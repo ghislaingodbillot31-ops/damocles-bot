@@ -1,10 +1,11 @@
-const { SlashCommandBuilder } = require('discord.js');
+const { SlashCommandBuilder, PermissionFlagsBits } = require('discord.js');
 const db = require('../database');
 
 module.exports = {
   data: new SlashCommandBuilder()
     .setName('banid')
     .setDescription('Bannit un membre par son ID Discord')
+    .setDefaultMemberPermissions(PermissionFlagsBits.BanMembers)
     .addStringOption(o => o.setName('id').setDescription('ID Discord du membre').setRequired(true))
     .addStringOption(o => o.setName('raison').setDescription('Raison du bannissement').setRequired(true)),
 

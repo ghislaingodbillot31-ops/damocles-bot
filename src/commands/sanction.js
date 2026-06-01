@@ -1,4 +1,4 @@
-const { SlashCommandBuilder } = require('discord.js');
+const { SlashCommandBuilder, PermissionFlagsBits } = require('discord.js');
 const db = require('../database');
 require('dotenv').config();
 
@@ -10,6 +10,7 @@ module.exports = {
   data: new SlashCommandBuilder()
     .setName('sanction')
     .setDescription('Ajoute un avertissement à un membre')
+    .setDefaultMemberPermissions(PermissionFlagsBits.ModerateMembers)
     .addUserOption(o => o.setName('membre').setDescription('Membre à sanctionner').setRequired(true))
     .addStringOption(o => o.setName('raison').setDescription('Raison de l\'avertissement').setRequired(true)),
 

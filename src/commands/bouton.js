@@ -1,4 +1,4 @@
-const { SlashCommandBuilder, ActionRowBuilder, ButtonBuilder, ButtonStyle } = require('discord.js');
+const { SlashCommandBuilder, PermissionFlagsBits, ActionRowBuilder, ButtonBuilder, ButtonStyle } = require('discord.js');
 require('dotenv').config();
 
 const ROLES_CHANNEL_ID = process.env.ROLES_CHANNEL_ID;
@@ -7,6 +7,7 @@ module.exports = {
   data: new SlashCommandBuilder()
     .setName('bouton')
     .setDescription('Crée un bouton interactif pour attribuer/retirer un rôle')
+    .setDefaultMemberPermissions(PermissionFlagsBits.ManageRoles)
     .addStringOption(o => o.setName('nom').setDescription('Texte du bouton').setRequired(true))
     .addRoleOption(o => o.setName('role').setDescription('Rôle à attribuer/retirer').setRequired(true)),
 

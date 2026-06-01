@@ -8,62 +8,103 @@ async function log(client, type, data) {
   if (!channel) return;
 
   const now = new Date().toLocaleString('fr-FR', { timeZone: 'Europe/Paris' });
-  let description, color;
+  let text, color;
+  const t = (label, value) => `\`${label}\` ${value}`;
 
   switch (type) {
     case 'member_join':
-      description = '`▶` 👋 Nouveau membre ............. <@' + data.userId + '>\n`▶` 🕐 Arrivée ........................ ' + now;
+      text  = '`▶` 👋 **Nouveau membre** — <@' + data.userId + '> — ' + now;
       color = 0x3498DB;
       break;
 
     case 'verification_ok':
-      description = '`▶` ✅ Vérification ............... Accordée\n`▶` 👤 Membre ........................ <@' + data.userId + '>\n`▶` 🕐 Date .......................... ' + now;
+      text  = '`▶` ✅ **Vérification accordée** — <@' + data.userId + '> — ' + now;
       color = 0x2ECC71;
       break;
 
     case 'verification_failed':
-      description = '`▶` ⛔ Vérification ............... Refusée\n`▶` 👤 Membre ........................ <@' + data.userId + '>\n`▶` ❌ Raisons ....................... ' + data.reasons + '\n`▶` 🕐 Date .......................... ' + now;
+      text  = '`▶` ⛔ **Vérification refusée** — <@' + data.userId + '> — ' + data.reasons + ' — ' + now;
       color = 0xE74C3C;
       break;
 
     case 'reglement_accepted':
-      description = '`▶` 📜 Règlement ................... Accepté\n`▶` 👤 Membre ........................ <@' + data.userId + '>\n`▶` 🕐 Date .......................... ' + now;
+      text  = '`▶` 📜 **Règlement accepté** — <@' + data.userId + '> — ' + now;
       color = 0x3498DB;
       break;
 
+    case 'first_message':
+      text  = '`▶` 💬 **Premier message** — <@' + data.userId + '> dans #' + data.channelName + ' : ' + data.content + ' — ' + now;
+      color = 0x2ECC71;
+      break;
+
     case 'member_activated':
-      description = '`▶` ✅ Statut ....................... Actif\n`▶` 👤 Membre ........................ <@' + data.userId + '>\n`▶` 📌 Via ........................... ' + data.source + '\n`▶` 🕐 Date .......................... ' + now;
+      text  = '`▶` ✅ **Membre activé** — <@' + data.userId + '> via ' + data.source + ' — ' + now;
       color = 0x2ECC71;
       break;
 
     case 'role_added':
-      description = '`▶` 🎭 Rôle ......................... Attribué\n`▶` 👤 Membre ........................ <@' + data.userId + '>\n`▶` 🏷️ Rôle .......................... **' + data.roleName + '**\n`▶` 🕐 Date .......................... ' + now;
+      text  = '`▶` 🎭 **Rôle attribué** — <@' + data.userId + '> → **' + data.roleName + '** — ' + now;
       color = 0x9B59B6;
       break;
 
     case 'role_removed':
-      description = '`▶` 🎭 Rôle ......................... Retiré\n`▶` 👤 Membre ........................ <@' + data.userId + '>\n`▶` 🏷️ Rôle .......................... **' + data.roleName + '**\n`▶` 🕐 Date .......................... ' + now;
+      text  = '`▶` 🎭 **Rôle retiré** — <@' + data.userId + '> ← **' + data.roleName + '** — ' + now;
       color = 0x95A5A6;
       break;
 
     case 'member_kicked':
-      description = '`▶` 👢 Expulsion ................... Effectuée\n`▶` 👤 Membre ........................ <@' + data.userId + '>\n`▶` 🛡️ Modérateur ................... <@' + data.modId + '>\n`▶` 📋 Raison ........................ ' + data.reason + '\n`▶` 🕐 Date .......................... ' + now;
+      text  = '`▶` 👢 **Expulsion** — <@' + data.userId + '> par <@' + data.modId + '> — ' + data.reason + ' — ' + now;
       color = 0xE67E22;
       break;
 
     case 'member_banned':
-      description = '`▶` 🔨 Bannissement ................ Effectué\n`▶` 👤 Membre ........................ <@' + data.userId + '>\n`▶` 🛡️ Modérateur ................... <@' + data.modId + '>\n`▶` 📋 Raison ........................ ' + data.reason + '\n`▶` 🕐 Date .......................... ' + now;
+      text  = '`▶` 🔨 **Bannissement** — <@' + data.userId + '> par <@' + data.modId + '> — ' + data.reason + ' — ' + now;
       color = 0xE74C3C;
       break;
 
     case 'warning_added':
-      description = '`▶` ⚠️ Avertissement ............... ' + data.count + '/3\n`▶` 👤 Membre ........................ <@' + data.userId + '>\n`▶` 🛡️ Modérateur ................... <@' + data.modId + '>\n`▶` 📋 Raison ........................ ' + data.reason + '\n`▶` 🕐 Date .......................... ' + now;
+      text  = '`▶` ⚠️ **Avertissement ' + data.count + '/3** — <@' + data.userId + '> par <@' + data.modId + '> — ' + data.reason + ' — ' + now;
       color = 0xF39C12;
       break;
 
     case 'analyse_done':
-      description = '`▶` 📊 Analyse quotidienne ......... Terminée\n`▶` 🟡 Nouveaux inactifs ............. **' + data.inactive + '**\n`▶` ✅ Réactivés ..................... **' + data.reactivated + '**\n`▶` ⚠️ À expulser .................... **' + data.toExpel + '**\n`▶` 🕐 Date .......................... ' + now;
+      text  = '`▶` 📊 **Analyse** — 🟡 ' + data.inactive + ' inactifs | ✅ ' + data.reactivated + ' réactivés | ⚠️ ' + data.toExpel + ' à expulser — ' + now;
       color = 0x5865F2;
+      break;
+
+    case 'raid_detected':
+      text  = '`▶` 🚨 **Anti-raid** — ' + data.count + ' joins détectés — <@' + data.userId + '> — ' + now;
+      color = 0xE74C3C;
+      break;
+
+    case 'spam_detected':
+      text  = '`▶` 🚫 **Anti-spam** — <@' + data.userId + '> dans #' + data.channelName + ' — ' + now;
+      color = 0xE74C3C;
+      break;
+
+    case 'link_detected':
+      text  = '`▶` 🔗 **Lien suspect** — <@' + data.userId + '> dans #' + data.channelName + ' — ' + data.links + ' — ' + now;
+      color = 0xF39C12;
+      break;
+
+    case 'ticket_created':
+      text  = '`▶` 🎫 **Ticket créé** — <@' + data.userId + '> → #' + data.channelName + ' — ' + now;
+      color = 0x5865F2;
+      break;
+
+    case 'ticket_taken':
+      text  = '`▶` ✋ **Ticket pris en charge** — <@' + data.userId + '> par <@' + data.modId + '> — ' + now;
+      color = 0x2ECC71;
+      break;
+
+    case 'ticket_closed':
+      text  = '`▶` 🔒 **Ticket clôturé** — <@' + data.userId + '> par <@' + data.modId + '> — ' + now;
+      color = 0x95A5A6;
+      break;
+
+    case 'banned_word':
+      text  = '`▶` 🚫 **Mot interdit** — <@' + data.userId + '> dans #' + data.channelName + ' — ' + now;
+      color = 0xE74C3C;
       break;
 
     default:
@@ -72,7 +113,7 @@ async function log(client, type, data) {
 
   await channel.send({
     embeds: [{
-      description,
+      description: text,
       color,
       footer: { text: 'Damoclès Log' },
       timestamp: new Date().toISOString(),

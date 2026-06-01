@@ -6,6 +6,10 @@ const activity = require('./activity');
 const { updateStatusMessage } = require('./statusbot');
 const { verifyMember, handleVerifyButton, setClient: setVerifClient } = require('./verification');
 const { log } = require('./logger');
+const { checkRaid, checkSpam, checkLinks } = require('./antiraid');
+const { sendWelcome, sendLeave } = require('./welcome');
+const { createTicket, takeTicket, closeTicket } = require('./tickets');
+const { createDashboard, setClient: setDashboardClient } = require('./dashboard');
 require('dotenv').config();
 
 const client = new Client({
@@ -44,6 +48,8 @@ const EXCLUDED_ROLE_IDS = (EXCLUDED_STR || '').split(',').filter(Boolean);
 client.once('clientReady', async () => {
   console.log(`\n✅ Bot connecté : ${client.user.tag}`);
   setVerifClient(client);
+  setDashboardClient(client);
+  createDashboard();
   console.log(`📡 Serveurs : ${client.guilds.cache.size}\n`);
 
   for (const [, guild] of client.guilds.cache) {
@@ -85,6 +91,8 @@ client.on('guildMemberAdd', async (member) => {
 
   db.upsertMember(member.user, { joinedAt: member.joinedAt?.toISOString() });
   await log(client, 'member_join', { userId: member.id });
+  await checkRaid(client, member);
+  await sendWelcome(member);
 
   // Donner le rôle Vérification en priorité
   if (VERIFICATION_ROLE_ID) {
@@ -119,13 +127,17 @@ client.on('guildMemberRemove', async (member) => {
 client.on('guildBanAdd', async (ban) => {
   try {
     await new Promise(r => setTimeout(r, 1500));
-    const logs = await ban.guild.fetchAuditLogs({ type: AuditLogEvent.MemberBanAdd, limit: 1 });
-    const log  = logs.entries.first();
-    const banReason = logs?.entries?.first()?.reason || 'Aucune raison';
-    const banMod    = logs?.entries?.first()?.executor?.id || '0';
-    db.banMember(ban.user, banReason, banMod);
-    await log(client, 'member_banned', { userId: ban.user.id, modId: banMod, reason: banReason });
-  } catch { db.banMember(ban.user, 'Aucune raison', 'Inconnu'); }
+    const auditLogs = await ban.guild.fetchAuditLogs({ type: AuditLogEvent.MemberBanAdd, limit: 1 });
+    const banEntry  = auditLogs.entries.first();
+    const banReason = banEntry?.reason || 'Aucune raison';
+    const banModId  = banEntry?.executor?.id || '0';
+    db.banMember(ban.user, banReason, banModId);
+    await log(client, 'member_banned', { userId: ban.user.id, modId: banModId, reason: banReason });
+    console.log('🔨 Ban enregistré : ' + ban.user.tag + ' — ' + banReason);
+  } catch (err) {
+    console.error('Erreur guildBanAdd :', err.message);
+    db.banMember(ban.user, 'Aucune raison', 'Inconnu');
+  }
   await updateStatusMessage(client);
 });
 
@@ -179,12 +191,48 @@ client.on('messageCreate', async (message) => {
     }
   }
 
+  // ── Vérification mots interdits ──────────────────────────────────────────
+  const cfg = require('./config').get();
+  const bannedWords = (cfg.BANNED_WORDS || '').split(',').map(w => w.trim().toLowerCase()).filter(Boolean);
+  if (bannedWords.length > 0) {
+    const msgLower = message.content.toLowerCase();
+    if (bannedWords.some(w => msgLower.includes(w))) {
+      await message.delete().catch(() => {});
+      await message.channel.send({ content: '<@' + member.id + '> Ce message contient un mot interdit.', }).then(m => setTimeout(() => m.delete().catch(() => {}), 5000));
+      db.addWarning(member.id, 'Mot interdit utilisé', 'DAMOCLES');
+      await log(client, 'banned_word', { userId: member.id, channelName: message.channel.name });
+      return;
+    }
+  }
+
+  // ── Blocage des liens ─────────────────────────────────────────────────────
+  if (cfg.LINKS_BLOCKED) {
+    const urlRegex = /(https?:\/\/[^\s]+)/gi;
+    if (urlRegex.test(message.content)) {
+      const allowedRoles = (cfg.LINKS_ALLOWED_ROLES || '').split(',').filter(Boolean);
+      const hasPermission = allowedRoles.some(id => member.roles.cache.has(id));
+      if (!hasPermission) {
+        await message.delete().catch(() => {});
+        await message.channel.send({ content: '<@' + member.id + '> Tu n\'es pas autorisé à poster des liens.', }).then(m => setTimeout(() => m.delete().catch(() => {}), 5000));
+        return;
+      }
+    }
+  }
+
   // ── Tous les autres salons : activité + activation en direct ────────────
   activity.recordActivity(member.id);
   db.recordActivity(member.id, 'message');
+  await checkSpam(client, message);
+  await checkLinks(client, message);
 
   // Dès qu'un joueur poste → rôle Actif immédiatement
   if (!member.roles.cache.has(ACTIVE_ROLE_ID)) {
+    // Log du message avant activation
+    await log(client, 'first_message', {
+      userId: member.id,
+      channelName: message.channel.name,
+      content: message.content.slice(0, 80) + (message.content.length > 80 ? '...' : ''),
+    });
     await activateMember(member, 'message');
   }
 });
@@ -284,6 +332,25 @@ client.on('interactionCreate', async (interaction) => {
       const cmd = client.commands.get('expulsion');
       if (cmd) await cmd.handleButton(interaction);
       await updateStatusMessage(client);
+      return;
+    }
+
+    // Bouton créer ticket
+    if (id === 'ticket_create') {
+      await createTicket(interaction);
+      return;
+    }
+
+    // Boutons ticket prise en charge / clôture
+    if (id.startsWith('ticket_take_')) {
+      const memberId = id.replace('ticket_take_', '');
+      await takeTicket(interaction, memberId);
+      return;
+    }
+
+    if (id.startsWith('ticket_close_')) {
+      const memberId = id.replace('ticket_close_', '');
+      await closeTicket(interaction, memberId);
       return;
     }
 
