@@ -1,13 +1,5 @@
 require('dotenv').config();
 
-// Empêcher le bot de crasher sur les erreurs non gérées
-process.on('unhandledRejection', err => {
-  console.error('⚠️ Erreur non gérée :', err.message || err);
-});
-process.on('uncaughtException', err => {
-  console.error('⚠️ Exception non capturée :', err.message || err);
-});
-
 const { Client, GatewayIntentBits, Partials, Events } = require('discord.js');
 const { verifyMember, handleVerifyButton } = require('./verification');
 const { sendWelcomeAfterReglement, sendLeave, getWelcomeConfig, setWelcomeConfig } = require('./welcome');
@@ -90,12 +82,9 @@ client.on(Events.MessageCreate, async message => {
   await checkSpam(client, message);
   await checkLinks(client, message);
 
-  // Détection premier message dans #général → rôle Membre validé
-  const GENERAL_CHANNEL_ID = '1538533261314236527';
+  // Détection premier message → rôle Membre validé
   if (
-    message.channel.id === GENERAL_CHANNEL_ID &&
     ACTIVE_ROLE_ID &&
-    REGLEMENT_ROLE_ID &&
     member.roles.cache.has(REGLEMENT_ROLE_ID) &&
     !member.roles.cache.has(ACTIVE_ROLE_ID) &&
     !firstMessageDone.has(member.id)
@@ -106,8 +95,9 @@ client.on(Events.MessageCreate, async message => {
       firstMessageAt: new Date().toISOString(),
       status: 'active',
     });
-    await log(client, 'member_activated', { userId: member.id, source: 'premier message général' });
-    console.log('✅ Premier message #général — Membre validé : ' + member.user.tag);
+    db.recordActivity(member.id, 'first_message');
+    await log(client, 'member_activated', { userId: member.id, source: 'premier message' });
+    console.log('✅ Premier message — Membre validé : ' + member.user.tag);
   }
 });
 
@@ -156,7 +146,17 @@ client.on(Events.InteractionCreate, async interaction => {
   if (id === 'accept_reglement') {
     const member = interaction.member;
 
-    // Répondre IMMÉDIATEMENT avant toute action
+    // Retirer Attente → donner Règlement validé
+    if (ATTENTE_ROLE_ID)   await member.roles.remove(ATTENTE_ROLE_ID).catch(() => {});
+    if (VERIFICATION_ROLE_ID) await member.roles.remove(VERIFICATION_ROLE_ID).catch(() => {});
+    if (REGLEMENT_ROLE_ID) await member.roles.add(REGLEMENT_ROLE_ID).catch(() => {});
+
+    db.reglementAccepted(member.id);
+    await log(client, 'reglement_accepted', { userId: member.id });
+
+    // Message de bienvenue dans #bienvenue
+    await sendWelcomeAfterReglement(member);
+
     await interaction.reply({
       embeds: [{
         description: '✅ **Règlement accepté !**\nConsulte le salon **#bienvenue** pour la suite.',
@@ -165,16 +165,6 @@ client.on(Events.InteractionCreate, async interaction => {
       }],
       flags: 64,
     });
-
-    // Actions après la réponse
-    if (ATTENTE_ROLE_ID)      await member.roles.remove(ATTENTE_ROLE_ID).catch(() => {});
-    if (VERIFICATION_ROLE_ID) await member.roles.remove(VERIFICATION_ROLE_ID).catch(() => {});
-    if (REGLEMENT_ROLE_ID)    await member.roles.add(REGLEMENT_ROLE_ID).catch(() => {});
-
-    db.reglementAccepted(member.id);
-    await log(client, 'reglement_accepted', { userId: member.id });
-    await sendWelcomeAfterReglement(member);
-
     console.log('📜 Règlement accepté : ' + member.user.tag);
     return;
   }

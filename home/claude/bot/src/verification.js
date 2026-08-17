@@ -83,9 +83,9 @@ async function verifyMember(member) {
       }]
     });
 
-    // Retirer rôle Vérification → donner En attente (accès au règlement)
+    // Retirer rôle Vérification → donner Attente règlement
     if (VERIFICATION_ROLE_ID) await member.roles.remove(VERIFICATION_ROLE_ID).catch(() => {});
-    if (ATTENTE_ROLE_ID)      await member.roles.add(ATTENTE_ROLE_ID).catch(() => {});
+    if (REGLEMENT_ROLE_ID)    await member.roles.add(REGLEMENT_ROLE_ID).catch(() => {});
     console.log('✅ Vérification OK : ' + member.user.tag);
 
   } else {

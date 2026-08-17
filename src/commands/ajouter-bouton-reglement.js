@@ -7,32 +7,27 @@ module.exports = {
     .setDefaultMemberPermissions(PermissionFlagsBits.ManageRoles),
 
   async execute(interaction) {
-    await interaction.deferReply({ ephemeral: true });
-
     const REGLEMENT_CHANNEL_ID = process.env.REGLEMENT_CHANNEL_ID;
-    const EXCLUDED_ROLE_IDS    = (process.env.EXCLUDED_ROLE_IDS || '').split(',').filter(Boolean);
 
-    // Vérifier que c'est bien dans #reglement
     if (interaction.channel.id !== REGLEMENT_CHANNEL_ID) {
-      await interaction.editReply({ content: '❌ Cette commande fonctionne uniquement dans le salon **#reglement**.' });
+      await interaction.reply({
+        content: '❌ Cette commande fonctionne uniquement dans le salon **#règlement**.',
+        flags: 64,
+      });
       return;
     }
 
-    // Vérifier que c'est un admin
-    const isAdmin = EXCLUDED_ROLE_IDS.some(id => interaction.member.roles.cache.has(id));
-    if (!isAdmin) {
-      await interaction.editReply({ content: '❌ Tu n\'as pas la permission d\'utiliser cette commande.' });
-      return;
-    }
+    // Répondre immédiatement
+    await interaction.reply({ content: '⏳ Ajout du bouton...', flags: 64 });
 
     const row = new ActionRowBuilder().addComponents(
       new ButtonBuilder()
-        .setCustomId('reglement_accept')
+        .setCustomId('accept_reglement')
         .setLabel('✅ J\'accepte le règlement')
         .setStyle(ButtonStyle.Success),
     );
 
     await interaction.targetMessage.reply({ components: [row] });
-    await interaction.editReply({ content: '✅ Bouton ajouté sous ton message !' });
+    await interaction.editReply({ content: '✅ Bouton ajouté sous le message !' });
   },
 };
