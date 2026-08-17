@@ -113,12 +113,15 @@ function getStats() {
     total:    all.length,
     active:   all.filter(m => m.status === STATUS.ACTIVE).length,
     inactive: all.filter(m => m.status === STATUS.INACTIVE).length,
+    left:     all.filter(m => m.status === STATUS.LEFT).length,
+    kicked:   all.filter(m => m.status === STATUS.KICKED).length,
     toExpel:  all.filter(m => {
       const ref = m.lastActivity ? new Date(m.lastActivity).getTime() : new Date(m.joinedAt).getTime();
       return m.status === STATUS.INACTIVE && (now - ref) >= d40;
     }).length,
     banned:   all.filter(m => m.status === STATUS.BANNED).length,
     warned:   all.filter(m => m.warnings?.length > 0).length,
+    present:  all.filter(m => m.status === STATUS.ACTIVE || m.status === STATUS.INACTIVE).length,
   };
 }
 

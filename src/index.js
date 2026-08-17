@@ -1,16 +1,21 @@
-const { Client, GatewayIntentBits, Partials, AuditLogEvent, Collection } = require('discord.js');
-const fs   = require('fs');
-const path = require('path');
-const db   = require('./database');
-const activity = require('./activity');
-const { updateStatusMessage } = require('./statusbot');
-const { verifyMember, handleVerifyButton, setClient: setVerifClient } = require('./verification');
-const { log } = require('./logger');
-const { checkRaid, checkSpam, checkLinks } = require('./antiraid');
-const { sendWelcome, sendLeave } = require('./welcome');
-const { createTicket, takeTicket, closeTicket } = require('./tickets');
-const { createDashboard, setClient: setDashboardClient } = require('./dashboard');
 require('dotenv').config();
+
+const { Client, GatewayIntentBits, Partials, Events } = require('discord.js');
+const { verifyMember, handleVerifyButton } = require('./verification');
+const { sendWelcome, sendLeave }           = require('./welcome');
+const { createTicket, takeTicket, closeTicket } = require('./tickets');
+const { checkRaid, checkSpam, checkLinks } = require('./antiraid');
+const { checkNewMember }                   = require('./antidoublecompte');
+const db                                   = require('./database');
+const { log }                              = require('./logger');
+const { createDashboard, setClient }       = require('./dashboard');
+const scheduledMessages                    = require('./scheduled-messages');
+const { startKeepAlive }                   = require('./keepalive');
+
+const ATTENTE_ROLE_ID  = process.env.ATTENTE_ROLE_ID;
+const ACTIVE_ROLE_ID   = process.env.ACTIVE_ROLE_ID;
+const REGLEMENT_ROLE_ID = process.env.REGLEMENT_ROLE_ID;
+const REGLES_ACCEPTEES_ROLE_ID = process.env.REGLES_ACCEPTEES_ROLE_ID || process.env.ACTIVE_ROLE_ID;
 
 const client = new Client({
   intents: [
@@ -18,254 +23,109 @@ const client = new Client({
     GatewayIntentBits.GuildMembers,
     GatewayIntentBits.GuildMessages,
     GatewayIntentBits.MessageContent,
-    GatewayIntentBits.GuildVoiceStates,
-    GatewayIntentBits.GuildModeration,
+    GatewayIntentBits.GuildBans,
+    GatewayIntentBits.GuildMessageReactions,
   ],
-  partials: [Partials.Message, Partials.Channel],
+  partials: [Partials.Message, Partials.Channel, Partials.Reaction],
 });
 
-// ── Commandes ────────────────────────────────────────────────────────────────
-client.commands = new Collection();
-const cmdFiles  = fs.readdirSync(path.join(__dirname, 'commands')).filter(f => f.endsWith('.js'));
-for (const file of cmdFiles) {
-  const cmd = require(`./commands/${file}`);
-  client.commands.set(cmd.data.name, cmd);
-  console.log(`📌 Commande : /${cmd.data.name}`);
-}
+// ── Ready ─────────────────────────────────────────────────────────────────────
+client.once(Events.ClientReady, async () => {
+  console.log('✅ Bot connecté : ' + client.user.tag);
+  console.log('📡 Serveurs : ' + client.guilds.cache.size);
 
-const {
-  VERIFICATION_ROLE_ID, REGLEMENT_ROLE_ID, ATTENTE_ROLE_ID,
-  ACTIVE_ROLE_ID, INACTIVE_ROLE_ID, REGLES_ACCEPTEES_ROLE_ID,
-  VERIFICATION_CHANNEL_ID, REGLEMENT_CHANNEL_ID,
-  ATTENTE_CHANNEL_ID, ACTIVATE_CHANNEL_ID, CHAT_CHANNEL_ID,
-  LOG_CHANNEL_ID, STATUS_CHANNEL_ID, DAMOCLES_LOG_CHANNEL_ID,
-  EXCLUDED_ROLE_IDS: EXCLUDED_STR,
-} = process.env;
-
-const EXCLUDED_ROLE_IDS = (EXCLUDED_STR || '').split(',').filter(Boolean);
-
-// ── Prêt ─────────────────────────────────────────────────────────────────────
-client.once('clientReady', async () => {
-  console.log(`\n✅ Bot connecté : ${client.user.tag}`);
-  setVerifClient(client);
-  setDashboardClient(client);
+  setClient(client);
   createDashboard();
-  console.log(`📡 Serveurs : ${client.guilds.cache.size}\n`);
 
-  for (const [, guild] of client.guilds.cache) {
-    const members = await guild.members.fetch();
-    for (const [, m] of members) {
-      if (!m.user.bot) db.upsertMember(m.user, { joinedAt: m.joinedAt?.toISOString() });
-    }
-    console.log(`💾 DB : ${db.getStats().total} membres`);
-    await activity.loadAllChannels(guild);
-  }
+  const allMembers = db.getAllMembers();
+  console.log('💾 DB : ' + allMembers.length + ' membres');
 
-  // Affichage animé au démarrage
-  await updateStatusMessage(client, true);
-
-  // Mise à jour silencieuse chaque lundi à 08h00
-  const cron = require('node-cron');
-  cron.schedule('0 8 * * 1', async () => {
-    console.log('⏰ Mise à jour hebdomadaire du status-bot...');
-    await updateStatusMessage(client, true);
-  });
-
-  // Analyse quotidienne à 6h
-  cron.schedule('0 6 * * *', async () => {
-    console.log('⏰ Analyse quotidienne automatique...');
-    for (const [, guild] of client.guilds.cache) {
-      const analyseCmd = client.commands.get('analyse');
-      if (analyseCmd && analyseCmd.runAuto) {
-        const result = await analyseCmd.runAuto(guild);
-        if (result) await log(client, 'analyse_done', result);
-      }
-    }
-  });
+  scheduledMessages.startAll(client);
+  startKeepAlive();
 });
 
 // ── Nouveau membre ────────────────────────────────────────────────────────────
-client.on('guildMemberAdd', async (member) => {
+client.on(Events.GuildMemberAdd, async member => {
   if (member.user.bot) return;
-  console.log(`👋 Nouveau membre : ${member.user.tag}`);
 
+  console.log('👋 Nouveau membre : ' + member.user.tag);
+
+  // Enregistrer en DB
   db.upsertMember(member.user, { joinedAt: member.joinedAt?.toISOString() });
-  await log(client, 'member_join', { userId: member.id });
-  await checkRaid(client, member);
-  await sendWelcome(member);
 
-  // Donner le rôle Vérification en priorité
-  if (VERIFICATION_ROLE_ID) {
-    await member.roles.add(VERIFICATION_ROLE_ID).catch(console.error);
-    console.log(`🔍 Rôle Vérification attribué à ${member.user.tag}`);
+  // Donner le rôle En attente
+  if (ATTENTE_ROLE_ID) {
+    await member.roles.add(ATTENTE_ROLE_ID).catch(() => {});
   }
 
-  // Attendre 2s puis lancer la vérification (évite les conflits avec le scan)
-  setTimeout(async () => {
-    await verifyMember(member);
-    await updateStatusMessage(client);
-  }, 2000);
+  // Anti-double compte
+  await checkNewMember(member);
+
+  // Message de bienvenue
+  await sendWelcome(member);
+
+  // Log
+  await log(client, 'member_join', { userId: member.id });
+
+  // Vérification automatique
+  await verifyMember(member);
 });
 
-// ── Membre qui quitte ─────────────────────────────────────────────────────────
-client.on('guildMemberRemove', async (member) => {
+// ── Départ membre ─────────────────────────────────────────────────────────────
+client.on(Events.GuildMemberRemove, async member => {
   if (member.user.bot) return;
-  try {
-    await new Promise(r => setTimeout(r, 1500));
-    const logs = await member.guild.fetchAuditLogs({ type: AuditLogEvent.MemberKick, limit: 1 });
-    const log  = logs.entries.first();
-    if (log && log.target.id === member.user.id && Date.now() - log.createdTimestamp < 5000) {
-      db.kickMember(member.user, log.reason || 'Aucune raison', log.executor?.tag);
-    } else {
-      db.memberLeft(member.user);
-    }
-  } catch { db.memberLeft(member.user); }
-  await updateStatusMessage(client);
+  db.memberLeft(member.user);
+  await sendLeave(member);
+  await log(client, 'member_left', { userId: member.id });
+  console.log('🚪 Départ : ' + member.user.tag);
 });
 
 // ── Ban ───────────────────────────────────────────────────────────────────────
-client.on('guildBanAdd', async (ban) => {
-  try {
-    await new Promise(r => setTimeout(r, 1500));
-    const auditLogs = await ban.guild.fetchAuditLogs({ type: AuditLogEvent.MemberBanAdd, limit: 1 });
-    const banEntry  = auditLogs.entries.first();
-    const banReason = banEntry?.reason || 'Aucune raison';
-    const banModId  = banEntry?.executor?.id || '0';
-    db.banMember(ban.user, banReason, banModId);
-    await log(client, 'member_banned', { userId: ban.user.id, modId: banModId, reason: banReason });
-    console.log('🔨 Ban enregistré : ' + ban.user.tag + ' — ' + banReason);
-  } catch (err) {
-    console.error('Erreur guildBanAdd :', err.message);
-    db.banMember(ban.user, 'Aucune raison', 'Inconnu');
-  }
-  await updateStatusMessage(client);
+client.on(Events.GuildBanAdd, async ban => {
+  db.banMember(ban.user, ban.reason || 'Aucune raison', 'Discord');
 });
 
 // ── Messages ──────────────────────────────────────────────────────────────────
-client.on('messageCreate', async (message) => {
+client.on(Events.MessageCreate, async message => {
   if (message.author.bot) return;
-  const member = message.member;
-  if (!member) return;
+  if (!message.guild) return;
 
-  const channelId = message.channel.id;
-
-  // ── Salon #status-joueurs : supprime les messages immédiatement ──────────
-  if (channelId === STATUS_CHANNEL_ID) {
-    await message.delete().catch(() => {});
-    return;
-  }
-
-  // ── Salon #reglement : admin poste → bot ajoute bouton dessous ────────────
-  if (channelId === REGLEMENT_CHANNEL_ID) {
-    // Seuls les membres exclus (admins) peuvent poster ici
-    const isAdmin = EXCLUDED_ROLE_IDS.some(id => member.roles.cache.has(id));
-    if (isAdmin) {
-      const { ActionRowBuilder, ButtonBuilder, ButtonStyle } = require('discord.js');
-      const row = new ActionRowBuilder().addComponents(
-        new ButtonBuilder()
-          .setCustomId('reglement_accept')
-          .setLabel('✅ J\'accepte le règlement')
-          .setStyle(ButtonStyle.Success),
-      );
-      await message.channel.send({ components: [row] });
-    }
-    return;
-  }
-
-  // ── Salon #active-toi : supprime le message, active si inactif ────────────
-  if (channelId === ACTIVATE_CHANNEL_ID) {
-    await message.delete().catch(() => {});
-    if (member.roles.cache.has(INACTIVE_ROLE_ID)) {
-      await activateMember(member, 'message');
-    }
-    return;
-  }
-
-  // ── Salon #chat : premier message → rôle Actif ───────────────────────────
-  if (channelId === CHAT_CHANNEL_ID) {
-    const hasRegles = REGLES_ACCEPTEES_ROLE_ID && member.roles.cache.has(REGLES_ACCEPTEES_ROLE_ID);
-    const hasRegle  = member.roles.cache.has(REGLEMENT_ROLE_ID);
-
-    if ((hasRegles || hasRegle) && !member.roles.cache.has(ACTIVE_ROLE_ID)) {
-      await activateMember(member, 'premier message dans #chat');
-    }
-  }
-
-  // ── Vérification mots interdits ──────────────────────────────────────────
-  const cfg = require('./config').get();
-  const bannedWords = (cfg.BANNED_WORDS || '').split(',').map(w => w.trim().toLowerCase()).filter(Boolean);
-  if (bannedWords.length > 0) {
-    const msgLower = message.content.toLowerCase();
-    if (bannedWords.some(w => msgLower.includes(w))) {
-      await message.delete().catch(() => {});
-      await message.channel.send({ content: '<@' + member.id + '> Ce message contient un mot interdit.', }).then(m => setTimeout(() => m.delete().catch(() => {}), 5000));
-      db.addWarning(member.id, 'Mot interdit utilisé', 'DAMOCLES');
-      await log(client, 'banned_word', { userId: member.id, channelName: message.channel.name });
-      return;
-    }
-  }
-
-  // ── Blocage des liens ─────────────────────────────────────────────────────
-  if (cfg.LINKS_BLOCKED) {
-    const urlRegex = /(https?:\/\/[^\s]+)/gi;
-    if (urlRegex.test(message.content)) {
-      const allowedRoles = (cfg.LINKS_ALLOWED_ROLES || '').split(',').filter(Boolean);
-      const hasPermission = allowedRoles.some(id => member.roles.cache.has(id));
-      if (!hasPermission) {
-        await message.delete().catch(() => {});
-        await message.channel.send({ content: '<@' + member.id + '> Tu n\'es pas autorisé à poster des liens.', }).then(m => setTimeout(() => m.delete().catch(() => {}), 5000));
-        return;
-      }
-    }
-  }
-
-  // ── Tous les autres salons : activité + activation en direct ────────────
-  activity.recordActivity(member.id);
-  db.recordActivity(member.id, 'message');
   await checkSpam(client, message);
   await checkLinks(client, message);
-
-  // Dès qu'un joueur poste → rôle Actif immédiatement
-  if (!member.roles.cache.has(ACTIVE_ROLE_ID)) {
-    // Log du message avant activation
-    await log(client, 'first_message', {
-      userId: member.id,
-      channelName: message.channel.name,
-      content: message.content.slice(0, 80) + (message.content.length > 80 ? '...' : ''),
-    });
-    await activateMember(member, 'message');
-  }
-});
-
-// ── Vocal ─────────────────────────────────────────────────────────────────────
-client.on('voiceStateUpdate', async (oldState, newState) => {
-  if (!oldState.channelId && newState.channelId) {
-    const member = newState.member;
-    if (!member || member.user.bot) return;
-    activity.recordActivity(member.id);
-    db.recordActivity(member.id, 'vocal');
-    if (member.roles.cache.has(INACTIVE_ROLE_ID)) {
-      await activateMember(member, 'vocal');
-    }
-  }
 });
 
 // ── Interactions ──────────────────────────────────────────────────────────────
-client.on('interactionCreate', async (interaction) => {
+client.on(Events.InteractionCreate, async interaction => {
 
-  // Commandes slash ET menus contextuels
-  if (interaction.isChatInputCommand() || interaction.isMessageContextMenuCommand()) {
-    const cmd = client.commands.get(interaction.commandName);
-    if (!cmd) return;
+  // Commandes slash
+  if (interaction.isChatInputCommand()) {
+    const commands = {};
     try {
-      await cmd.execute(interaction);
-    } catch (err) {
-      console.error(`Erreur ${interaction.commandName} :`, err.message);
-      const msg = { content: '❌ Une erreur est survenue.', ephemeral: true };
-      try {
-        if (interaction.deferred) await interaction.editReply(msg);
-        else if (!interaction.replied) await interaction.reply(msg);
-      } catch {}
+      commands['expulsion'] = require('./commands/expulsion');
+      commands['banid']     = require('./commands/banid');
+      commands['sanction']  = require('./commands/sanction');
+      commands['bouton']    = require('./commands/bouton');
+      commands['analyse']   = require('./commands/analyse');
+    } catch {}
+
+    const cmd = commands[interaction.commandName];
+    if (cmd) {
+      try { await cmd.execute(interaction); }
+      catch (err) { console.error('Erreur commande :', err.message); }
+    }
+    return;
+  }
+
+  // Menus contextuels
+  if (interaction.isContextMenuCommand()) {
+    const name = interaction.commandName;
+    if (name === 'Ajouter bouton règlement') {
+      const { execute } = require('./commands/ajouter-bouton-reglement');
+      await execute(interaction);
+    }
+    if (name === 'Ajouter bouton ticket') {
+      const { execute } = require('./commands/ticket');
+      await execute(interaction);
     }
     return;
   }
@@ -274,141 +134,81 @@ client.on('interactionCreate', async (interaction) => {
   if (interaction.isButton()) {
     const id = interaction.customId;
 
-    // Bouton règlement accepté
-    if (id === 'reglement_accept') {
-      const member = interaction.member;
-
-      // Déjà actif
-      if (member.roles.cache.has(ACTIVE_ROLE_ID)) {
-        await interaction.reply({ content: '✅ Tu es déjà membre actif !', ephemeral: true });
-        return;
-      }
-
-      // Donner le rôle Règles acceptées
-      if (REGLES_ACCEPTEES_ROLE_ID) {
-        await member.roles.add(REGLES_ACCEPTEES_ROLE_ID).catch(console.error);
-        console.log(`✅ Rôle Règles acceptées donné à ${member.user.tag}`);
-      } else {
-        console.error('❌ REGLES_ACCEPTEES_ROLE_ID manquant dans .env');
-      }
-
-      const CHAT_CHANNEL_ID = process.env.CHAT_CHANNEL_ID;
-      await interaction.reply({
-        content: '✅ Règlement accepté ! Rends-toi dans <#' + CHAT_CHANNEL_ID + '> et dis bonjour pour accéder au serveur.',
-        ephemeral: true
-      });
-      console.log(`📜 ${member.user.tag} a accepté le règlement → rôle Règles acceptées attribué`);
-      await log(client, 'reglement_accepted', { userId: member.id });
-
-      // Log
-      if (LOG_CHANNEL_ID) {
-        const logCh = member.guild.channels.cache.get(LOG_CHANNEL_ID);
-        if (logCh) await logCh.send({
-          embeds: [{
-            title: '📜 Règlement accepté',
-            color: 0x3498DB,
-            thumbnail: { url: member.user.displayAvatarURL() },
-            fields: [
-              { name: 'Membre', value: `<@${member.id}> (${member.user.tag})`, inline: true },
-              { name: 'Date', value: new Date().toLocaleString('fr-FR', { timeZone: 'Europe/Paris' }), inline: true },
-            ],
-            footer: { text: 'Damoclès Security Bot' },
-            timestamp: new Date().toISOString(),
-          }]
-        }).catch(() => {});
-      }
-      return;
-    }
-
-    // Boutons vérification admin
+    // ── Vérification staff ─────────────────────────────────────────────────
     if (id.startsWith('verify_')) {
       await handleVerifyButton(interaction);
-      await updateStatusMessage(client);
       return;
     }
 
-    // Boutons expulsion
-    if (id.startsWith('kick_') || id.startsWith('keep_')) {
-      const cmd = client.commands.get('expulsion');
-      if (cmd) await cmd.handleButton(interaction);
-      await updateStatusMessage(client);
+    // ── Acceptation du règlement ──────────────────────────────────────────
+    if (id === 'accept_reglement') {
+      const member = interaction.member;
+      if (REGLEMENT_ROLE_ID) await member.roles.remove(REGLEMENT_ROLE_ID).catch(() => {});
+      if (ATTENTE_ROLE_ID)   await member.roles.remove(ATTENTE_ROLE_ID).catch(() => {});
+      if (REGLES_ACCEPTEES_ROLE_ID) await member.roles.add(REGLES_ACCEPTEES_ROLE_ID).catch(() => {});
+
+      await interaction.reply({
+        embeds: [{
+          description: '✅ **Règlement accepté !**\nBienvenue sur le serveur <@' + member.id + '> !',
+          color: 0x2ECC71,
+          footer: { text: 'Damoclès Security Bot' },
+        }],
+        flags: 64, // ephemeral
+      });
+
+      await log(client, 'reglement_accepted', { userId: member.id });
+      console.log('📜 Règlement accepté : ' + member.user.tag);
       return;
     }
 
-    // Bouton créer ticket
+    // ── Tickets ────────────────────────────────────────────────────────────
     if (id === 'ticket_create') {
       await createTicket(interaction);
       return;
     }
-
-    // Boutons ticket prise en charge / clôture
     if (id.startsWith('ticket_take_')) {
-      const memberId = id.replace('ticket_take_', '');
-      await takeTicket(interaction, memberId);
+      await takeTicket(interaction, id.replace('ticket_take_', ''));
       return;
     }
-
     if (id.startsWith('ticket_close_')) {
-      const memberId = id.replace('ticket_close_', '');
-      await closeTicket(interaction, memberId);
+      await closeTicket(interaction, id.replace('ticket_close_', ''));
       return;
     }
 
-    // Boutons rôles
+    // ── Rôles via boutons ──────────────────────────────────────────────────
     if (id.startsWith('role_')) {
       const roleId = id.replace('role_', '');
-      const cmd = client.commands.get('bouton');
-      if (cmd) {
-        const hadRole = interaction.member.roles.cache.has(roleId);
-        await cmd.handleRoleButton(interaction, roleId);
-        const role = interaction.guild.roles.cache.get(roleId);
-        if (role) await log(client, hadRole ? 'role_removed' : 'role_added', { userId: interaction.user.id, roleName: role.name });
+      const role   = interaction.guild.roles.cache.get(roleId);
+      if (!role) {
+        await interaction.reply({ content: '❌ Rôle introuvable.', flags: 64 });
+        return;
       }
+      const member = interaction.member;
+      if (member.roles.cache.has(roleId)) {
+        await member.roles.remove(role);
+        await interaction.reply({ content: '🔴 Rôle **' + role.name + '** retiré.', flags: 64 });
+      } else {
+        await member.roles.add(role);
+        await interaction.reply({ content: '✅ Rôle **' + role.name + '** attribué.', flags: 64 });
+      }
+      return;
+    }
+
+    // ── Kick/ignore depuis scanner ─────────────────────────────────────────
+    if (id.startsWith('kick_')) {
+      const memberId = id.replace('kick_', '');
+      const target   = await interaction.guild.members.fetch(memberId).catch(() => null);
+      if (target) {
+        await target.kick('Inactivité prolongée');
+        await interaction.update({ embeds: [{ description: '👢 <@' + memberId + '> expulsé.', color: 0xE74C3C }], components: [] });
+      }
+      return;
+    }
+    if (id.startsWith('ignore_')) {
+      await interaction.update({ embeds: [{ description: '✅ Ignoré.', color: 0x2ECC71 }], components: [] });
       return;
     }
   }
 });
-
-// ── Activation ────────────────────────────────────────────────────────────────
-async function activateMember(member, source) {
-  try {
-    if (member.roles.cache.has(INACTIVE_ROLE_ID)) {
-      await member.roles.remove(INACTIVE_ROLE_ID).catch(() => {});
-    }
-    if (ACTIVE_ROLE_ID && !member.roles.cache.has(ACTIVE_ROLE_ID)) {
-      await member.roles.add(ACTIVE_ROLE_ID).catch(() => {});
-    }
-    // Retirer aussi Règlement si présent (étape franchie)
-    if (REGLEMENT_ROLE_ID && member.roles.cache.has(REGLEMENT_ROLE_ID)) {
-      await member.roles.remove(REGLEMENT_ROLE_ID).catch(() => {});
-    }
-    db.recordActivity(member.id, source);
-    console.log(`✅ ${member.user.tag} activé (${source})`);
-    await log(client, 'member_activated', { userId: member.id, source });
-
-    // Log
-    if (LOG_CHANNEL_ID) {
-      const ch = member.guild.channels.cache.get(LOG_CHANNEL_ID);
-      if (ch) await ch.send({
-        embeds: [{
-          title: '✅ Membre activé',
-          color: 0x2ECC71,
-          thumbnail: { url: member.user.displayAvatarURL() },
-          fields: [
-            { name: 'Membre', value: `<@${member.id}> (${member.user.tag})`, inline: true },
-            { name: 'Via',    value: source, inline: true },
-            { name: 'Date',   value: new Date().toLocaleString('fr-FR', { timeZone: 'Europe/Paris' }) },
-          ],
-          footer: { text: 'Damoclès Security Bot' },
-          timestamp: new Date().toISOString(),
-        }]
-      }).catch(() => {});
-    }
-
-    await updateStatusMessage(client);
-  } catch (err) {
-    console.error(`Erreur activation ${member.user.tag} :`, err.message);
-  }
-}
 
 client.login(process.env.DISCORD_TOKEN);

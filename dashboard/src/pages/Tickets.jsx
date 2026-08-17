@@ -171,9 +171,10 @@ export default function Tickets() {
                 <label className="block text-gray-400 text-xs mb-1">Message affiché avec le bouton</label>
                 <textarea value={config.TICKET_MESSAGE || ''}
                   onChange={e => setConfig(c => ({ ...c, TICKET_MESSAGE: e.target.value }))}
-                  rows={3}
-                  className="w-full bg-gray-800 border border-gray-700 rounded-lg px-3 py-2 text-white text-sm focus:outline-none focus:border-indigo-500 resize-none"
-                  placeholder="Entre en contact avec le staff du serveur." />
+                  rows={6}
+                  className="w-full bg-gray-800 border border-gray-700 rounded-lg px-3 py-2 text-white text-sm focus:outline-none focus:border-indigo-500 resize-y font-mono"
+                  placeholder={'# 🎫 OUVERTURE D\'UN TICKET\n\nMerci de fournir toutes les informations nécessaires.'} />
+                <p className="text-gray-600 text-xs mt-1">{(config.TICKET_MESSAGE || '').length} caractères — Entrée = saut de ligne</p>
               </div>
 
               <div className="grid grid-cols-2 gap-4">
@@ -208,17 +209,34 @@ export default function Tickets() {
 
               {/* Aperçu */}
               <div>
-                <label className="block text-gray-400 text-xs mb-2">Aperçu</label>
-                <div className="bg-gray-800 rounded-xl p-4 border border-gray-700">
-                  <p className="text-gray-300 text-sm mb-3">{config.TICKET_MESSAGE || 'Entre en contact avec le staff.'}</p>
-                  <button className={`px-4 py-2 rounded-lg text-white text-sm font-medium ${
-                    config.TICKET_BUTTON_COLOR === 'Success' ? 'bg-green-600' :
-                    config.TICKET_BUTTON_COLOR === 'Danger'  ? 'bg-red-600'   :
-                    config.TICKET_BUTTON_COLOR === 'Secondary' ? 'bg-gray-600' : 'bg-indigo-600'
-                  }`}>
-                    {config.TICKET_BUTTON_LABEL || '🎫 Ouvrir un ticket'}
-                  </button>
+                <label className="block text-gray-400 text-xs mb-2">Aperçu Discord</label>
+                <div className="bg-[#313338] rounded-xl p-4 border border-gray-700">
+                  {/* Embed Discord simulé */}
+                  <div className="flex gap-3">
+                    <div className={`w-1 rounded-full flex-shrink-0 ${
+                      config.TICKET_BUTTON_COLOR === 'Success'   ? 'bg-green-500' :
+                      config.TICKET_BUTTON_COLOR === 'Danger'    ? 'bg-red-500'   :
+                      config.TICKET_BUTTON_COLOR === 'Secondary' ? 'bg-gray-500'  : 'bg-indigo-500'
+                    }`} />
+                    <div className="flex-1 min-w-0">
+                      <div className="bg-[#2b2d31] rounded-lg p-3 mb-3">
+                        <div className="text-white text-sm whitespace-pre-wrap break-words leading-relaxed">
+                          {(config.TICKET_MESSAGE || 'Entre en contact avec le staff.')
+                            .replace(/\*\*(.*?)\*\*/g, '$1')  /* bold preview simplifié */
+                          }
+                        </div>
+                      </div>
+                      <button className={`px-4 py-2 rounded text-white text-sm font-medium ${
+                        config.TICKET_BUTTON_COLOR === 'Success'   ? 'bg-green-600'  :
+                        config.TICKET_BUTTON_COLOR === 'Danger'    ? 'bg-red-600'    :
+                        config.TICKET_BUTTON_COLOR === 'Secondary' ? 'bg-gray-600'   : 'bg-indigo-600'
+                      }`}>
+                        {config.TICKET_BUTTON_LABEL || '🎫 Ouvrir un ticket'}
+                      </button>
+                    </div>
+                  </div>
                 </div>
+                <p className="text-gray-600 text-xs mt-1">Utilise Entrée pour les sauts de ligne. **texte** pour le gras dans Discord.</p>
               </div>
 
             </div>

@@ -5,6 +5,8 @@ import Members from './pages/Members';
 import Config from './pages/Config';
 import Logs from './pages/Logs';
 import Tickets from './pages/Tickets';
+import Messages from './pages/Messages';
+import RoleButtons from './pages/RoleButtons';
 import Login from './pages/Login';
 
 export default function App() {
@@ -36,7 +38,9 @@ export default function App() {
           <Route path="/members" element={<Members />} />
           <Route path="/config" element={<Config />} />
           <Route path="/logs" element={<Logs />} />
-          <Route path="/tickets" element={<Tickets />} />
+          <Route path="/tickets"  element={<Tickets />} />
+          <Route path="/messages"     element={<Messages />} />
+          <Route path="/role-buttons" element={<RoleButtons />} />
         </Routes>
       </main>
     </div>
@@ -51,6 +55,9 @@ function Sidebar({ user }) {
     { to: '/config',    icon: '⚙️',  label: 'Configuration' },
     { to: '/logs',      icon: '📋', label: 'Logs' },
     { to: '/tickets',   icon: '🎫', label: 'Tickets' },
+    { to: '/messages',     icon: '📢', label: 'Messages récurrents' },
+    { to: '/role-buttons', icon: '🎭', label: 'Boutons de rôles' },
+    { to: '/feeds',        icon: '📡', label: 'Annonces auto' },
   ];
 
   return (
