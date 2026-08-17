@@ -9,23 +9,23 @@ process.on('uncaughtException', err => {
 });
 
 const { Client, GatewayIntentBits, Partials, Events } = require('discord.js');
-const { verifyMember, handleVerifyButton } = require('./verification');
-const { sendWelcomeAfterReglement, sendLeave, getWelcomeConfig, setWelcomeConfig } = require('./welcome');
-const { createTicket, takeTicket, closeTicket } = require('./tickets');
-const { checkRaid, checkSpam, checkLinks }       = require('./antiraid');
-const { checkNewMember }                         = require('./antidoublecompte');
-const db                                         = require('./database');
-const { log }                                    = require('./logger');
-const { createDashboard, setClient }             = require('./dashboard');
-const scheduledMessages                          = require('./scheduled-messages');
-const { startKeepAlive }                         = require('./keepalive');
+const { verifyMember, handleVerifyButton }             = require('./verification');
+const { sendWelcomeAfterReglement, sendLeave }         = require('./welcome');
+const { createTicket, takeTicket, closeTicket }        = require('./tickets');
+const { checkSpam, checkLinks }                        = require('./antiraid');
+const { checkNewMember }                               = require('./antidoublecompte');
+const db                                               = require('./database');
+const { log }                                          = require('./logger');
+const { createDashboard, setClient }                   = require('./dashboard');
+const scheduledMessages                                = require('./scheduled-messages');
+const { startKeepAlive }                               = require('./keepalive');
 
 const VERIFICATION_ROLE_ID = process.env.VERIFICATION_ROLE_ID;
 const ATTENTE_ROLE_ID      = process.env.ATTENTE_ROLE_ID;
 const REGLEMENT_ROLE_ID    = process.env.REGLEMENT_ROLE_ID;
 const ACTIVE_ROLE_ID       = process.env.ACTIVE_ROLE_ID;
+const GENERAL_CHANNEL_ID   = '1538533261314236527';
 
-// Suivi premier message : userId -> true
 const firstMessageDone = new Set();
 
 const client = new Client({
@@ -39,7 +39,6 @@ const client = new Client({
   partials: [Partials.Message, Partials.Channel],
 });
 
-// ── Ready ─────────────────────────────────────────────────────────────────────
 client.once(Events.ClientReady, async () => {
   console.log('✅ Bot connecté : ' + client.user.tag);
   console.log('📡 Serveurs : ' + client.guilds.cache.size);
@@ -50,22 +49,16 @@ client.once(Events.ClientReady, async () => {
   startKeepAlive();
 });
 
-// ── Nouveau membre ────────────────────────────────────────────────────────────
 client.on(Events.GuildMemberAdd, async member => {
   if (member.user.bot) return;
   console.log('👋 Nouveau membre : ' + member.user.tag);
-
   db.upsertMember(member.user, { joinedAt: member.joinedAt?.toISOString() });
-
-  // Rôle Vérification
   if (VERIFICATION_ROLE_ID) await member.roles.add(VERIFICATION_ROLE_ID).catch(() => {});
-
   await checkNewMember(member);
   await log(client, 'member_join', { userId: member.id });
   await verifyMember(member);
 });
 
-// ── Départ membre ─────────────────────────────────────────────────────────────
 client.on(Events.GuildMemberRemove, async member => {
   if (member.user.bot) return;
   db.memberLeft(member.user);
@@ -74,24 +67,20 @@ client.on(Events.GuildMemberRemove, async member => {
   console.log('🚪 Départ : ' + member.user.tag);
 });
 
-// ── Ban ───────────────────────────────────────────────────────────────────────
 client.on(Events.GuildBanAdd, async ban => {
   db.banMember(ban.user, ban.reason || 'Aucune raison', 'Discord');
 });
 
-// ── Messages ──────────────────────────────────────────────────────────────────
 client.on(Events.MessageCreate, async message => {
   if (message.author.bot) return;
   if (!message.guild) return;
-
   const member = message.member;
   if (!member) return;
 
   await checkSpam(client, message);
   await checkLinks(client, message);
 
-  // Détection premier message dans #général → rôle Membre validé
-  const GENERAL_CHANNEL_ID = '1538533261314236527';
+  // Premier message dans #général → rôle Membre validé
   if (
     message.channel.id === GENERAL_CHANNEL_ID &&
     ACTIVE_ROLE_ID &&
@@ -102,19 +91,14 @@ client.on(Events.MessageCreate, async message => {
   ) {
     firstMessageDone.add(member.id);
     await member.roles.add(ACTIVE_ROLE_ID).catch(() => {});
-    db.upsertMember(member.user, {
-      firstMessageAt: new Date().toISOString(),
-      status: 'active',
-    });
+    db.upsertMember(member.user, { firstMessageAt: new Date().toISOString(), status: 'active' });
     await log(client, 'member_activated', { userId: member.id, source: 'premier message général' });
     console.log('✅ Premier message #général — Membre validé : ' + member.user.tag);
   }
 });
 
-// ── Interactions ──────────────────────────────────────────────────────────────
 client.on(Events.InteractionCreate, async interaction => {
 
-  // Commandes slash
   if (interaction.isChatInputCommand()) {
     const cmdMap = {
       'expulsion': './commands/expulsion',
@@ -131,7 +115,6 @@ client.on(Events.InteractionCreate, async interaction => {
     return;
   }
 
-  // Menus contextuels
   if (interaction.isContextMenuCommand()) {
     if (interaction.commandName === 'Ajouter bouton règlement') {
       await require('./commands/ajouter-bouton-reglement').execute(interaction);
@@ -142,21 +125,16 @@ client.on(Events.InteractionCreate, async interaction => {
     return;
   }
 
-  // Boutons
   if (!interaction.isButton()) return;
   const id = interaction.customId;
 
-  // Vérification admin
   if (id.startsWith('verify_')) {
     await handleVerifyButton(interaction);
     return;
   }
 
-  // Acceptation règlement
   if (id === 'accept_reglement') {
     const member = interaction.member;
-
-    // Répondre IMMÉDIATEMENT avant toute action
     await interaction.reply({
       embeds: [{
         description: '✅ **Règlement accepté !**\nConsulte le salon **#bienvenue** pour la suite.',
@@ -165,26 +143,20 @@ client.on(Events.InteractionCreate, async interaction => {
       }],
       flags: 64,
     });
-
-    // Actions après la réponse
     if (ATTENTE_ROLE_ID)      await member.roles.remove(ATTENTE_ROLE_ID).catch(() => {});
     if (VERIFICATION_ROLE_ID) await member.roles.remove(VERIFICATION_ROLE_ID).catch(() => {});
     if (REGLEMENT_ROLE_ID)    await member.roles.add(REGLEMENT_ROLE_ID).catch(() => {});
-
     db.reglementAccepted(member.id);
     await log(client, 'reglement_accepted', { userId: member.id });
     await sendWelcomeAfterReglement(member);
-
     console.log('📜 Règlement accepté : ' + member.user.tag);
     return;
   }
 
-  // Tickets
   if (id === 'ticket_create') { await createTicket(interaction); return; }
   if (id.startsWith('ticket_take_'))  { await takeTicket(interaction, id.replace('ticket_take_', '')); return; }
   if (id.startsWith('ticket_close_')) { await closeTicket(interaction, id.replace('ticket_close_', '')); return; }
 
-  // Rôles boutons
   if (id.startsWith('role_')) {
     const roleId = id.replace('role_', '');
     const role   = interaction.guild.roles.cache.get(roleId);
@@ -200,7 +172,6 @@ client.on(Events.InteractionCreate, async interaction => {
     return;
   }
 
-  // Scanner
   if (id.startsWith('kick_')) {
     const target = await interaction.guild.members.fetch(id.replace('kick_', '')).catch(() => null);
     if (target) await target.kick('Inactivité prolongée');
