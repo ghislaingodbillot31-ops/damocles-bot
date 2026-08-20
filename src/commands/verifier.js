@@ -29,7 +29,7 @@ module.exports = {
     }
 
     // Enregistrer en DB
-    db.upsertMember(user, { joinedAt: member.joinedAt?.toISOString() });
+    await db.upsertMember(user, { joinedAt: member.joinedAt?.toISOString() });
 
     // Donner le rôle Vérification si pas déjà présent
     const VERIFICATION_ROLE_ID = process.env.VERIFICATION_ROLE_ID;

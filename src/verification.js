@@ -18,7 +18,7 @@ async function verifyMember(member) {
   const failed  = checks.filter(c => !c.passed);
 
   // Enregistrer en DB
-  db.upsertMember(member.user, {
+  await db.upsertMember(member.user, {
     joinedAt: member.joinedAt?.toISOString(),
     verifiedAt: new Date().toISOString(),
     verificationResult: failed.length === 0 ? 'ok' : 'failed',
@@ -124,7 +124,7 @@ async function verifyMember(member) {
     });
 
     // Enregistrer l'échec en DB
-    db.upsertMember(member.user, { status: 'pending_admin' });
+    await db.upsertMember(member.user, { status: 'pending_admin' });
     console.log('⛔ Vérification ÉCHOUÉE : ' + member.user.tag);
   }
 }
@@ -133,7 +133,7 @@ async function verifyMember(member) {
 async function runChecks(member) {
   const user    = member.user;
   const ageDays = Math.floor((Date.now() - user.createdTimestamp) / 86400000);
-  const record  = db.getMember(user.id);
+  const record  = await db.getMember(user.id);
   const checks  = [];
 
   // 1. Pseudo conforme
@@ -229,7 +229,7 @@ async function handleVerifyButton(interaction) {
     if (ATTENTE_ROLE_ID)      await member.roles.remove(ATTENTE_ROLE_ID).catch(() => {});
     if (REGLEMENT_ROLE_ID)    await member.roles.add(REGLEMENT_ROLE_ID).catch(() => {});
 
-    db.upsertMember(member.user, { status: 'active', adminAccepted: true, adminAcceptedBy: interaction.user.tag, adminAcceptedAt: new Date().toISOString() });
+    await db.upsertMember(member.user, { status: 'active', adminAccepted: true, adminAcceptedBy: interaction.user.tag, adminAcceptedAt: new Date().toISOString() });
 
     await interaction.update({
       embeds: [{
@@ -250,7 +250,7 @@ async function handleVerifyButton(interaction) {
       // Kick avec raison
       if (member) {
         await member.kick('Membre refusé par l\'administration');
-        db.kickMember(member.user, 'Refusé par l\'administration', interaction.user.tag);
+        await db.kickMember(member.user, 'Refusé par l\'administration', interaction.user.tag);
       }
 
       await interaction.update({

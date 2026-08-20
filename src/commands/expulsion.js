@@ -97,7 +97,7 @@ module.exports = {
         }).catch(() => {});
         // Kick après la réponse
         await member.kick('Expulsé via /expulsion par ' + interaction.user.tag).catch(() => {});
-        db.kickMember(member.user, 'Expulsé via /expulsion', interaction.user.tag);
+        await db.kickMember(member.user, 'Expulsé via /expulsion', interaction.user.tag);
         console.log('👢 ' + member.user.tag + ' expulsé par ' + interaction.user.tag);
       }
     }

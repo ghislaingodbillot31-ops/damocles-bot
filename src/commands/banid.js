@@ -28,7 +28,7 @@ module.exports = {
       await guild.members.ban(userId, { reason: `${raison} (par ${interaction.user.tag})` });
 
       // Enregistrement DB
-      db.banMember(user, raison, interaction.user.tag);
+      await db.banMember(user, raison, interaction.user.tag);
 
       // Log dans le salon logs
       const LOG_CHANNEL_ID = process.env.LOG_CHANNEL_ID;

@@ -9,7 +9,7 @@ const MOIS = ['', 'Janvier', 'Février', 'Mars', 'Avril', 'Mai', 'Juin',
 
 // ── Message d'anniversaire dans #général ──────────────────────────────────────
 async function sendBirthdayMessages(client) {
-  const members = db.getAnniversairesAujourdhui();
+  const members = await db.getAnniversairesAujourdhui();
   if (!members.length) return;
 
   const guild   = client.guilds.cache.first();
@@ -53,7 +53,7 @@ async function updateBirthdayChannel(client) {
   const todayMois = today.getMonth() + 1;
 
   // Récupérer tous les membres avec anniversaire
-  const allMembers = db.getAllMembers().filter(m => m.anniversaire);
+  const allMembers = await db.getAllMembers().filter(m => m.anniversaire);
 
   // Grouper par mois
   const parMois = {};

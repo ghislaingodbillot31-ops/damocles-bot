@@ -1,6 +1,5 @@
 require('dotenv').config();
 
-// Empêcher le bot de crasher sur les erreurs non gérées
 process.on('unhandledRejection', err => {
   console.error('⚠️ Erreur non gérée :', err.message || err);
 });
@@ -41,38 +40,47 @@ const client = new Client({
   partials: [Partials.Message, Partials.Channel],
 });
 
+// ── Ready ─────────────────────────────────────────────────────────────────────
 client.once(Events.ClientReady, async () => {
   console.log('✅ Bot connecté : ' + client.user.tag);
   console.log('📡 Serveurs : ' + client.guilds.cache.size);
   setClient(client);
-  console.log('💾 DB : ' + db.getAllMembers().length + ' membres');
+
+  const members = await db.getAllMembers();
+  console.log('💾 DB : ' + members.length + ' membres');
+
   scheduledMessages.startAll(client);
   startKeepAlive();
   startBirthdayTasks(client, cron);
 });
 
+// ── Nouveau membre ────────────────────────────────────────────────────────────
 client.on(Events.GuildMemberAdd, async member => {
   if (member.user.bot) return;
   console.log('👋 Nouveau membre : ' + member.user.tag);
-  db.upsertMember(member.user, { joinedAt: member.joinedAt?.toISOString() });
+
+  await db.upsertMember(member.user, { joinedAt: member.joinedAt?.toISOString() });
   if (VERIFICATION_ROLE_ID) await member.roles.add(VERIFICATION_ROLE_ID).catch(() => {});
   await checkNewMember(member);
   await log(client, 'member_join', { userId: member.id });
   await verifyMember(member);
 });
 
+// ── Départ membre ─────────────────────────────────────────────────────────────
 client.on(Events.GuildMemberRemove, async member => {
   if (member.user.bot) return;
-  db.memberLeft(member.user);
+  await db.memberLeft(member.user);
   await sendLeave(member);
   await log(client, 'member_left', { userId: member.id });
   console.log('🚪 Départ : ' + member.user.tag);
 });
 
+// ── Ban ───────────────────────────────────────────────────────────────────────
 client.on(Events.GuildBanAdd, async ban => {
-  db.banMember(ban.user, ban.reason || 'Aucune raison', 'Discord');
+  await db.banMember(ban.user, ban.reason || 'Aucune raison', 'Discord');
 });
 
+// ── Messages ──────────────────────────────────────────────────────────────────
 client.on(Events.MessageCreate, async message => {
   if (message.author.bot) return;
   if (!message.guild) return;
@@ -93,12 +101,13 @@ client.on(Events.MessageCreate, async message => {
   ) {
     firstMessageDone.add(member.id);
     await member.roles.add(ACTIVE_ROLE_ID).catch(() => {});
-    db.upsertMember(member.user, { firstMessageAt: new Date().toISOString(), status: 'active' });
+    await db.upsertMember(member.user, { firstMessageAt: new Date().toISOString(), status: 'active' });
     await log(client, 'member_activated', { userId: member.id, source: 'premier message général' });
     console.log('✅ Premier message #général — Membre validé : ' + member.user.tag);
   }
 });
 
+// ── Interactions ──────────────────────────────────────────────────────────────
 client.on(Events.InteractionCreate, async interaction => {
 
   if (interaction.isChatInputCommand()) {
@@ -133,11 +142,13 @@ client.on(Events.InteractionCreate, async interaction => {
   if (!interaction.isButton()) return;
   const id = interaction.customId;
 
+  // Vérification admin
   if (id.startsWith('verify_')) {
     await handleVerifyButton(interaction);
     return;
   }
 
+  // Règlement accepté
   if (id === 'accept_reglement') {
     const member = interaction.member;
     await interaction.reply({
@@ -151,17 +162,19 @@ client.on(Events.InteractionCreate, async interaction => {
     if (ATTENTE_ROLE_ID)      await member.roles.remove(ATTENTE_ROLE_ID).catch(() => {});
     if (VERIFICATION_ROLE_ID) await member.roles.remove(VERIFICATION_ROLE_ID).catch(() => {});
     if (REGLEMENT_ROLE_ID)    await member.roles.add(REGLEMENT_ROLE_ID).catch(() => {});
-    db.reglementAccepted(member.id);
+    await db.reglementAccepted(member.id);
     await log(client, 'reglement_accepted', { userId: member.id });
     await sendWelcomeAfterReglement(member);
     console.log('📜 Règlement accepté : ' + member.user.tag);
     return;
   }
 
+  // Tickets
   if (id === 'ticket_create') { await createTicket(interaction); return; }
   if (id.startsWith('ticket_take_'))  { await takeTicket(interaction, id.replace('ticket_take_', '')); return; }
   if (id.startsWith('ticket_close_')) { await closeTicket(interaction, id.replace('ticket_close_', '')); return; }
 
+  // Rôles boutons
   if (id.startsWith('role_')) {
     const roleId = id.replace('role_', '');
     const role   = interaction.guild.roles.cache.get(roleId);
@@ -189,17 +202,11 @@ client.on(Events.InteractionCreate, async interaction => {
   }
 });
 
+// ── Démarrage ─────────────────────────────────────────────────────────────────
 createDashboard();
 
-// Timeout de connexion Discord
-const loginTimeout = setTimeout(() => {
-  console.error('❌ Timeout — Discord ne répond pas après 30s');
-}, 30000);
-
 client.login(process.env.DISCORD_TOKEN).then(() => {
-  clearTimeout(loginTimeout);
   console.log('🟢 Login Discord réussi');
 }).catch(err => {
-  clearTimeout(loginTimeout);
   console.error('❌ Erreur login Discord :', err.message);
 });

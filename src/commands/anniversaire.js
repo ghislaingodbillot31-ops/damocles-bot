@@ -40,12 +40,12 @@ module.exports = {
       return;
     }
 
-    const ok = db.setAnniversaire(interaction.user.id, dateStr);
+    const ok = await db.setAnniversaire(interaction.user.id, dateStr);
 
     if (!ok) {
       // Membre pas encore en DB — on l'ajoute
-      db.upsertMember(interaction.user);
-      db.setAnniversaire(interaction.user.id, dateStr);
+      await db.upsertMember(interaction.user);
+      await db.setAnniversaire(interaction.user.id, dateStr);
     }
 
     await interaction.reply({

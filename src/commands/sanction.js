@@ -27,8 +27,8 @@ module.exports = {
     }
 
     // Enregistrer dans la DB
-    db.upsertMember(target.user);
-    const warningCount = db.addWarning(target.user.id, raison, interaction.user.tag);
+    await db.upsertMember(target.user);
+    const warningCount = await db.addWarning(target.user.id, raison, interaction.user.tag);
 
     const logChannel = LOG_CHANNEL_ID ? guild.channels.cache.get(LOG_CHANNEL_ID) : null;
 
