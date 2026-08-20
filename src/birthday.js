@@ -80,11 +80,17 @@ async function updateBirthdayChannel(client) {
     }
   } catch {}
 
-  // Message d'en-tête
+  // Message d'explication
   await channel.send({
     embeds: [{
       title: '🎂 Anniversaires — ' + today.getFullYear(),
-      description: 'Tous les anniversaires enregistrés, classés par mois.',
+      description: [
+        '**Comment enregistrer ton anniversaire ?**',
+        '> Utilise la commande `/anniversaire` suivie de ta date de naissance',
+        '> **Exemple :** `/anniversaire 20/11/1988`',
+        '',
+        'Le jour de ton anniversaire, un message apparaîtra automatiquement dans le salon général !',
+      ].join('\n'),
       color: 0xF1C40F,
       footer: { text: 'Mis à jour le ' + today.toLocaleDateString('fr-FR') + ' — Damoclès Bot' },
       timestamp: new Date().toISOString(),
