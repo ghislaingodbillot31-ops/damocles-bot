@@ -28,7 +28,7 @@ const upload = multer({
   },
 });
 
-const OWNER_ID = '231500104844967937';
+const OWNER_IDS = ['231500104844967937', '1487197600452055040'];
 
 let _client = null;
 function setClient(c) { _client = c; }
@@ -80,7 +80,7 @@ function createDashboard() {
       });
       const user = await userRes.json();
 
-      if (user.id !== OWNER_ID) {
+      if (!OWNER_IDS.includes(user.id)) {
         return res.redirect('/?error=unauthorized');
       }
 

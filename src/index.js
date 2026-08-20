@@ -19,6 +19,8 @@ const { log }                                          = require('./logger');
 const { createDashboard, setClient }                   = require('./dashboard');
 const scheduledMessages                                = require('./scheduled-messages');
 const { startKeepAlive }                               = require('./keepalive');
+const { startBirthdayTasks }                           = require('./birthday');
+const cron                                             = require('node-cron');
 
 const VERIFICATION_ROLE_ID = process.env.VERIFICATION_ROLE_ID;
 const ATTENTE_ROLE_ID      = process.env.ATTENTE_ROLE_ID;
@@ -47,6 +49,7 @@ client.once(Events.ClientReady, async () => {
   console.log('💾 DB : ' + db.getAllMembers().length + ' membres');
   scheduledMessages.startAll(client);
   startKeepAlive();
+  startBirthdayTasks(client, cron);
 });
 
 client.on(Events.GuildMemberAdd, async member => {
@@ -101,11 +104,14 @@ client.on(Events.InteractionCreate, async interaction => {
 
   if (interaction.isChatInputCommand()) {
     const cmdMap = {
-      'expulsion': './commands/expulsion',
-      'banid':     './commands/banid',
-      'sanction':  './commands/sanction',
-      'bouton':    './commands/bouton',
-      'analyse':   './commands/analyse',
+      'anniversaire': './commands/anniversaire',
+      'verifier':     './commands/verifier',
+      'sync-db':      './commands/sync-db',
+      'expulsion':    './commands/expulsion',
+      'banid':        './commands/banid',
+      'sanction':     './commands/sanction',
+      'bouton':       './commands/bouton',
+      'analyse':      './commands/analyse',
     };
     const cmdPath = cmdMap[interaction.commandName];
     if (cmdPath) {

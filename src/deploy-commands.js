@@ -9,6 +9,9 @@ const commands = [
   require('./commands/analyse').data.toJSON(),
   require('./commands/ajouter-bouton-reglement').data.toJSON(),
   require('./commands/ticket').data.toJSON(),
+  require('./commands/anniversaire').data.toJSON(),
+  require('./commands/verifier').data.toJSON(),
+  require('./commands/sync-db').data.toJSON(),
 ];
 
 const rest = new REST().setToken(process.env.DISCORD_TOKEN);
@@ -19,5 +22,5 @@ const rest = new REST().setToken(process.env.DISCORD_TOKEN);
     Routes.applicationGuildCommands(process.env.CLIENT_ID, process.env.GUILD_ID),
     { body: commands }
   );
-  console.log('✅ Commandes : /expulsion /banid /sanction /bouton /analyse + menus règlement & ticket');
+  console.log('✅ Commandes enregistrées : /expulsion /banid /sanction /bouton /analyse /anniversaire /verifier /sync-db + menus règlement & ticket');
 })();
