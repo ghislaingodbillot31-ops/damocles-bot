@@ -1,20 +1,24 @@
-const fs   = require('fs');
-const path = require('path');
+const { MongoClient } = require('mongodb');
 
-const DB_PATH = path.join(__dirname, '..', 'data', 'members.json');
+const MONGODB_URI = process.env.MONGODB_URI || 'mongodb+srv://ghislaingodbillot31_db_user:Yr7iMfldJDEOLLaQ@vanguard.qgawxnd.mongodb.net/?appName=Vanguard';
+const DB_NAME     = 'damocles';
+const COLLECTION  = 'members';
 
-if (!fs.existsSync(path.dirname(DB_PATH))) {
-  fs.mkdirSync(path.dirname(DB_PATH), { recursive: true });
+let _client = null;
+let _db     = null;
+
+async function connect() {
+  if (_db) return _db;
+  _client = new MongoClient(MONGODB_URI);
+  await _client.connect();
+  _db = _client.db(DB_NAME);
+  console.log('🍃 MongoDB connecté');
+  return _db;
 }
 
-function loadDB() {
-  if (!fs.existsSync(DB_PATH)) return {};
-  try { return JSON.parse(fs.readFileSync(DB_PATH, 'utf-8')); }
-  catch { return {}; }
-}
-
-function saveDB(db) {
-  fs.writeFileSync(DB_PATH, JSON.stringify(db, null, 2), 'utf-8');
+async function getCol() {
+  const db = await connect();
+  return db.collection(COLLECTION);
 }
 
 const STATUS = {
@@ -26,165 +30,172 @@ const STATUS = {
 };
 
 // ── Upsert membre ─────────────────────────────────────────────────────────────
-function upsertMember(user, extra = {}) {
-  const db  = loadDB();
+async function upsertMember(user, extra = {}) {
+  const col = await getCol();
   const now = new Date().toISOString();
+  const existing = await col.findOne({ id: user.id });
 
-  if (!db[user.id]) {
-    db[user.id] = {
+  if (!existing) {
+    const doc = {
       id:       user.id,
       tag:      user.tag,
       username: user.username,
       avatar:   user.avatar || null,
       status:   STATUS.ACTIVE,
       present:  true,
-      firstSeen: now,
-      joinedAt:  extra.joinedAt || now,
-      leftAt:    null,
-      kickedAt:  null,
-      bannedAt:  null,
-      banReason: null,
-      verifiedAt:          null,
-      verificationResult:  null,
-      adminAccepted:       null,
-      adminAcceptedBy:     null,
-      reglementAcceptedAt: null,
-      firstMessageAt:      null,
+      firstSeen:  now,
+      joinedAt:   extra.joinedAt || now,
+      leftAt:     null, kickedAt: null, bannedAt: null, banReason: null,
+      verifiedAt: null, verificationResult: null,
+      adminAccepted: null, adminAcceptedBy: null,
+      reglementAcceptedAt: null, firstMessageAt: null,
       anniversaire: null,
       warnings: [],
       visits:   1,
       history:  [{ event: 'join', date: extra.joinedAt || now }],
+      ...extra,
     };
+    await col.insertOne(doc);
+    return doc;
   } else {
-    db[user.id].tag      = user.tag;
-    db[user.id].username = user.username;
-    if (user.avatar) db[user.id].avatar = user.avatar;
+    const update = {
+      tag:      user.tag,
+      username: user.username,
+    };
+    if (user.avatar) update.avatar = user.avatar;
 
-    // Si le membre revient
-    if (!db[user.id].present) {
-      db[user.id].present  = true;
-      db[user.id].status   = STATUS.ACTIVE;
-      db[user.id].visits   = (db[user.id].visits || 1) + 1;
-      db[user.id].joinedAt = extra.joinedAt || now;
-      db[user.id].leftAt   = null;
-      db[user.id].history.push({ event: 'rejoin', date: extra.joinedAt || now });
+    if (!existing.present) {
+      update.present  = true;
+      update.status   = STATUS.ACTIVE;
+      update.visits   = (existing.visits || 1) + 1;
+      update.joinedAt = extra.joinedAt || now;
+      update.leftAt   = null;
+      await col.updateOne({ id: user.id }, {
+        $set: update,
+        $push: { history: { event: 'rejoin', date: extra.joinedAt || now } },
+      });
+    } else {
+      if (extra && Object.keys(extra).length) Object.assign(update, extra);
+      await col.updateOne({ id: user.id }, { $set: update });
     }
+    return await col.findOne({ id: user.id });
   }
-
-  Object.assign(db[user.id], extra);
-  saveDB(db);
-  return db[user.id];
 }
 
 // ── Avertissement ─────────────────────────────────────────────────────────────
-function addWarning(userId, reason, moderator) {
-  const db = loadDB();
-  if (!db[userId]) return null;
+async function addWarning(userId, reason, moderator) {
+  const col     = await getCol();
   const warning = { date: new Date().toISOString(), reason, moderator };
-  if (!db[userId].warnings) db[userId].warnings = [];
-  db[userId].warnings.push(warning);
-  db[userId].history.push({ event: 'warning', date: warning.date, detail: reason, moderator });
-  saveDB(db);
-  return db[userId].warnings.length;
+  await col.updateOne({ id: userId }, {
+    $push: { warnings: warning, history: { event: 'warning', date: warning.date, detail: reason, moderator } },
+  });
+  const m = await col.findOne({ id: userId });
+  return m?.warnings?.length || 0;
 }
 
 // ── Ban ───────────────────────────────────────────────────────────────────────
-function banMember(user, reason, moderator) {
-  upsertMember(user);
-  const db  = loadDB();
+async function banMember(user, reason, moderator) {
+  await upsertMember(user);
+  const col = await getCol();
   const now = new Date().toISOString();
-  db[user.id].status    = STATUS.BANNED;
-  db[user.id].present   = false;
-  db[user.id].bannedAt  = now;
-  db[user.id].banReason = reason;
-  db[user.id].history.push({ event: 'ban', date: now, detail: reason, moderator });
-  saveDB(db);
+  await col.updateOne({ id: user.id }, {
+    $set: { status: STATUS.BANNED, present: false, bannedAt: now, banReason: reason },
+    $push: { history: { event: 'ban', date: now, detail: reason, moderator } },
+  });
 }
 
 // ── Kick ──────────────────────────────────────────────────────────────────────
-function kickMember(user, reason, moderator) {
-  upsertMember(user);
-  const db  = loadDB();
+async function kickMember(user, reason, moderator) {
+  await upsertMember(user);
+  const col = await getCol();
   const now = new Date().toISOString();
-  db[user.id].status   = STATUS.KICKED;
-  db[user.id].present  = false;
-  db[user.id].kickedAt = now;
-  db[user.id].history.push({ event: 'kick', date: now, detail: reason, moderator });
-  saveDB(db);
+  await col.updateOne({ id: user.id }, {
+    $set: { status: STATUS.KICKED, present: false, kickedAt: now },
+    $push: { history: { event: 'kick', date: now, detail: reason, moderator } },
+  });
 }
 
 // ── Départ ────────────────────────────────────────────────────────────────────
-function memberLeft(user) {
-  upsertMember(user);
-  const db  = loadDB();
+async function memberLeft(user) {
+  await upsertMember(user);
+  const col = await getCol();
   const now = new Date().toISOString();
-  db[user.id].status  = STATUS.LEFT;
-  db[user.id].present = false;
-  db[user.id].leftAt  = now;
-  db[user.id].history.push({ event: 'leave', date: now });
-  saveDB(db);
+  await col.updateOne({ id: user.id }, {
+    $set: { status: STATUS.LEFT, present: false, leftAt: now },
+    $push: { history: { event: 'leave', date: now } },
+  });
 }
 
 // ── Règlement accepté ─────────────────────────────────────────────────────────
-function reglementAccepted(userId) {
-  const db  = loadDB();
-  if (!db[userId]) return;
+async function reglementAccepted(userId) {
+  const col = await getCol();
   const now = new Date().toISOString();
-  db[userId].reglementAcceptedAt = now;
-  db[userId].status = STATUS.ACTIVE;
-  db[userId].history.push({ event: 'reglement_accepted', date: now });
-  saveDB(db);
+  await col.updateOne({ id: userId }, {
+    $set: { reglementAcceptedAt: now, status: STATUS.ACTIVE },
+    $push: { history: { event: 'reglement_accepted', date: now } },
+  });
 }
 
 // ── Anniversaire ──────────────────────────────────────────────────────────────
-function setAnniversaire(userId, dateStr) {
-  const db = loadDB();
-  if (!db[userId]) return false;
-  db[userId].anniversaire = dateStr;
-  db[userId].history.push({ event: 'anniversaire_set', date: new Date().toISOString(), detail: dateStr });
-  saveDB(db);
+async function setAnniversaire(userId, dateStr) {
+  const col = await getCol();
+  const m   = await col.findOne({ id: userId });
+  if (!m) return false;
+  await col.updateOne({ id: userId }, {
+    $set: { anniversaire: dateStr },
+    $push: { history: { event: 'anniversaire_set', date: new Date().toISOString(), detail: dateStr } },
+  });
   return true;
 }
 
-function getAnniversairesDuMois(mois) {
-  return Object.values(loadDB()).filter(m => {
-    if (!m.anniversaire) return false;
-    return parseInt(m.anniversaire.split('/')[1]) === mois;
-  }).sort((a, b) => parseInt(a.anniversaire.split('/')[0]) - parseInt(b.anniversaire.split('/')[0]));
+async function getAnniversairesDuMois(mois) {
+  const col  = await getCol();
+  const all  = await col.find({ anniversaire: { $ne: null } }).toArray();
+  return all.filter(m => parseInt(m.anniversaire?.split('/')[1]) === mois)
+            .sort((a, b) => parseInt(a.anniversaire.split('/')[0]) - parseInt(b.anniversaire.split('/')[0]));
 }
 
-function getAnniversairesAujourdhui() {
+async function getAnniversairesAujourdhui() {
   const today = new Date();
-  return Object.values(loadDB()).filter(m => {
-    if (!m.anniversaire) return false;
-    const parts = m.anniversaire.split('/');
-    return parseInt(parts[0]) === today.getDate() && parseInt(parts[1]) === today.getMonth() + 1;
+  const col   = await getCol();
+  const all   = await col.find({ anniversaire: { $ne: null } }).toArray();
+  return all.filter(m => {
+    const parts = m.anniversaire?.split('/');
+    return parts && parseInt(parts[0]) === today.getDate() && parseInt(parts[1]) === today.getMonth() + 1;
   });
 }
 
 // ── Getters ───────────────────────────────────────────────────────────────────
-function getMember(userId)  { return loadDB()[userId] || null; }
-function getAllMembers()     { return Object.values(loadDB()); }
-
-// Membres présents sur Discord
-function getPresentMembers() {
-  return Object.values(loadDB()).filter(m => m.present === true);
+async function getMember(userId) {
+  const col = await getCol();
+  return await col.findOne({ id: userId });
 }
 
-// Membres absents (partis, expulsés, bannis)
-function getAbsentMembers() {
-  return Object.values(loadDB()).filter(m => !m.present);
+async function getAllMembers() {
+  const col = await getCol();
+  return await col.find({}).toArray();
 }
 
-function recordActivity(userId, type) {
-  const db = loadDB();
-  if (!db[userId]) return;
-  db[userId].history.push({ event: type, date: new Date().toISOString() });
-  saveDB(db);
+async function getPresentMembers() {
+  const col = await getCol();
+  return await col.find({ present: true }).toArray();
 }
 
-function getStats() {
-  const all = getAllMembers();
+async function getAbsentMembers() {
+  const col = await getCol();
+  return await col.find({ present: false }).toArray();
+}
+
+async function recordActivity(userId, type) {
+  const col = await getCol();
+  await col.updateOne({ id: userId }, {
+    $push: { history: { event: type, date: new Date().toISOString() } },
+  });
+}
+
+async function getStats() {
+  const col = await getCol();
+  const all = await col.find({}).toArray();
   return {
     total:        all.length,
     present:      all.filter(m => m.present).length,
@@ -202,7 +213,7 @@ function getStats() {
 }
 
 module.exports = {
-  upsertMember, addWarning, banMember, kickMember, memberLeft,
+  connect, upsertMember, addWarning, banMember, kickMember, memberLeft,
   reglementAccepted, setAnniversaire, getAnniversairesDuMois,
   getAnniversairesAujourdhui, getMember, getAllMembers, getPresentMembers,
   getAbsentMembers, recordActivity, getStats, STATUS,
