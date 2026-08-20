@@ -190,4 +190,10 @@ client.on(Events.InteractionCreate, async interaction => {
 });
 
 createDashboard();
-client.login(process.env.DISCORD_TOKEN);
+console.log('🔑 Token présent :', !!process.env.DISCORD_TOKEN);
+console.log('🚀 Tentative de connexion Discord...');
+client.login(process.env.DISCORD_TOKEN).then(() => {
+  console.log('🟢 Login Discord réussi');
+}).catch(err => {
+  console.error('❌ Erreur login Discord :', err.message);
+});
