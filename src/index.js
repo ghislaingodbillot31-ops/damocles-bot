@@ -190,10 +190,16 @@ client.on(Events.InteractionCreate, async interaction => {
 });
 
 createDashboard();
-console.log('🔑 Token présent :', !!process.env.DISCORD_TOKEN);
-console.log('🚀 Tentative de connexion Discord...');
+
+// Timeout de connexion Discord
+const loginTimeout = setTimeout(() => {
+  console.error('❌ Timeout — Discord ne répond pas après 30s');
+}, 30000);
+
 client.login(process.env.DISCORD_TOKEN).then(() => {
+  clearTimeout(loginTimeout);
   console.log('🟢 Login Discord réussi');
 }).catch(err => {
+  clearTimeout(loginTimeout);
   console.error('❌ Erreur login Discord :', err.message);
 });
