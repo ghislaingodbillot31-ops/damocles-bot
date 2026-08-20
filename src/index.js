@@ -45,7 +45,6 @@ client.once(Events.ClientReady, async () => {
   console.log('✅ Bot connecté : ' + client.user.tag);
   console.log('📡 Serveurs : ' + client.guilds.cache.size);
   setClient(client);
-  createDashboard();
   console.log('💾 DB : ' + db.getAllMembers().length + ' membres');
   scheduledMessages.startAll(client);
   startKeepAlive();
@@ -190,4 +189,5 @@ client.on(Events.InteractionCreate, async interaction => {
   }
 });
 
+createDashboard();
 client.login(process.env.DISCORD_TOKEN);
