@@ -82,7 +82,7 @@ function createDashboard() {
 
   // ── API Stats ─────────────────────────────────────────────────────────────
   app.get('/api/stats', requireAuth, (req, res) => {
-    const stats = db.getStats();
+    const stats = await db.getStats();
     const guild = _client?.guilds.cache.first();
     res.json({
       ...stats,
@@ -94,12 +94,12 @@ function createDashboard() {
 
   // ── API Membres ───────────────────────────────────────────────────────────
   app.get('/api/members', requireAuth, (req, res) => {
-    const members = db.getAllMembers();
+    const members = await db.getAllMembers();
     res.json(members);
   });
 
   app.get('/api/members/:id', requireAuth, (req, res) => {
-    const member = db.getMember(req.params.id);
+    const member = await db.getMember(req.params.id);
     if (!member) return res.status(404).json({ error: 'Not found' });
     res.json(member);
   });
@@ -112,7 +112,7 @@ function createDashboard() {
     try {
       await guild.members.ban(req.params.id, { reason: reason || 'Banni via dashboard' });
       const user = await _client.users.fetch(req.params.id).catch(() => null);
-      if (user) db.banMember(user, reason || 'Banni via dashboard', 'Dashboard');
+      if (user) await db.banMember(user, reason || 'Banni via dashboard', 'Dashboard');
       res.json({ success: true });
     } catch (err) {
       res.status(500).json({ error: err.message });
@@ -127,7 +127,7 @@ function createDashboard() {
       const member = await guild.members.fetch(req.params.id).catch(() => null);
       if (!member) return res.status(404).json({ error: 'Member not found' });
       await member.kick(reason || 'Kické via dashboard');
-      db.kickMember(member.user, reason || 'Kické via dashboard', 'Dashboard');
+      await db.kickMember(member.user, reason || 'Kické via dashboard', 'Dashboard');
       res.json({ success: true });
     } catch (err) {
       res.status(500).json({ error: err.message });
@@ -136,7 +136,7 @@ function createDashboard() {
 
   app.post('/api/members/:id/warn', requireAuth, async (req, res) => {
     const { reason } = req.body;
-    const count = db.addWarning(req.params.id, reason || 'Averti via dashboard', 'Dashboard');
+    const count = await db.addWarning(req.params.id, reason || 'Averti via dashboard', 'Dashboard');
     res.json({ success: true, warningCount: count });
   });
 

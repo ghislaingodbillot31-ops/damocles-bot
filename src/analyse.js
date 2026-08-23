@@ -65,7 +65,7 @@ module.exports = {
           }
           newActive++;
         }
-        db.upsertMember(member.user, { status: 'active' });
+        await db.upsertMember(member.user, { status: 'active' });
 
       } else if (status === 'inactive' || status === 'expel') {
         // Inactif → retirer tous les rôles + donner Inactif
@@ -80,7 +80,7 @@ module.exports = {
           await member.roles.add(inactiveRole).catch(() => {});
           newInactive++;
         }
-        db.upsertMember(member.user, { status: 'inactive' });
+        await db.upsertMember(member.user, { status: 'inactive' });
         inactiveList.push('<@' + member.id + '> — ' + days + 'j');
 
         if (status === 'expel') {

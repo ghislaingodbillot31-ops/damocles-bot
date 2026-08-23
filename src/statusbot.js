@@ -24,7 +24,7 @@ async function updateStatusMessage(client, animated = false) {
   if (!channel) return;
   if (!animated) return;
 
-  const stats = db.getStats();
+  const stats = await db.getStats();
   const guild = client.guilds.cache.first();
   const now   = new Date().toLocaleString('fr-FR', { timeZone: 'Europe/Paris' });
 
@@ -52,7 +52,8 @@ async function updateStatusMessage(client, animated = false) {
   await sleep(500);
 
   // Comptes refusés
-  const refused = db.getAllMembers().filter(m => m.history?.some(h => h.event === 'kick' && h.moderator === 'Administration')).length;
+  const allMembersForRefused = await db.getAllMembers();
+  const refused = allMembersForRefused.filter(m => m.history?.some(h => h.event === 'kick' && h.moderator === 'Administration')).length;
   await postLine(channel, '`▶` ❌ Comptes refusés ................ ✅ **' + refused + '**', 0x2ECC71);
   await sleep(500);
 
