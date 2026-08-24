@@ -19,6 +19,7 @@ const { createDashboard, setClient }                   = require('./dashboard');
 const scheduledMessages                                = require('./scheduled-messages');
 const { startKeepAlive }                               = require('./keepalive');
 const { startBirthdayTasks }                           = require('./birthday');
+const { startFS25Monitor }                             = require('./fs25-monitor');
 const cron                                             = require('node-cron');
 
 const VERIFICATION_ROLE_ID = process.env.VERIFICATION_ROLE_ID;
@@ -52,6 +53,7 @@ client.once(Events.ClientReady, async () => {
   scheduledMessages.startAll(client);
   startKeepAlive();
   startBirthdayTasks(client, cron);
+  startFS25Monitor(client);
 });
 
 // ── Nouveau membre ────────────────────────────────────────────────────────────
