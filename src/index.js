@@ -46,6 +46,7 @@ client.once(Events.ClientReady, async () => {
   console.log('✅ Bot connecté : ' + client.user.tag);
   console.log('📡 Serveurs : ' + client.guilds.cache.size);
   setClient(client);
+  await db.initMongo();
 
   const members = await db.getAllMembers();
   console.log('💾 DB : ' + members.length + ' membres');
