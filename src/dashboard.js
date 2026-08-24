@@ -81,7 +81,7 @@ function createDashboard() {
   }
 
   // ── API Stats ─────────────────────────────────────────────────────────────
-  app.get('/api/stats', requireAuth, (req, res) => {
+  app.get('/api/stats', requireAuth, async (req, res) => {
     const stats = await db.getStats();
     const guild = _client?.guilds.cache.first();
     res.json({
@@ -93,12 +93,12 @@ function createDashboard() {
   });
 
   // ── API Membres ───────────────────────────────────────────────────────────
-  app.get('/api/members', requireAuth, (req, res) => {
+  app.get('/api/members', requireAuth, async (req, res) => {
     const members = await db.getAllMembers();
     res.json(members);
   });
 
-  app.get('/api/members/:id', requireAuth, (req, res) => {
+  app.get('/api/members/:id', requireAuth, async (req, res) => {
     const member = await db.getMember(req.params.id);
     if (!member) return res.status(404).json({ error: 'Not found' });
     res.json(member);
