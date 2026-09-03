@@ -1,20 +1,34 @@
 const fs   = require('fs');
 const path = require('path');
+const { ActionRowBuilder, ButtonBuilder, ButtonStyle } = require('discord.js');
 
-// Salon des rôles — l'en-tête explicatif s'y auto-poste au démarrage.
-// Les boutons de rôle eux-mêmes sont ajoutés à la main via /bouton [nom] [rôle].
+// Salon des rôles. Le bot y maintient UN SEUL message :
+//   [ embed d'explication ]  +  [ boutons de rôle ]
+// Les boutons sont ajoutés/retirés via /bouton et le message se re-rend.
 const ROLES_CHANNEL = '1538537709633802270';
-const STORE_PATH    = path.join(__dirname, '..', 'data', 'roles-header.json');
+const STORE_PATH    = path.join(__dirname, '..', 'data', 'roles-panel.json');
+const MAX_BOUTONS   = 25; // 5 rangées de 5
+
+const STYLES = {
+  Primary:   ButtonStyle.Primary,
+  Secondary: ButtonStyle.Secondary,
+  Success:   ButtonStyle.Success,
+  Danger:    ButtonStyle.Danger,
+};
 
 function loadStore() {
-  try { return JSON.parse(fs.readFileSync(STORE_PATH, 'utf-8')); }
-  catch { return {}; }
+  try {
+    const s = JSON.parse(fs.readFileSync(STORE_PATH, 'utf-8'));
+    return { messageId: s.messageId || null, buttons: Array.isArray(s.buttons) ? s.buttons : [] };
+  } catch {
+    return { messageId: null, buttons: [] };
+  }
 }
 
-function saveStore(data) {
+function saveStore(store) {
   try {
     fs.mkdirSync(path.dirname(STORE_PATH), { recursive: true });
-    fs.writeFileSync(STORE_PATH, JSON.stringify(data, null, 2), 'utf-8');
+    fs.writeFileSync(STORE_PATH, JSON.stringify(store, null, 2), 'utf-8');
   } catch (err) {
     console.error('⚠️ roles.js — sauvegarde impossible :', err.message);
   }
@@ -39,33 +53,95 @@ function headerEmbed() {
   };
 }
 
-// Poste l'en-tête s'il n'existe pas encore, sinon le met à jour sur place
-// (il ne bouge pas → il reste en haut du salon, au-dessus des boutons).
-async function postRolesHeader(client) {
-  const channel = client.channels.cache.get(ROLES_CHANNEL)
+function buildComponents(buttons) {
+  const rows = [];
+  for (let i = 0; i < buttons.length; i += 5) {
+    const row = new ActionRowBuilder();
+    for (const b of buttons.slice(i, i + 5)) {
+      const btn = new ButtonBuilder()
+        .setCustomId('role_' + b.roleId)
+        .setLabel(b.label)
+        .setStyle(STYLES[b.style] || ButtonStyle.Primary);
+      if (b.emoji) { try { btn.setEmoji(b.emoji); } catch { /* emoji invalide → ignoré */ } }
+      row.addComponents(btn);
+    }
+    rows.push(row);
+  }
+  return rows;
+}
+
+async function _channel(client) {
+  return client.channels.cache.get(ROLES_CHANNEL)
     || await client.channels.fetch(ROLES_CHANNEL).catch(() => null);
+}
+
+// Rend le panneau : édite le message existant sur place (il ne bouge pas),
+// sinon en poste un nouveau.
+async function renderPanel(client) {
+  const channel = await _channel(client);
   if (!channel) {
     console.error('⚠️ roles.js — salon ' + ROLES_CHANNEL + ' introuvable');
     return;
   }
 
-  const store = loadStore();
-  const embed = headerEmbed();
+  const store   = loadStore();
+  const payload = { embeds: [headerEmbed()], components: buildComponents(store.buttons) };
 
   if (store.messageId) {
-    const existing = await channel.messages.fetch(store.messageId).catch(() => null);
-    if (existing && existing.author.id === client.user.id) {
-      await existing.edit({ embeds: [embed] }).catch(() => {});
-      console.log('🎭 En-tête des rôles actualisé');
+    const msg = await channel.messages.fetch(store.messageId).catch(() => null);
+    if (msg && msg.author.id === client.user.id) {
+      await msg.edit(payload).catch(() => {});
+      console.log('🎭 Panneau des rôles actualisé (' + store.buttons.length + ' bouton(s))');
       return;
     }
   }
 
-  const sent = await channel.send({ embeds: [embed] }).catch(() => null);
+  const sent = await channel.send(payload).catch(() => null);
   if (sent) {
-    saveStore({ messageId: sent.id, channelId: channel.id });
-    console.log('🎭 En-tête des rôles publié');
+    store.messageId = sent.id;
+    saveStore(store);
+    console.log('🎭 Panneau des rôles publié');
   }
 }
 
-module.exports = { ROLES_CHANNEL, postRolesHeader };
+async function addRoleButton(client, { roleId, label, emoji = '', style = 'Primary' }) {
+  const store    = loadStore();
+  const existing = store.buttons.find(b => b.roleId === roleId);
+
+  if (existing) {
+    existing.label = label;
+    existing.emoji = emoji;
+    existing.style = style;
+  } else {
+    if (store.buttons.length >= MAX_BOUTONS) return { ok: false, reason: 'max' };
+    store.buttons.push({ roleId, label, emoji, style });
+  }
+
+  saveStore(store);
+  await renderPanel(client);
+  return { ok: true, count: store.buttons.length, updated: !!existing };
+}
+
+async function removeRoleButton(client, roleId) {
+  const store  = loadStore();
+  const before = store.buttons.length;
+  store.buttons = store.buttons.filter(b => b.roleId !== roleId);
+  if (store.buttons.length === before) return { ok: false, reason: 'notfound' };
+
+  saveStore(store);
+  await renderPanel(client);
+  return { ok: true, count: store.buttons.length };
+}
+
+function listRoleButtons() {
+  return loadStore().buttons;
+}
+
+module.exports = {
+  ROLES_CHANNEL,
+  renderPanel,
+  postRolesHeader: renderPanel, // alias historique (appelé depuis index.js)
+  addRoleButton,
+  removeRoleButton,
+  listRoleButtons,
+};

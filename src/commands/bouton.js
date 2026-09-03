@@ -1,69 +1,54 @@
-const { SlashCommandBuilder, PermissionFlagsBits, ActionRowBuilder, ButtonBuilder, ButtonStyle } = require('discord.js');
-require('dotenv').config();
-
-const { ROLES_CHANNEL } = require('../roles');
-const ROLES_CHANNEL_ID = process.env.ROLES_CHANNEL_ID || ROLES_CHANNEL;
+const { SlashCommandBuilder, PermissionFlagsBits } = require('discord.js');
+const roles = require('../roles');
 
 module.exports = {
   data: new SlashCommandBuilder()
     .setName('bouton')
-    .setDescription('Crée un bouton interactif pour attribuer/retirer un rôle')
+    .setDescription('Ajoute / met à jour / retire un bouton de rôle dans le salon des rôles')
     .setDefaultMemberPermissions(PermissionFlagsBits.ManageRoles)
-    .addStringOption(o => o.setName('nom').setDescription('Texte du bouton').setRequired(true))
-    .addRoleOption(o => o.setName('role').setDescription('Rôle à attribuer/retirer').setRequired(true)),
+    .addRoleOption(o => o.setName('role').setDescription('Rôle concerné').setRequired(true))
+    .addStringOption(o => o.setName('nom').setDescription('Texte du bouton (obligatoire pour ajouter)').setRequired(false))
+    .addStringOption(o => o.setName('emoji').setDescription('Emoji du bouton (optionnel)').setRequired(false))
+    .addStringOption(o => o.setName('couleur').setDescription('Couleur du bouton').setRequired(false)
+      .addChoices(
+        { name: 'Bleu',  value: 'Primary' },
+        { name: 'Gris',  value: 'Secondary' },
+        { name: 'Vert',  value: 'Success' },
+        { name: 'Rouge', value: 'Danger' },
+      ))
+    .addBooleanOption(o => o.setName('retirer').setDescription('Retirer ce bouton au lieu de l\'ajouter').setRequired(false)),
 
   async execute(interaction) {
-    await interaction.deferReply({ ephemeral: true });
+    await interaction.deferReply({ flags: 64 });
 
-    const nom   = interaction.options.getString('nom');
-    const role  = interaction.options.getRole('role');
-    const guild = interaction.guild;
+    const role    = interaction.options.getRole('role');
+    const nom     = interaction.options.getString('nom');
+    const emoji   = interaction.options.getString('emoji') || '';
+    const couleur = interaction.options.getString('couleur') || 'Primary';
+    const retirer = interaction.options.getBoolean('retirer') || false;
 
-    const channel = ROLES_CHANNEL_ID
-      ? guild.channels.cache.get(ROLES_CHANNEL_ID)
-      : interaction.channel;
-
-    if (!channel) {
-      await interaction.editReply({ content: '❌ Salon des rôles introuvable. Vérifie `ROLES_CHANNEL_ID` dans le `.env`.' });
+    if (retirer) {
+      const r = await roles.removeRoleButton(interaction.client, role.id);
+      await interaction.editReply(r.ok
+        ? '🗑️ Bouton **' + role.name + '** retiré du salon des rôles. (' + r.count + ' bouton(s) restant(s))'
+        : '❌ Aucun bouton n\'existe pour **' + role.name + '**.');
       return;
     }
 
-    const row = new ActionRowBuilder().addComponents(
-      new ButtonBuilder()
-        .setCustomId(`role_${role.id}`)
-        .setLabel(nom)
-        .setStyle(ButtonStyle.Primary),
-    );
-
-    await channel.send({
-      embeds: [{
-        description: `Clique sur le bouton pour obtenir ou retirer le rôle **${role.name}**.`,
-        color: role.color || 0x5865F2,
-        footer: { text: 'Damoclès Security Bot' },
-      }],
-      components: [row],
-    });
-
-    await interaction.editReply({ content: `✅ Bouton **${nom}** créé dans <#${channel.id}> pour le rôle **${role.name}**.` });
-    console.log(`🎭 Bouton "${nom}" créé pour le rôle ${role.name}`);
-  },
-
-  // Gestion du clic sur le bouton de rôle
-  async handleRoleButton(interaction, roleId) {
-    const member = interaction.member;
-    const role   = interaction.guild.roles.cache.get(roleId);
-
-    if (!role) {
-      await interaction.reply({ content: '❌ Rôle introuvable.', ephemeral: true });
+    if (!nom) {
+      await interaction.editReply('❌ Précise un **nom** de bouton pour l\'ajouter (ou utilise `retirer:true` pour l\'enlever).');
       return;
     }
 
-    if (member.roles.cache.has(roleId)) {
-      await member.roles.remove(role).catch(console.error);
-      await interaction.reply({ content: `✅ Rôle **${role.name}** retiré.`, ephemeral: true });
-    } else {
-      await member.roles.add(role).catch(console.error);
-      await interaction.reply({ content: `✅ Rôle **${role.name}** attribué.`, ephemeral: true });
+    const r = await roles.addRoleButton(interaction.client, { roleId: role.id, label: nom, emoji, style: couleur });
+    if (!r.ok) {
+      await interaction.editReply('❌ Maximum ' + 25 + ' boutons atteint dans le panneau.');
+      return;
     }
+
+    await interaction.editReply(
+      (r.updated ? '✏️ Bouton **' + nom + '** mis à jour' : '✅ Bouton **' + nom + '** ajouté')
+      + ' pour le rôle **' + role.name + '** dans <#' + roles.ROLES_CHANNEL + '>. (' + r.count + ' bouton(s))');
+    console.log('🎭 /bouton — ' + (r.updated ? 'maj' : 'ajout') + ' "' + nom + '" → ' + role.name);
   },
 };

@@ -2,7 +2,9 @@ const fs   = require('fs');
 const path = require('path');
 const db   = require('./database');
 
-const STATE_PATH = path.join(__dirname, '..', 'data', 'levels.json');
+const STATE_PATH = path.join(__dirname, '..', 'data', 'levels.json'); // ids des messages du salon
+const XP_PATH    = path.join(__dirname, '..', 'data', 'xp.json');      // LES POINTS (source de vérité)
+const MEMBERS_PATH = path.join(__dirname, '..', 'data', 'members.json');
 
 // ── Barème (tout est modifiable ici) ─────────────────────────────────────────
 const XP = {
@@ -31,6 +33,65 @@ const cooldowns = new Map();   // userId -> { msg, img }
 const pending   = new Map();   // userId -> { dxp, dvoiceMs, dinvites, user }
 const inviteCache = new Map(); // code -> uses
 
+// ── Stockage des points : data/xp.json ──────────────────────────────────────
+// { [userId]: { xp, level, voiceMs, invites, tag } }
+let _xp = {};
+let _saveTimer = null;
+let _xpDirty   = false;
+
+function loadXp() {
+  // 1) fichier xp.json existant
+  try {
+    const parsed = JSON.parse(fs.readFileSync(XP_PATH, 'utf-8'));
+    if (parsed && typeof parsed === 'object') { _xp = parsed; return; }
+  } catch {}
+
+  // 2) sinon, migration one-shot depuis members.json (ancien emplacement)
+  _xp = {};
+  try {
+    const raw = JSON.parse(fs.readFileSync(MEMBERS_PATH, 'utf-8'));
+    for (const [id, m] of Object.entries(raw)) {
+      if ((m.xp || 0) > 0 || (m.voiceMs || 0) > 0 || (m.invites || 0) > 0) {
+        _xp[id] = {
+          xp: m.xp || 0,
+          level: m.level ?? levelFromXp(m.xp || 0),
+          voiceMs: m.voiceMs || 0,
+          invites: m.invites || 0,
+          tag: m.tag || m.username || null,
+        };
+      }
+    }
+    if (Object.keys(_xp).length) {
+      console.log('🎚️ Migration XP : ' + Object.keys(_xp).length + ' membre(s) depuis members.json');
+      saveXpNow();
+    }
+  } catch {}
+}
+
+function saveXpNow() {
+  clearTimeout(_saveTimer);
+  _saveTimer = null;
+  _xpDirty = false;
+  try {
+    fs.mkdirSync(path.dirname(XP_PATH), { recursive: true });
+    fs.writeFileSync(XP_PATH, JSON.stringify(_xp, null, 2), 'utf-8');
+  } catch (err) {
+    console.error('⚠️ xp.json — sauvegarde impossible :', err.message);
+  }
+}
+
+// Écriture différée (2 s) pour éviter d'écrire le fichier à chaque petite modif
+function saveXpSoon() {
+  _xpDirty = true;
+  if (_saveTimer) return;
+  _saveTimer = setTimeout(saveXpNow, 2000);
+}
+
+function rec(userId) {
+  if (!_xp[userId]) _xp[userId] = { xp: 0, level: 0, voiceMs: 0, invites: 0, tag: null };
+  return _xp[userId];
+}
+
 function loadState() {
   try {
     const s = JSON.parse(fs.readFileSync(STATE_PATH, 'utf-8'));
@@ -52,32 +113,31 @@ function queue(userId, user, { xp = 0, voiceMs = 0, invites = 0 }) {
   pending.set(userId, p);
 }
 
+// Applique les points en attente. AUCUN remise à zéro : on ajoute au total existant.
 async function flush() {
+  if (!pending.size) return;
   let bougé = false;
   let leveledUp = false;
+
   for (const [uid, p] of [...pending.entries()]) {
     pending.delete(uid);
     try {
-      let m = await db.getMember(uid);
-      if (!m && p.user) m = await db.upsertMember(p.user);
-      if (!m) continue;
+      const r        = rec(uid);
+      const oldLevel = r.level ?? levelFromXp(r.xp || 0);
 
-      const oldXp    = m.xp || 0;
-      const oldLevel = m.level ?? levelFromXp(oldXp);
-      const newXp    = Math.max(0, oldXp + p.dxp);
-      const newLevel = levelFromXp(newXp);
+      r.xp      = Math.max(0, (r.xp || 0) + p.dxp);
+      r.voiceMs = (r.voiceMs || 0) + p.dvoiceMs;
+      r.invites = (r.invites || 0) + p.dinvites;
+      r.level   = levelFromXp(r.xp);
+      if (p.user) r.tag = p.user.tag || p.user.username || r.tag;
 
-      await db.updateMember(uid, {
-        xp: newXp,
-        level: newLevel,
-        voiceMs: (m.voiceMs || 0) + p.dvoiceMs,
-        invites: (m.invites || 0) + p.dinvites,
-      });
       bougé = true;
-
-      if (newLevel > oldLevel) { leveledUp = true; await announceLevelUp(uid, newLevel); }
+      if (r.level > oldLevel) { leveledUp = true; await announceLevelUp(uid, r.level); }
     } catch (e) { console.error('⚠️ levels flush :', e.message); }
   }
+
+  if (bougé) saveXpNow(); // on écrit tout de suite après un flush
+
   if (leveledUp) await refreshLeaderboard();  // republie en bas après les 🎉
   else if (bougé) await editLeaderboard();     // simple mise à jour du contenu
 }
@@ -125,8 +185,8 @@ function baremeEmbed() {
 }
 
 // Bloc 2 : le classement (mis à jour en continu)
-async function classementEmbed() {
-  const top = await getClassement(15);
+function classementEmbed() {
+  const top = getClassement(15);
   const lignes = top.length
     ? top.map(e => (MEDAILLE[e.rang - 1] || '`#' + e.rang + '`') + ' <@' + e.id + '> — **Nv ' + e.level + '** · ' + e.xp.toLocaleString('fr-FR') + ' XP').join('\n')
     : '*Personne n\'a encore d\'XP — sois le premier !*';
@@ -156,7 +216,7 @@ async function editLeaderboard() {
   try {
     const ch = await _channel();
     if (!ch) return;
-    const embed = await classementEmbed();
+    const embed = classementEmbed();
     if (_leaderboardMsgId) {
       const msg = await ch.messages.fetch(_leaderboardMsgId).catch(() => null);
       if (msg) { await msg.edit({ embeds: [embed] }).catch(() => {}); return; }
@@ -189,7 +249,7 @@ async function refreshLeaderboard() {
     if (!ch) return;
     await _clearChannel(ch);
     const b = await ch.send({ embeds: [baremeEmbed()] }).catch(() => null);
-    const m = await ch.send({ embeds: [await classementEmbed()] }).catch(() => null);
+    const m = await ch.send({ embeds: [classementEmbed()] }).catch(() => null);
     _baremeMsgId      = b ? b.id : null;
     _leaderboardMsgId = m ? m.id : null;
     saveState();
@@ -215,8 +275,6 @@ function onMessage(message) {
 }
 
 // ── Vocal ────────────────────────────────────────────────────────────────────
-// Le comptage se fait entièrement dans sweepVoice (scan des salons) — onVoice
-// est conservé pour l'API mais n'a plus rien à faire.
 function onVoice() {}
 
 // Balaye TOUS les salons vocaux du serveur toutes les minutes et crédite
@@ -282,79 +340,97 @@ async function checkRetention() {
     if (!m.invitedBy || m.inviteBonusDone || !m.present) continue;
     if (!m.invitedAt || Date.parse(m.invitedAt) > limite) continue;
 
-    const inviter = await db.getMember(m.invitedBy);
-    if (inviter) {
-      await db.updateMember(m.invitedBy, {
-        xp: (inviter.xp || 0) + XP.INVITE_KEEP,
-        level: levelFromXp((inviter.xp || 0) + XP.INVITE_KEEP),
-      });
-    }
+    const r = rec(m.invitedBy);
+    r.xp   += XP.INVITE_KEEP;
+    r.level = levelFromXp(r.xp);
     await db.updateMember(m.id, { inviteBonusDone: true });
     bonus++;
   }
+  if (bonus) saveXpNow();
   return bonus;
 }
 
 // ── Getters pour les commandes ───────────────────────────────────────────────
-async function getClassement(limit = 15) {
-  const all = (await db.getAllMembers()).filter(m => (m.xp || 0) > 0);
-  all.sort((a, b) => (b.xp || 0) - (a.xp || 0));
-  return all.slice(0, limit).map((m, i) => ({
-    rang: i + 1, id: m.id, xp: m.xp || 0, level: m.level ?? levelFromXp(m.xp || 0),
-  }));
+function getClassement(limit = 15) {
+  return Object.entries(_xp)
+    .filter(([, v]) => (v.xp || 0) > 0)
+    .sort((a, b) => (b[1].xp || 0) - (a[1].xp || 0))
+    .slice(0, limit)
+    .map(([id, v], i) => ({
+      rang: i + 1, id, xp: v.xp || 0, level: v.level ?? levelFromXp(v.xp || 0),
+    }));
 }
 
-async function getRang(userId) {
-  const all = (await db.getAllMembers()).filter(m => (m.xp || 0) > 0);
-  all.sort((a, b) => (b.xp || 0) - (a.xp || 0));
-  const idx = all.findIndex(m => m.id === userId);
-  const m   = (await db.getMember(userId)) || {};
-  const xp  = m.xp || 0;
-  const level = m.level ?? levelFromXp(xp);
+function getRang(userId) {
+  const classees = Object.entries(_xp)
+    .filter(([, v]) => (v.xp || 0) > 0)
+    .sort((a, b) => (b[1].xp || 0) - (a[1].xp || 0));
+  const idx = classees.findIndex(([id]) => id === userId);
+  const r   = _xp[userId] || {};
+  const xp  = r.xp || 0;
+  const level = r.level ?? levelFromXp(xp);
   return {
     xp, level,
     rang: idx === -1 ? null : idx + 1,
-    total: all.length,
-    voiceMs: m.voiceMs || 0,
-    invites: m.invites || 0,
+    total: classees.length,
+    voiceMs: r.voiceMs || 0,
+    invites: r.invites || 0,
     xpNiveauActuel: totalXpForLevel(level),
     xpNiveauSuivant: totalXpForLevel(level + 1),
   };
 }
 
-async function adminAjuster(userId, delta) {
-  const m = (await db.getMember(userId)) || (await db.upsertMember({ id: userId, tag: userId, username: userId }));
-  const xp = Math.max(0, (m.xp || 0) + delta);
-  await db.updateMember(userId, { xp, level: levelFromXp(xp) });
-  return { xp, level: levelFromXp(xp) };
+function adminAjuster(userId, delta) {
+  const r = rec(userId);
+  r.xp    = Math.max(0, (r.xp || 0) + delta);
+  r.level = levelFromXp(r.xp);
+  saveXpNow();
+  return { xp: r.xp, level: r.level };
 }
 
-async function adminReset() {
-  const all = await db.getAllMembers();
-  let n = 0;
-  for (const m of all) {
-    if (m.xp || m.voiceMs || m.invites) {
-      await db.updateMember(m.id, { xp: 0, level: 0, voiceMs: 0, invites: 0 });
-      n++;
-    }
-  }
+function adminReset() {
+  const n = Object.keys(_xp).length;
+  _xp = {};
+  saveXpNow();
   return n;
 }
 
 // ── Démarrage ────────────────────────────────────────────────────────────────
+function _shutdown() {
+  // dernier filet de sécurité : on applique les points en attente et on sauvegarde
+  try {
+    for (const [uid, p] of pending.entries()) {
+      const r = rec(uid);
+      r.xp = Math.max(0, (r.xp || 0) + p.dxp);
+      r.voiceMs = (r.voiceMs || 0) + p.dvoiceMs;
+      r.invites = (r.invites || 0) + p.dinvites;
+      r.level = levelFromXp(r.xp);
+    }
+    pending.clear();
+  } catch {}
+  saveXpNow();
+}
+
 async function startLevels(client) {
   _client = client;
+  loadXp();
   loadState();
   const guild = client.guilds.cache.first();
   if (guild) await cacheInvites(guild);
 
   setInterval(() => sweepVoice(), 60_000);
   setInterval(() => flush().catch(() => {}), 30_000);
+  setInterval(() => { if (_xpDirty) saveXpNow(); }, 5 * 60_000); // filet de sécurité
+
+  // Sauvegarde des points quand le process s'arrête (redéploiement Render, Ctrl+C…)
+  process.once('SIGTERM', () => { _shutdown(); process.exit(0); });
+  process.once('SIGINT',  () => { _shutdown(); process.exit(0); });
+  process.once('beforeExit', _shutdown);
 
   await refreshLeaderboard();
   _refreshTimer = setInterval(() => refreshLeaderboard().catch(() => {}), 60 * 60_000); // toutes les heures
 
-  console.log('🎚️ Système de niveaux — prêt');
+  console.log('🎚️ Système de niveaux — prêt (' + Object.keys(_xp).length + ' membre(s) avec XP)');
 }
 
 module.exports = {
