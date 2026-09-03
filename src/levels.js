@@ -118,7 +118,6 @@ function queue(userId, user, { xp = 0, voiceMs = 0, invites = 0 }) {
 async function flush() {
   if (!pending.size) return;
   let bougé = false;
-  let leveledUp = false;
 
   for (const [uid, p] of [...pending.entries()]) {
     pending.delete(uid);
@@ -133,14 +132,15 @@ async function flush() {
       if (p.user) r.tag = p.user.tag || p.user.username || r.tag;
 
       bougé = true;
-      if (r.level > oldLevel) { leveledUp = true; await announceLevelUp(uid, r.level); }
+      if (r.level > oldLevel) await announceLevelUp(uid, r.level);
     } catch (e) { console.error('⚠️ levels flush :', e.message); }
   }
 
   if (bougé) saveXpNow(); // on écrit tout de suite après un flush
 
-  if (leveledUp) await refreshLeaderboard();  // republie en bas après les 🎉
-  else if (bougé) await editLeaderboard();     // simple mise à jour du contenu
+  // Toujours une mise à jour SUR PLACE : le classement reste en position 2,
+  // les annonces 🎉 de montée de niveau s'empilent en dessous.
+  if (bougé) await editLeaderboard();
 }
 
 async function announceLevelUp(userId, level) {
@@ -210,50 +210,57 @@ async function _channel() {
     || await _client.channels.fetch(LEADERBOARD_CHANNEL).catch(() => null);
 }
 
-// Met à jour le contenu SANS déplacer le message (utilisé quand l'XP bouge)
+// Vide entièrement le salon du classement (tout, sans exception).
+async function _viderSalon(ch) {
+  for (let i = 0; i < 10; i++) {
+    const lot = await ch.messages.fetch({ limit: 100 }).catch(() => null);
+    if (!lot || lot.size === 0) return;
+
+    const recents = lot.filter(m => Date.now() - m.createdTimestamp < 14 * 86_400_000);
+    const vieux   = lot.filter(m => Date.now() - m.createdTimestamp >= 14 * 86_400_000);
+
+    if (recents.size >= 2) await ch.bulkDelete(recents, true).catch(() => {});
+    else for (const [, m] of recents) await m.delete().catch(() => {});
+    for (const [, m] of vieux) await m.delete().catch(() => {});
+
+    if (lot.size < 100) return;
+  }
+}
+
+// Reconstruit : vide le salon, puis poste (1) explication et (2) classement.
+async function _rebuild(ch) {
+  await _viderSalon(ch);
+  const b = await ch.send({ embeds: [baremeEmbed()] }).catch(() => null);
+  const m = await ch.send({ embeds: [classementEmbed()] }).catch(() => null);
+  _baremeMsgId      = b ? b.id : null;
+  _leaderboardMsgId = m ? m.id : null;
+  saveState();
+}
+
+// Met à jour le classement SUR PLACE (position 2). Les annonces 🎉 restent
+// en dessous. Utilisé quand l'XP bouge et sur les montées de niveau.
 async function editLeaderboard() {
   if (_refreshing) return;
   _refreshing = true;
   try {
     const ch = await _channel();
     if (!ch) return;
-    const embed = classementEmbed();
     if (_leaderboardMsgId) {
       const msg = await ch.messages.fetch(_leaderboardMsgId).catch(() => null);
-      if (msg) { await msg.edit({ embeds: [embed] }).catch(() => {}); return; }
+      if (msg) { await msg.edit({ embeds: [classementEmbed()] }).catch(() => {}); return; }
     }
-    const m = await ch.send({ embeds: [embed] }).catch(() => null);
-    _leaderboardMsgId = m ? m.id : null;
-    saveState();
+    await _rebuild(ch); // message perdu → on reconstruit tout
   } finally { _refreshing = false; }
 }
 
-// Nettoie les anciens messages de classement du bot (garde les 🎉 montées de niveau)
-async function _clearChannel(ch) {
-  try {
-    const msgs = await ch.messages.fetch({ limit: 50 });
-    for (const [, m] of msgs) {
-      if (m.author.id !== _client.user.id) continue;
-      const estLevelUp = (m.embeds[0]?.description || '').startsWith('🎉');
-      if (!estLevelUp) await m.delete().catch(() => {}); // classement + tout autre message du bot
-    }
-  } catch {}
-}
-
-// Supprime TOUT message du bot et republie les 2 blocs EN BAS
-// (démarrage, après un level-up, chaque heure)
+// Refresh complet : supprime tout le salon et repost explication + classement.
+// (démarrage + périodiquement) — les vieilles annonces 🎉 sont nettoyées ici.
 async function refreshLeaderboard() {
   if (_refreshing) return;
   _refreshing = true;
   try {
     const ch = await _channel();
-    if (!ch) return;
-    await _clearChannel(ch);
-    const b = await ch.send({ embeds: [baremeEmbed()] }).catch(() => null);
-    const m = await ch.send({ embeds: [classementEmbed()] }).catch(() => null);
-    _baremeMsgId      = b ? b.id : null;
-    _leaderboardMsgId = m ? m.id : null;
-    saveState();
+    if (ch) await _rebuild(ch);
   } finally { _refreshing = false; }
 }
 
