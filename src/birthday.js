@@ -85,19 +85,21 @@ async function updateBirthdayChannel(client) {
 
   const dateLongue = e => e.jj + ' ' + MOIS[e.mm].toLowerCase() + ' ' + e.next.getFullYear();
 
+  // Trié du plus proche au plus lointain (par prochaine occurrence)
+  list.sort((a, b) => a.next - b.next);
+
   // En-tête : le plus proche uniquement
-  const prochain = list.reduce((min, e) => (e.next < min.next ? e : min), list[0]);
+  const prochain = list[0];
   const tete = prochain.isToday
     ? '## 🎉 Aujourd\'hui !\n> C\'est l\'anniversaire de <@' + prochain.id + '> — **' + prochain.age + ' ans** 🥳'
     : '## 🎂 Prochain anniversaire\n> **le ' + dateLongue(prochain) + '** de <@' + prochain.id + '>\n'
       + '> dans **' + prochain.jours + ' jour' + (prochain.jours > 1 ? 's' : '') + '** — il/elle aura **' + prochain.age + ' ans**';
 
-  // Listing : TOUS les anniversaires de l'année, dans l'ordre du calendrier
-  const calendrier = [...list].sort((a, b) => a.mm - b.mm || a.jj - b.jj);
-  const lignes = calendrier.map(e => {
-    const puce = e.isToday ? '🎉' : (e.id === prochain.id ? '⭐' : '📅');
-    const jjmm = String(e.jj).padStart(2, '0') + ' ' + MOIS[e.mm].toLowerCase();
-    return puce + ' `' + jjmm.padEnd(13) + '` <@' + e.id + '>  ·  ' + e.age + ' ans';
+  // Listing des suivants, dans l'ordre chronologique (du plus proche au plus lointain)
+  const lignes = list.slice(1).map(e => {
+    const puce = e.isToday ? '🎉' : '📅';
+    const jjmm = (String(e.jj).padStart(2, '0') + ' ' + MOIS[e.mm].toLowerCase()).padEnd(13);
+    return puce + ' `' + jjmm + '` <@' + e.id + '>  ·  ' + e.age + ' ans  ·  dans ' + e.jours + ' j';
   });
 
   // Respecter la limite de 4096 caractères
@@ -116,10 +118,10 @@ async function updateBirthdayChannel(client) {
       description: [
         tete,
         '',
-        '**📅 Tous les anniversaires de l\'année**',
-        corps,
+        '**📅 Anniversaires suivants**',
+        corps || '*Aucun autre pour le moment.*',
         '',
-        '-# ⭐ prochain · 🎉 aujourd\'hui — enregistre le tien avec `/anniversaire JJ/MM/AAAA`',
+        '-# Enregistre le tien avec `/anniversaire JJ/MM/AAAA`',
       ].join('\n'),
       color: 0xF1C40F,
       footer: { text: 'Mis à jour le ' + now.toLocaleDateString('fr-FR') + ' — Damoclès Bot' },
