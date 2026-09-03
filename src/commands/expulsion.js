@@ -1,4 +1,6 @@
 const { SlashCommandBuilder, PermissionFlagsBits, ActionRowBuilder, ButtonBuilder, ButtonStyle } = require('discord.js');
+const activity = require('../activity');
+const { getMemberStatus, getDaysInactive, getLastActivity, EXPEL_DAYS } = activity;
 const db = require('../database');
 require('dotenv').config();
 
@@ -34,6 +36,8 @@ module.exports = {
           } else throw err;
         }
       }
+
+      await activity.refresh();
 
       const toExpel = [];
 

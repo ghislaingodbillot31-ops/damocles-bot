@@ -1,6 +1,6 @@
 const { SlashCommandBuilder, PermissionFlagsBits } = require('discord.js');
-const INACTIVE_DAYS = 30;
-const EXPEL_DAYS = 60;
+const activity = require('../activity');
+const { getMemberStatus, getDaysInactive, INACTIVE_DAYS, EXPEL_DAYS } = activity;
 const db = require('../database');
 require('dotenv').config();
 
@@ -29,6 +29,8 @@ async function runAnalysis(guild) {
       } else throw err;
     }
   }
+
+  await activity.refresh();
 
   let newInactive = 0, newActive = 0, toExpel = 0;
   const inactiveList = [], expelList = [];
