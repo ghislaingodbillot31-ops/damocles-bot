@@ -236,6 +236,8 @@ async function cleanDatabase() {
       || m.anniversaire
       || m.reglementAcceptedAt
       || m.verificationResult === 'ok'
+      || (m.xp || 0) > 0
+      || (m.invites || 0) > 0
       || (m.visits || 1) > 1
       || (Array.isArray(m.warnings) && m.warnings.length > 0)
       || (Array.isArray(m.history) && m.history.some(h =>

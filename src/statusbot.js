@@ -70,7 +70,10 @@ async function updateStatusMessage(client, animated = false) {
   await postLine(channel, '`▶` 🛡️ Système de vérification ...... ✅ **Actif**', 0x2ECC71);
   await sleep(400);
 
-  await postLine(channel, '`▶` 📋 Commandes .................... ✅ **10 slash + 2 menus**', 0x2ECC71);
+  await postLine(channel, '`▶` 🎚️ Système de niveaux ........... ✅ **Actif**', 0x2ECC71);
+  await sleep(400);
+
+  await postLine(channel, '`▶` 📋 Commandes .................... ✅ **13 slash + 2 menus**', 0x2ECC71);
   await sleep(400);
 
   await postLine(channel, '`▶` 🔄 Actualisation quotidienne .... ✅ **Planifiée — 04h00**', 0x2ECC71);

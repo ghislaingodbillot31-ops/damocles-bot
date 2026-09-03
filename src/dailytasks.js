@@ -58,6 +58,13 @@ async function runDaily(client) {
   } catch (e) { console.error('   ⚠️ Analyse :', e.message); }
 
   try {
+    const levels = require('./levels');
+    await levels.flush();
+    const b = await levels.checkRetention();
+    if (b) console.log('   🎚️ Bonus rétention 7 j : ' + b + ' invitation(s) créditée(s)');
+  } catch (e) { console.error('   ⚠️ Niveaux :', e.message); }
+
+  try {
     const { updateStatusMessage } = require('./statusbot');
     await updateStatusMessage(client, true);
   } catch (e) { console.error('   ⚠️ Message de statut :', e.message); }

@@ -14,6 +14,9 @@ const commands = [
   require('./commands/sync-db').data.toJSON(),
   require('./commands/contrat').data.toJSON(),
   require('./commands/maintenance').data.toJSON(),
+  require('./commands/niveau').data.toJSON(),
+  require('./commands/classement').data.toJSON(),
+  require('./commands/xp-admin').data.toJSON(),
 ];
 
 const rest = new REST().setToken(process.env.DISCORD_TOKEN);

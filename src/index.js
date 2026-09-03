@@ -25,6 +25,7 @@ const contrat                                          = require('./commands/con
 const { startDailyTasks }                              = require('./dailytasks');
 const { updateStatusMessage }                          = require('./statusbot');
 const tempvoice                                        = require('./tempvoice');
+const levels                                           = require('./levels');
 const cron                                             = require('node-cron');
 
 const VERIFICATION_ROLE_ID = process.env.VERIFICATION_ROLE_ID;
@@ -43,6 +44,7 @@ const client = new Client({
     GatewayIntentBits.MessageContent,
     GatewayIntentBits.GuildBans,
     GatewayIntentBits.GuildVoiceStates,
+    GatewayIntentBits.GuildInvites,
   ],
   partials: [Partials.Message, Partials.Channel],
 });
@@ -63,6 +65,7 @@ client.once(Events.ClientReady, async () => {
   startFS25Monitor(client);
   startDailyTasks(client, cron);
   tempvoice.startTempVoice(client);
+  levels.startLevels(client);
 
   // Publier le HUB des exploitants
   try {
@@ -103,6 +106,7 @@ client.on(Events.GuildMemberAdd, async member => {
   console.log('👋 Nouveau membre : ' + member.user.tag);
 
   await db.upsertMember(member.user, { joinedAt: member.joinedAt?.toISOString() });
+  await levels.onMemberAdd(member);
   if (VERIFICATION_ROLE_ID) await member.roles.add(VERIFICATION_ROLE_ID).catch(() => {});
   await checkNewMember(member);
   await log(client, 'member_join', { userId: member.id });
@@ -123,10 +127,15 @@ client.on(Events.GuildBanAdd, async ban => {
   await db.banMember(ban.user, ban.reason || 'Aucune raison', 'Discord');
 });
 
-// ── Vocal : supprimer les salons temporaires vides ───────────────────────────
-client.on(Events.VoiceStateUpdate, (oldState) => {
+// ── Vocal : salons temporaires vides + XP vocal ─────────────────────────────
+client.on(Events.VoiceStateUpdate, (oldState, newState) => {
   tempvoice.handleVoiceState(oldState).catch(() => {});
+  try { levels.onVoice(oldState, newState); } catch {}
 });
+
+// ── Invitations (tracking XP) ───────────────────────────────────────────────
+client.on(Events.InviteCreate, inv => { try { levels.cacheInvites(inv.guild); } catch {} });
+client.on(Events.InviteDelete, inv => { try { levels.cacheInvites(inv.guild); } catch {} });
 
 // ── Messages ──────────────────────────────────────────────────────────────────
 client.on(Events.MessageCreate, async message => {
@@ -135,6 +144,7 @@ client.on(Events.MessageCreate, async message => {
   const member = message.member;
   if (!member) return;
 
+  try { levels.onMessage(message); } catch {}
   await checkSpam(client, message);
   await checkLinks(client, message);
 
@@ -165,6 +175,9 @@ client.on(Events.InteractionCreate, async interaction => {
       'sync-db':      './commands/sync-db',
       'contrat':      './commands/contrat',
       'maintenance':  './commands/maintenance',
+      'niveau':       './commands/niveau',
+      'classement':   './commands/classement',
+      'xp-admin':     './commands/xp-admin',
       'expulsion':    './commands/expulsion',
       'banid':        './commands/banid',
       'sanction':     './commands/sanction',
