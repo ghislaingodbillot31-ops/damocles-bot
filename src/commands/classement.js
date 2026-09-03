@@ -7,6 +7,7 @@ module.exports = {
     .setDescription('Classement XP du serveur + comment gagner des points'),
 
   async execute(interaction) {
-    await interaction.reply({ embeds: [levels.baremeEmbed(), await levels.classementEmbed()] });
+    await levels.flush().catch(() => {}); // applique les points en attente avant l'affichage
+    await interaction.reply({ embeds: [levels.baremeEmbed(), levels.classementEmbed()] });
   },
 };

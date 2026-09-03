@@ -419,12 +419,15 @@ async function startLevels(client) {
   if (guild) await cacheInvites(guild);
 
   setInterval(() => sweepVoice(), 60_000);
-  setInterval(() => flush().catch(() => {}), 30_000);
-  setInterval(() => { if (_xpDirty) saveXpNow(); }, 5 * 60_000); // filet de sécurité
+  setInterval(() => flush().catch(() => {}), 15_000);
+  setInterval(() => { if (_xpDirty) saveXpNow(); }, 60_000); // filet de sécurité
 
   // Sauvegarde des points quand le process s'arrête (redéploiement Render, Ctrl+C…)
-  process.once('SIGTERM', () => { _shutdown(); process.exit(0); });
-  process.once('SIGINT',  () => { _shutdown(); process.exit(0); });
+  const stop = () => { _shutdown(); process.exit(0); };
+  process.once('SIGTERM', stop);
+  process.once('SIGINT',  stop);
+  process.once('SIGBREAK', stop); // Windows : Ctrl+Break / fermeture console
+  process.once('SIGHUP',  stop);
   process.once('beforeExit', _shutdown);
 
   await refreshLeaderboard();

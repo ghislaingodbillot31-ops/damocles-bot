@@ -15,7 +15,8 @@ module.exports = {
 
   async execute(interaction) {
     const user = interaction.options.getUser('membre') || interaction.user;
-    const r    = await levels.getRang(user.id);
+    await levels.flush().catch(() => {}); // applique les points en attente avant l'affichage
+    const r = levels.getRang(user.id);
 
     if (!r.xp) {
       await interaction.reply({
