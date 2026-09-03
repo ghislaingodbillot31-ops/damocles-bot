@@ -119,40 +119,6 @@
       }
     ]
   },
-  "1505297247032574222": {
-    "id": "1505297247032574222",
-    "username": "gapp_72664",
-    "tag": "gapp_72664",
-    "avatar": null,
-    "status": "left",
-    "present": false,
-    "firstSeen": "2026-05-30T18:11:49.301Z",
-    "joinedAt": "2026-05-16T19:55:29.367Z",
-    "leftAt": "2026-08-20T01:08:41.643Z",
-    "kickedAt": null,
-    "bannedAt": null,
-    "banReason": null,
-    "verifiedAt": null,
-    "verificationResult": null,
-    "adminAccepted": null,
-    "adminAcceptedBy": null,
-    "reglementAcceptedAt": null,
-    "firstMessageAt": null,
-    "warnings": [],
-    "anniversaire": null,
-    "visits": 1,
-    "history": [
-      {
-        "event": "join",
-        "date": "2026-05-30T18:11:49.301Z",
-        "detail": "Premier enregistrement"
-      },
-      {
-        "event": "sync_absent",
-        "date": "2026-08-20T01:08:41.643Z"
-      }
-    ]
-  },
   "1059156045743796244": {
     "id": "1059156045743796244",
     "username": "lebiscornu",
@@ -273,40 +239,6 @@
       }
     ]
   },
-  "1457018911395418316": {
-    "id": "1457018911395418316",
-    "username": "freyja_03290",
-    "tag": "freyja_03290",
-    "avatar": null,
-    "status": "left",
-    "present": false,
-    "firstSeen": "2026-05-30T18:11:49.303Z",
-    "joinedAt": "2026-05-25T18:11:15.625Z",
-    "leftAt": "2026-08-20T01:08:41.643Z",
-    "kickedAt": null,
-    "bannedAt": null,
-    "banReason": null,
-    "verifiedAt": null,
-    "verificationResult": null,
-    "adminAccepted": null,
-    "adminAcceptedBy": null,
-    "reglementAcceptedAt": null,
-    "firstMessageAt": null,
-    "warnings": [],
-    "anniversaire": null,
-    "visits": 1,
-    "history": [
-      {
-        "event": "join",
-        "date": "2026-05-30T18:11:49.303Z",
-        "detail": "Premier enregistrement"
-      },
-      {
-        "event": "sync_absent",
-        "date": "2026-08-20T01:08:41.643Z"
-      }
-    ]
-  },
   "1325959698767286355": {
     "id": "1325959698767286355",
     "username": "salamandredemoniaque",
@@ -347,40 +279,6 @@
       }
     ]
   },
-  "344937230655160321": {
-    "id": "344937230655160321",
-    "username": "mick09171",
-    "tag": "mick09171",
-    "avatar": "eb94fce1a122cbde3c39e9676f1fc869",
-    "status": "left",
-    "present": false,
-    "firstSeen": "2026-05-30T18:11:49.303Z",
-    "joinedAt": "2026-05-05T10:31:21.327Z",
-    "leftAt": "2026-08-20T01:08:41.643Z",
-    "kickedAt": null,
-    "bannedAt": null,
-    "banReason": null,
-    "verifiedAt": null,
-    "verificationResult": null,
-    "adminAccepted": null,
-    "adminAcceptedBy": null,
-    "reglementAcceptedAt": null,
-    "firstMessageAt": null,
-    "warnings": [],
-    "anniversaire": null,
-    "visits": 1,
-    "history": [
-      {
-        "event": "join",
-        "date": "2026-05-30T18:11:49.303Z",
-        "detail": "Premier enregistrement"
-      },
-      {
-        "event": "sync_absent",
-        "date": "2026-08-20T01:08:41.643Z"
-      }
-    ]
-  },
   "447758957918814218": {
     "id": "447758957918814218",
     "username": "houbi_26",
@@ -418,40 +316,6 @@
         "event": "kick",
         "date": "2026-05-30T18:35:59.670Z",
         "detail": "Expulsé manuellement via commande /expulsion"
-      }
-    ]
-  },
-  "930944495460155482": {
-    "id": "930944495460155482",
-    "username": "frenchi_liwlaka",
-    "tag": "frenchi_liwlaka",
-    "avatar": "3074dd8f3b6b45e1d8113ddb02cb1350",
-    "status": "left",
-    "present": false,
-    "firstSeen": "2026-05-30T18:11:49.304Z",
-    "joinedAt": "2025-10-13T21:10:17.059Z",
-    "leftAt": "2026-08-20T01:08:41.643Z",
-    "kickedAt": null,
-    "bannedAt": null,
-    "banReason": null,
-    "verifiedAt": null,
-    "verificationResult": null,
-    "adminAccepted": null,
-    "adminAcceptedBy": null,
-    "reglementAcceptedAt": null,
-    "firstMessageAt": null,
-    "warnings": [],
-    "anniversaire": null,
-    "visits": 1,
-    "history": [
-      {
-        "event": "join",
-        "date": "2026-05-30T18:11:49.304Z",
-        "detail": "Premier enregistrement"
-      },
-      {
-        "event": "sync_absent",
-        "date": "2026-08-20T01:08:41.643Z"
       }
     ]
   },
@@ -535,46 +399,6 @@
       }
     ]
   },
-  "604673172553465862": {
-    "id": "604673172553465862",
-    "username": "frifri_foxio",
-    "tag": "frifri_foxio",
-    "avatar": "d1d5cdea02429168cf0419e2f64d6291",
-    "status": "left",
-    "present": false,
-    "firstSeen": "2026-05-30T18:11:49.305Z",
-    "joinedAt": "2025-08-08T13:41:02.042Z",
-    "leftAt": "2026-05-30T18:36:07.771Z",
-    "kickedAt": "2026-05-30T18:36:06.797Z",
-    "bannedAt": null,
-    "banReason": null,
-    "verifiedAt": null,
-    "verificationResult": null,
-    "adminAccepted": null,
-    "adminAcceptedBy": null,
-    "reglementAcceptedAt": null,
-    "firstMessageAt": null,
-    "warnings": [],
-    "anniversaire": null,
-    "visits": 1,
-    "history": [
-      {
-        "event": "join",
-        "date": "2026-05-30T18:11:49.305Z",
-        "detail": "Premier enregistrement"
-      },
-      {
-        "event": "kick",
-        "date": "2026-05-30T18:36:06.797Z",
-        "detail": "Expulsé manuellement via /expulsion"
-      },
-      {
-        "event": "leave",
-        "date": "2026-05-30T18:36:07.771Z",
-        "detail": "A quitté le serveur"
-      }
-    ]
-  },
   "394446456691490829": {
     "id": "394446456691490829",
     "username": "firka6608",
@@ -612,50 +436,6 @@
         "event": "kick",
         "date": "2026-05-30T18:36:08.254Z",
         "detail": "Expulsé manuellement via commande /expulsion"
-      }
-    ]
-  },
-  "494526318185152543": {
-    "id": "494526318185152543",
-    "username": "gregmng",
-    "tag": "gregmng",
-    "avatar": "516355868adf9e92b06fcda20e6dde68",
-    "status": "left",
-    "present": false,
-    "firstSeen": "2026-05-30T18:11:49.306Z",
-    "joinedAt": "2026-06-13T13:14:55.267Z",
-    "leftAt": "2026-08-20T01:08:41.643Z",
-    "kickedAt": "2026-05-30T18:36:12.252Z",
-    "bannedAt": null,
-    "banReason": null,
-    "verifiedAt": null,
-    "verificationResult": null,
-    "adminAccepted": null,
-    "adminAcceptedBy": null,
-    "reglementAcceptedAt": null,
-    "firstMessageAt": null,
-    "warnings": [],
-    "anniversaire": null,
-    "visits": 1,
-    "history": [
-      {
-        "event": "join",
-        "date": "2026-05-30T18:11:49.306Z",
-        "detail": "Premier enregistrement"
-      },
-      {
-        "event": "kick",
-        "date": "2026-05-30T18:36:11.289Z",
-        "detail": "Expulsé manuellement via /expulsion"
-      },
-      {
-        "event": "kick",
-        "date": "2026-05-30T18:36:12.252Z",
-        "detail": "Expulsé manuellement via commande /expulsion"
-      },
-      {
-        "event": "sync_absent",
-        "date": "2026-08-20T01:08:41.643Z"
       }
     ]
   },
@@ -766,74 +546,6 @@
         "event": "kick",
         "date": "2026-05-30T18:36:17.699Z",
         "detail": "Expulsé manuellement via commande /expulsion"
-      }
-    ]
-  },
-  "289737575516864523": {
-    "id": "289737575516864523",
-    "username": "ceytos374",
-    "tag": "ceytos374",
-    "avatar": "b1470fec4f6006becc0e263e8bb33f2c",
-    "status": "left",
-    "present": false,
-    "firstSeen": "2026-05-30T18:11:49.308Z",
-    "joinedAt": "2026-05-25T19:17:29.023Z",
-    "leftAt": "2026-08-20T01:08:41.643Z",
-    "kickedAt": null,
-    "bannedAt": null,
-    "banReason": null,
-    "verifiedAt": null,
-    "verificationResult": null,
-    "adminAccepted": null,
-    "adminAcceptedBy": null,
-    "reglementAcceptedAt": null,
-    "firstMessageAt": null,
-    "warnings": [],
-    "anniversaire": null,
-    "visits": 1,
-    "history": [
-      {
-        "event": "join",
-        "date": "2026-05-30T18:11:49.308Z",
-        "detail": "Premier enregistrement"
-      },
-      {
-        "event": "sync_absent",
-        "date": "2026-08-20T01:08:41.643Z"
-      }
-    ]
-  },
-  "338257560224137216": {
-    "id": "338257560224137216",
-    "username": "m1st3r_chris",
-    "tag": "m1st3r_chris",
-    "avatar": "a_23381874bd44b10af0ba95fd404723ec",
-    "status": "left",
-    "present": false,
-    "firstSeen": "2026-05-30T18:11:49.308Z",
-    "joinedAt": "2026-05-01T11:04:15.269Z",
-    "leftAt": "2026-08-20T01:08:41.643Z",
-    "kickedAt": null,
-    "bannedAt": null,
-    "banReason": null,
-    "verifiedAt": null,
-    "verificationResult": null,
-    "adminAccepted": null,
-    "adminAcceptedBy": null,
-    "reglementAcceptedAt": null,
-    "firstMessageAt": null,
-    "warnings": [],
-    "anniversaire": null,
-    "visits": 1,
-    "history": [
-      {
-        "event": "join",
-        "date": "2026-05-30T18:11:49.308Z",
-        "detail": "Premier enregistrement"
-      },
-      {
-        "event": "sync_absent",
-        "date": "2026-08-20T01:08:41.643Z"
       }
     ]
   },
@@ -1168,40 +880,6 @@
       }
     ]
   },
-  "698602322598821939": {
-    "id": "698602322598821939",
-    "username": "miller6938",
-    "tag": "miller6938",
-    "avatar": "4b862caede2c877d54e81c4111d628cf",
-    "status": "left",
-    "present": false,
-    "firstSeen": "2026-05-30T18:11:49.310Z",
-    "joinedAt": "2026-05-16T20:17:40.868Z",
-    "leftAt": "2026-08-20T01:08:41.643Z",
-    "kickedAt": null,
-    "bannedAt": null,
-    "banReason": null,
-    "verifiedAt": null,
-    "verificationResult": null,
-    "adminAccepted": null,
-    "adminAcceptedBy": null,
-    "reglementAcceptedAt": null,
-    "firstMessageAt": null,
-    "warnings": [],
-    "anniversaire": null,
-    "visits": 1,
-    "history": [
-      {
-        "event": "join",
-        "date": "2026-05-30T18:11:49.310Z",
-        "detail": "Premier enregistrement"
-      },
-      {
-        "event": "sync_absent",
-        "date": "2026-08-20T01:08:41.643Z"
-      }
-    ]
-  },
   "798928205104676886": {
     "id": "798928205104676886",
     "username": "ultraxiii",
@@ -1239,40 +917,6 @@
         "event": "kick",
         "date": "2026-05-30T18:38:17.780Z",
         "detail": "Expulsé manuellement via commande /expulsion"
-      }
-    ]
-  },
-  "245518753226293249": {
-    "id": "245518753226293249",
-    "username": "warsong7814",
-    "tag": "warsong7814",
-    "avatar": "5d3c07ca4951de6e78ef25b86ddee390",
-    "status": "left",
-    "present": false,
-    "firstSeen": "2026-05-30T18:11:49.311Z",
-    "joinedAt": "2026-05-28T13:15:01.530Z",
-    "leftAt": "2026-08-20T01:08:41.643Z",
-    "kickedAt": null,
-    "bannedAt": null,
-    "banReason": null,
-    "verifiedAt": null,
-    "verificationResult": null,
-    "adminAccepted": null,
-    "adminAcceptedBy": null,
-    "reglementAcceptedAt": null,
-    "firstMessageAt": null,
-    "warnings": [],
-    "anniversaire": null,
-    "visits": 1,
-    "history": [
-      {
-        "event": "join",
-        "date": "2026-05-30T18:11:49.311Z",
-        "detail": "Premier enregistrement"
-      },
-      {
-        "event": "sync_absent",
-        "date": "2026-08-20T01:08:41.643Z"
       }
     ]
   },
@@ -1476,78 +1120,6 @@
       }
     ]
   },
-  "462598553341001728": {
-    "id": "462598553341001728",
-    "username": "cansacerpa",
-    "tag": "cansacerpa",
-    "avatar": "82bb1ed6c07e72bd24cc2b96c89560c0",
-    "status": "left",
-    "present": false,
-    "firstSeen": "2026-05-30T18:11:49.313Z",
-    "joinedAt": "2025-10-01T17:15:45.596Z",
-    "leftAt": "2026-08-20T01:08:41.643Z",
-    "kickedAt": null,
-    "bannedAt": null,
-    "banReason": null,
-    "verifiedAt": null,
-    "verificationResult": null,
-    "adminAccepted": null,
-    "adminAcceptedBy": null,
-    "reglementAcceptedAt": null,
-    "firstMessageAt": null,
-    "warnings": [],
-    "anniversaire": null,
-    "visits": 1,
-    "history": [
-      {
-        "event": "join",
-        "date": "2026-05-30T18:11:49.313Z",
-        "detail": "Premier enregistrement"
-      },
-      {
-        "event": "message",
-        "date": "2026-06-01T21:19:45.181Z"
-      },
-      {
-        "event": "sync_absent",
-        "date": "2026-08-20T01:08:41.643Z"
-      }
-    ]
-  },
-  "990353473918869525": {
-    "id": "990353473918869525",
-    "username": "loursflingueur",
-    "tag": "loursflingueur",
-    "avatar": "6272736e0604e7e00bf27872e7557dc7",
-    "status": "left",
-    "present": false,
-    "firstSeen": "2026-05-30T18:11:49.314Z",
-    "joinedAt": "2026-05-16T13:11:06.970Z",
-    "leftAt": "2026-08-20T01:08:41.643Z",
-    "kickedAt": null,
-    "bannedAt": null,
-    "banReason": null,
-    "verifiedAt": null,
-    "verificationResult": null,
-    "adminAccepted": null,
-    "adminAcceptedBy": null,
-    "reglementAcceptedAt": null,
-    "firstMessageAt": null,
-    "warnings": [],
-    "anniversaire": null,
-    "visits": 1,
-    "history": [
-      {
-        "event": "join",
-        "date": "2026-05-30T18:11:49.314Z",
-        "detail": "Premier enregistrement"
-      },
-      {
-        "event": "sync_absent",
-        "date": "2026-08-20T01:08:41.643Z"
-      }
-    ]
-  },
   "210844943609102336": {
     "id": "210844943609102336",
     "username": "cyraullie",
@@ -1585,86 +1157,6 @@
         "event": "kick",
         "date": "2026-05-30T18:40:01.763Z",
         "detail": "Expulsé manuellement via commande /expulsion"
-      }
-    ]
-  },
-  "160832731843002368": {
-    "id": "160832731843002368",
-    "username": "nayumii",
-    "tag": "nayumii",
-    "avatar": "e6f6df84af6d948de6297b39ec4cf6b3",
-    "status": "left",
-    "present": false,
-    "firstSeen": "2026-05-30T18:11:49.315Z",
-    "joinedAt": "2025-08-28T08:05:19.059Z",
-    "leftAt": "2026-05-30T18:40:00.868Z",
-    "kickedAt": "2026-05-30T18:39:59.773Z",
-    "bannedAt": null,
-    "banReason": null,
-    "verifiedAt": null,
-    "verificationResult": null,
-    "adminAccepted": null,
-    "adminAcceptedBy": null,
-    "reglementAcceptedAt": null,
-    "firstMessageAt": null,
-    "warnings": [],
-    "anniversaire": null,
-    "visits": 1,
-    "history": [
-      {
-        "event": "join",
-        "date": "2026-05-30T18:11:49.315Z",
-        "detail": "Premier enregistrement"
-      },
-      {
-        "event": "kick",
-        "date": "2026-05-30T18:39:59.774Z",
-        "detail": "Expulsé manuellement via /expulsion"
-      },
-      {
-        "event": "leave",
-        "date": "2026-05-30T18:40:00.868Z",
-        "detail": "A quitté le serveur"
-      }
-    ]
-  },
-  "142953501679550464": {
-    "id": "142953501679550464",
-    "username": "zach4875",
-    "tag": "zach4875",
-    "avatar": "f63f7edb8d4b36b72b4046fa26f48dee",
-    "status": "left",
-    "present": false,
-    "firstSeen": "2026-05-30T18:11:49.315Z",
-    "joinedAt": "2025-07-16T18:03:58.634Z",
-    "leftAt": "2026-05-30T18:40:00.147Z",
-    "kickedAt": "2026-05-30T18:39:58.944Z",
-    "bannedAt": null,
-    "banReason": null,
-    "verifiedAt": null,
-    "verificationResult": null,
-    "adminAccepted": null,
-    "adminAcceptedBy": null,
-    "reglementAcceptedAt": null,
-    "firstMessageAt": null,
-    "warnings": [],
-    "anniversaire": null,
-    "visits": 1,
-    "history": [
-      {
-        "event": "join",
-        "date": "2026-05-30T18:11:49.315Z",
-        "detail": "Premier enregistrement"
-      },
-      {
-        "event": "kick",
-        "date": "2026-05-30T18:39:58.944Z",
-        "detail": "Expulsé manuellement via /expulsion"
-      },
-      {
-        "event": "leave",
-        "date": "2026-05-30T18:40:00.147Z",
-        "detail": "A quitté le serveur"
       }
     ]
   },
@@ -1908,40 +1400,6 @@
       }
     ]
   },
-  "280418447303901196": {
-    "id": "280418447303901196",
-    "username": "lioube",
-    "tag": "lioube",
-    "avatar": null,
-    "status": "left",
-    "present": false,
-    "firstSeen": "2026-05-30T18:11:49.318Z",
-    "joinedAt": "2026-05-27T16:41:53.414Z",
-    "leftAt": "2026-08-20T01:08:41.643Z",
-    "kickedAt": null,
-    "bannedAt": null,
-    "banReason": null,
-    "verifiedAt": null,
-    "verificationResult": null,
-    "adminAccepted": null,
-    "adminAcceptedBy": null,
-    "reglementAcceptedAt": null,
-    "firstMessageAt": null,
-    "warnings": [],
-    "anniversaire": null,
-    "visits": 1,
-    "history": [
-      {
-        "event": "join",
-        "date": "2026-05-30T18:11:49.318Z",
-        "detail": "Premier enregistrement"
-      },
-      {
-        "event": "sync_absent",
-        "date": "2026-08-20T01:08:41.643Z"
-      }
-    ]
-  },
   "284788346582990849": {
     "id": "284788346582990849",
     "username": "patochee_",
@@ -2062,40 +1520,6 @@
       }
     ]
   },
-  "1484117064347029634": {
-    "id": "1484117064347029634",
-    "username": "speedblazer_37680",
-    "tag": "speedblazer_37680",
-    "avatar": null,
-    "status": "left",
-    "present": false,
-    "firstSeen": "2026-05-30T18:11:49.320Z",
-    "joinedAt": "2026-05-08T12:25:52.813Z",
-    "leftAt": "2026-08-20T01:08:41.643Z",
-    "kickedAt": null,
-    "bannedAt": null,
-    "banReason": null,
-    "verifiedAt": null,
-    "verificationResult": null,
-    "adminAccepted": null,
-    "adminAcceptedBy": null,
-    "reglementAcceptedAt": null,
-    "firstMessageAt": null,
-    "warnings": [],
-    "anniversaire": null,
-    "visits": 1,
-    "history": [
-      {
-        "event": "join",
-        "date": "2026-05-30T18:11:49.320Z",
-        "detail": "Premier enregistrement"
-      },
-      {
-        "event": "sync_absent",
-        "date": "2026-08-20T01:08:41.643Z"
-      }
-    ]
-  },
   "447565536600260608": {
     "id": "447565536600260608",
     "username": "etterd",
@@ -2176,120 +1600,6 @@
       }
     ]
   },
-  "279357913733136385": {
-    "id": "279357913733136385",
-    "username": "ozzy2601",
-    "tag": "ozzy2601",
-    "avatar": null,
-    "status": "left",
-    "present": false,
-    "firstSeen": "2026-05-30T18:11:49.321Z",
-    "joinedAt": "2026-03-07T23:01:37.186Z",
-    "leftAt": "2026-05-30T18:40:19.833Z",
-    "kickedAt": "2026-05-30T18:40:18.642Z",
-    "bannedAt": null,
-    "banReason": null,
-    "verifiedAt": null,
-    "verificationResult": null,
-    "adminAccepted": null,
-    "adminAcceptedBy": null,
-    "reglementAcceptedAt": null,
-    "firstMessageAt": null,
-    "warnings": [],
-    "anniversaire": null,
-    "visits": 1,
-    "history": [
-      {
-        "event": "join",
-        "date": "2026-05-30T18:11:49.321Z",
-        "detail": "Premier enregistrement"
-      },
-      {
-        "event": "kick",
-        "date": "2026-05-30T18:40:18.642Z",
-        "detail": "Expulsé manuellement via /expulsion"
-      },
-      {
-        "event": "leave",
-        "date": "2026-05-30T18:40:19.833Z",
-        "detail": "A quitté le serveur"
-      }
-    ]
-  },
-  "113380972912766976": {
-    "id": "113380972912766976",
-    "username": "cassepieds",
-    "tag": "cassepieds",
-    "avatar": "d38728ae09481a01ed64db07313fa45c",
-    "status": "left",
-    "present": false,
-    "firstSeen": "2026-05-30T18:11:49.322Z",
-    "joinedAt": "2026-05-26T13:01:56.905Z",
-    "leftAt": "2026-08-20T01:08:41.643Z",
-    "kickedAt": null,
-    "bannedAt": null,
-    "banReason": null,
-    "verifiedAt": null,
-    "verificationResult": null,
-    "adminAccepted": null,
-    "adminAcceptedBy": null,
-    "reglementAcceptedAt": null,
-    "firstMessageAt": null,
-    "warnings": [],
-    "anniversaire": null,
-    "visits": 1,
-    "history": [
-      {
-        "event": "join",
-        "date": "2026-05-30T18:11:49.322Z",
-        "detail": "Premier enregistrement"
-      },
-      {
-        "event": "sync_absent",
-        "date": "2026-08-20T01:08:41.643Z"
-      }
-    ]
-  },
-  "175563575853711360": {
-    "id": "175563575853711360",
-    "username": "spaceguil",
-    "tag": "spaceguil",
-    "avatar": "1946e7ebf17953c728e74f1b51743772",
-    "status": "left",
-    "present": false,
-    "firstSeen": "2026-05-30T18:11:49.322Z",
-    "joinedAt": "2026-02-05T01:13:38.835Z",
-    "leftAt": "2026-05-30T18:40:20.403Z",
-    "kickedAt": "2026-05-30T18:40:19.213Z",
-    "bannedAt": null,
-    "banReason": null,
-    "verifiedAt": null,
-    "verificationResult": null,
-    "adminAccepted": null,
-    "adminAcceptedBy": null,
-    "reglementAcceptedAt": null,
-    "firstMessageAt": null,
-    "warnings": [],
-    "anniversaire": null,
-    "visits": 1,
-    "history": [
-      {
-        "event": "join",
-        "date": "2026-05-30T18:11:49.322Z",
-        "detail": "Premier enregistrement"
-      },
-      {
-        "event": "kick",
-        "date": "2026-05-30T18:40:19.213Z",
-        "detail": "Expulsé manuellement via /expulsion"
-      },
-      {
-        "event": "leave",
-        "date": "2026-05-30T18:40:20.403Z",
-        "detail": "A quitté le serveur"
-      }
-    ]
-  },
   "208661033307340800": {
     "id": "208661033307340800",
     "username": "mudril",
@@ -2327,46 +1637,6 @@
         "event": "kick",
         "date": "2026-05-30T18:40:21.208Z",
         "detail": "Expulsé manuellement via commande /expulsion"
-      }
-    ]
-  },
-  "526508218613235712": {
-    "id": "526508218613235712",
-    "username": "oudor",
-    "tag": "oudor",
-    "avatar": "59a1882f3ba4a54ff5ae8a050a98af4b",
-    "status": "left",
-    "present": false,
-    "firstSeen": "2026-05-30T18:11:49.323Z",
-    "joinedAt": "2026-01-19T14:23:02.441Z",
-    "leftAt": "2026-05-30T18:40:23.269Z",
-    "kickedAt": "2026-05-30T18:40:22.341Z",
-    "bannedAt": null,
-    "banReason": null,
-    "verifiedAt": null,
-    "verificationResult": null,
-    "adminAccepted": null,
-    "adminAcceptedBy": null,
-    "reglementAcceptedAt": null,
-    "firstMessageAt": null,
-    "warnings": [],
-    "anniversaire": null,
-    "visits": 1,
-    "history": [
-      {
-        "event": "join",
-        "date": "2026-05-30T18:11:49.323Z",
-        "detail": "Premier enregistrement"
-      },
-      {
-        "event": "kick",
-        "date": "2026-05-30T18:40:22.341Z",
-        "detail": "Expulsé manuellement via /expulsion"
-      },
-      {
-        "event": "leave",
-        "date": "2026-05-30T18:40:23.269Z",
-        "detail": "A quitté le serveur"
       }
     ]
   },
@@ -2447,46 +1717,6 @@
         "event": "kick",
         "date": "2026-05-30T18:40:26.464Z",
         "detail": "Expulsé manuellement via commande /expulsion"
-      }
-    ]
-  },
-  "293700884251279360": {
-    "id": "293700884251279360",
-    "username": "runeranock",
-    "tag": "runeranock",
-    "avatar": "3021a98155d2889072c30908ba25b62b",
-    "status": "left",
-    "present": false,
-    "firstSeen": "2026-05-30T18:11:49.325Z",
-    "joinedAt": "2025-06-03T15:29:14.579Z",
-    "leftAt": "2026-05-30T18:40:31.394Z",
-    "kickedAt": "2026-05-30T18:40:30.304Z",
-    "bannedAt": null,
-    "banReason": null,
-    "verifiedAt": null,
-    "verificationResult": null,
-    "adminAccepted": null,
-    "adminAcceptedBy": null,
-    "reglementAcceptedAt": null,
-    "firstMessageAt": null,
-    "warnings": [],
-    "anniversaire": null,
-    "visits": 1,
-    "history": [
-      {
-        "event": "join",
-        "date": "2026-05-30T18:11:49.325Z",
-        "detail": "Premier enregistrement"
-      },
-      {
-        "event": "kick",
-        "date": "2026-05-30T18:40:30.304Z",
-        "detail": "Expulsé manuellement via /expulsion"
-      },
-      {
-        "event": "leave",
-        "date": "2026-05-30T18:40:31.394Z",
-        "detail": "A quitté le serveur"
       }
     ]
   },
@@ -2732,108 +1962,6 @@
       }
     ]
   },
-  "354960750952972298": {
-    "id": "354960750952972298",
-    "username": "lomedesneiges",
-    "tag": "lomedesneiges",
-    "avatar": "134a28e54395feb43f88394fb4334056",
-    "status": "left",
-    "present": false,
-    "firstSeen": "2026-05-30T18:11:49.328Z",
-    "joinedAt": "2026-05-11T11:04:56.510Z",
-    "leftAt": "2026-08-20T01:08:41.643Z",
-    "kickedAt": null,
-    "bannedAt": null,
-    "banReason": null,
-    "verifiedAt": null,
-    "verificationResult": null,
-    "adminAccepted": null,
-    "adminAcceptedBy": null,
-    "reglementAcceptedAt": null,
-    "firstMessageAt": null,
-    "warnings": [],
-    "anniversaire": null,
-    "visits": 1,
-    "history": [
-      {
-        "event": "join",
-        "date": "2026-05-30T18:11:49.328Z",
-        "detail": "Premier enregistrement"
-      },
-      {
-        "event": "sync_absent",
-        "date": "2026-08-20T01:08:41.643Z"
-      }
-    ]
-  },
-  "515659543821418506": {
-    "id": "515659543821418506",
-    "username": "_king_loser_",
-    "tag": "_king_loser_",
-    "avatar": "6ef57e5c9a56ecaa0be20c5c4b9360b1",
-    "status": "left",
-    "present": false,
-    "firstSeen": "2026-05-30T18:11:49.329Z",
-    "joinedAt": "2026-05-16T11:02:48.540Z",
-    "leftAt": "2026-08-20T01:08:41.643Z",
-    "kickedAt": null,
-    "bannedAt": null,
-    "banReason": null,
-    "verifiedAt": null,
-    "verificationResult": null,
-    "adminAccepted": null,
-    "adminAcceptedBy": null,
-    "reglementAcceptedAt": null,
-    "firstMessageAt": null,
-    "warnings": [],
-    "anniversaire": null,
-    "visits": 1,
-    "history": [
-      {
-        "event": "join",
-        "date": "2026-05-30T18:11:49.329Z",
-        "detail": "Premier enregistrement"
-      },
-      {
-        "event": "sync_absent",
-        "date": "2026-08-20T01:08:41.643Z"
-      }
-    ]
-  },
-  "341611305964273665": {
-    "id": "341611305964273665",
-    "username": "lalaitue666",
-    "tag": "lalaitue666",
-    "avatar": "cffc247378e0d3970c0f2ea934303af6",
-    "status": "left",
-    "present": false,
-    "firstSeen": "2026-05-30T18:11:49.329Z",
-    "joinedAt": "2026-03-28T15:40:55.254Z",
-    "leftAt": "2026-08-20T01:08:41.643Z",
-    "kickedAt": null,
-    "bannedAt": null,
-    "banReason": null,
-    "verifiedAt": null,
-    "verificationResult": null,
-    "adminAccepted": null,
-    "adminAcceptedBy": null,
-    "reglementAcceptedAt": null,
-    "firstMessageAt": null,
-    "warnings": [],
-    "anniversaire": null,
-    "visits": 1,
-    "history": [
-      {
-        "event": "join",
-        "date": "2026-05-30T18:11:49.329Z",
-        "detail": "Premier enregistrement"
-      },
-      {
-        "event": "sync_absent",
-        "date": "2026-08-20T01:08:41.643Z"
-      }
-    ]
-  },
   "173157388961054721": {
     "id": "173157388961054721",
     "username": "mooshi",
@@ -3030,78 +2158,6 @@
         "date": "2026-05-31T14:22:34.251Z",
         "detail": "Expulsé via /expulsion par sihg_67",
         "moderator": "DAMOCLES#6215"
-      }
-    ]
-  },
-  "229700649418227717": {
-    "id": "229700649418227717",
-    "username": "babki",
-    "tag": "babki",
-    "avatar": "28683f6e897229be2d1928d4fe7311ac",
-    "status": "left",
-    "present": false,
-    "firstSeen": "2026-05-30T18:11:49.332Z",
-    "joinedAt": "2025-08-25T10:10:48.547Z",
-    "leftAt": "2026-08-20T01:08:41.643Z",
-    "kickedAt": null,
-    "bannedAt": null,
-    "banReason": null,
-    "verifiedAt": null,
-    "verificationResult": null,
-    "adminAccepted": null,
-    "adminAcceptedBy": null,
-    "reglementAcceptedAt": null,
-    "firstMessageAt": null,
-    "warnings": [],
-    "anniversaire": null,
-    "visits": 1,
-    "history": [
-      {
-        "event": "join",
-        "date": "2026-05-30T18:11:49.332Z",
-        "detail": "Premier enregistrement"
-      },
-      {
-        "event": "sync_absent",
-        "date": "2026-08-20T01:08:41.643Z"
-      }
-    ]
-  },
-  "287300364036866048": {
-    "id": "287300364036866048",
-    "username": "xenith80",
-    "tag": "xenith80",
-    "avatar": "7e89548b1e959ae32eb5cc5d70137682",
-    "status": "left",
-    "present": false,
-    "firstSeen": "2026-05-30T18:11:49.332Z",
-    "joinedAt": "2026-05-09T18:35:25.377Z",
-    "leftAt": "2026-08-20T01:08:41.643Z",
-    "kickedAt": null,
-    "bannedAt": null,
-    "banReason": null,
-    "verifiedAt": null,
-    "verificationResult": null,
-    "adminAccepted": null,
-    "adminAcceptedBy": null,
-    "reglementAcceptedAt": null,
-    "firstMessageAt": null,
-    "warnings": [],
-    "anniversaire": null,
-    "visits": 1,
-    "history": [
-      {
-        "event": "join",
-        "date": "2026-05-30T18:11:49.332Z",
-        "detail": "Premier enregistrement"
-      },
-      {
-        "event": "vocal",
-        "date": "2026-05-31T13:21:40.469Z"
-      },
-      {
-        "event": "sync_absent",
-        "date": "2026-08-20T01:08:41.643Z"
       }
     ]
   },
@@ -3847,74 +2903,6 @@
       }
     ]
   },
-  "1489222340331180083": {
-    "id": "1489222340331180083",
-    "username": "louanne_35019",
-    "tag": "louanne_35019",
-    "avatar": null,
-    "status": "left",
-    "present": false,
-    "firstSeen": "2026-05-30T18:11:49.345Z",
-    "joinedAt": "2026-05-19T12:46:20.384Z",
-    "leftAt": "2026-08-20T01:08:41.643Z",
-    "kickedAt": null,
-    "bannedAt": null,
-    "banReason": null,
-    "verifiedAt": null,
-    "verificationResult": null,
-    "adminAccepted": null,
-    "adminAcceptedBy": null,
-    "reglementAcceptedAt": null,
-    "firstMessageAt": null,
-    "warnings": [],
-    "anniversaire": null,
-    "visits": 1,
-    "history": [
-      {
-        "event": "join",
-        "date": "2026-05-30T18:11:49.345Z",
-        "detail": "Premier enregistrement"
-      },
-      {
-        "event": "sync_absent",
-        "date": "2026-08-20T01:08:41.643Z"
-      }
-    ]
-  },
-  "315231057748426753": {
-    "id": "315231057748426753",
-    "username": "lepoutch",
-    "tag": "lepoutch",
-    "avatar": "46e4ec79531f463354ee96ccf5d1663f",
-    "status": "left",
-    "present": false,
-    "firstSeen": "2026-05-30T18:11:49.346Z",
-    "joinedAt": "2026-05-09T18:07:24.816Z",
-    "leftAt": "2026-08-20T01:08:41.643Z",
-    "kickedAt": null,
-    "bannedAt": null,
-    "banReason": null,
-    "verifiedAt": null,
-    "verificationResult": null,
-    "adminAccepted": null,
-    "adminAcceptedBy": null,
-    "reglementAcceptedAt": null,
-    "firstMessageAt": null,
-    "warnings": [],
-    "anniversaire": null,
-    "visits": 1,
-    "history": [
-      {
-        "event": "join",
-        "date": "2026-05-30T18:11:49.346Z",
-        "detail": "Premier enregistrement"
-      },
-      {
-        "event": "sync_absent",
-        "date": "2026-08-20T01:08:41.643Z"
-      }
-    ]
-  },
   "390907596695142401": {
     "id": "390907596695142401",
     "username": "boby.wow",
@@ -4050,40 +3038,6 @@
       }
     ]
   },
-  "688322728973172746": {
-    "id": "688322728973172746",
-    "username": "papypierro",
-    "tag": "papypierro",
-    "avatar": "780f1ffcc79e6d941888533dd1e6abd4",
-    "status": "left",
-    "present": false,
-    "firstSeen": "2026-05-30T18:11:49.349Z",
-    "joinedAt": "2026-05-29T19:01:10.254Z",
-    "leftAt": "2026-08-20T01:08:41.643Z",
-    "kickedAt": null,
-    "bannedAt": null,
-    "banReason": null,
-    "verifiedAt": null,
-    "verificationResult": null,
-    "adminAccepted": null,
-    "adminAcceptedBy": null,
-    "reglementAcceptedAt": null,
-    "firstMessageAt": null,
-    "warnings": [],
-    "anniversaire": null,
-    "visits": 1,
-    "history": [
-      {
-        "event": "join",
-        "date": "2026-05-30T18:11:49.349Z",
-        "detail": "Premier enregistrement"
-      },
-      {
-        "event": "sync_absent",
-        "date": "2026-08-20T01:08:41.643Z"
-      }
-    ]
-  },
   "359081160531247107": {
     "id": "359081160531247107",
     "username": "sharky7206",
@@ -4189,40 +3143,6 @@
       }
     ]
   },
-  "277590884122492939": {
-    "id": "277590884122492939",
-    "username": "varg_hall",
-    "tag": "varg_hall",
-    "avatar": null,
-    "status": "left",
-    "present": false,
-    "firstSeen": "2026-05-30T18:11:49.351Z",
-    "joinedAt": "2026-05-18T08:08:06.759Z",
-    "leftAt": "2026-08-20T01:08:41.643Z",
-    "kickedAt": null,
-    "bannedAt": null,
-    "banReason": null,
-    "verifiedAt": null,
-    "verificationResult": null,
-    "adminAccepted": null,
-    "adminAcceptedBy": null,
-    "reglementAcceptedAt": null,
-    "firstMessageAt": null,
-    "warnings": [],
-    "anniversaire": null,
-    "visits": 1,
-    "history": [
-      {
-        "event": "join",
-        "date": "2026-05-30T18:11:49.351Z",
-        "detail": "Premier enregistrement"
-      },
-      {
-        "event": "sync_absent",
-        "date": "2026-08-20T01:08:41.643Z"
-      }
-    ]
-  },
   "329706058819829760": {
     "id": "329706058819829760",
     "username": "mandrakemaster",
@@ -4255,40 +3175,6 @@
         "event": "kick",
         "date": "2026-05-30T18:47:25.899Z",
         "detail": "Expulsé via /expulsion par sihg_67"
-      }
-    ]
-  },
-  "148869137890803713": {
-    "id": "148869137890803713",
-    "username": "lejoelopez",
-    "tag": "lejoelopez",
-    "avatar": "7f95ae3f3b0042e0a017d4216b1b8fbf",
-    "status": "left",
-    "present": false,
-    "firstSeen": "2026-05-30T18:11:49.353Z",
-    "joinedAt": "2026-05-02T12:09:16.627Z",
-    "leftAt": "2026-08-20T01:08:41.643Z",
-    "kickedAt": null,
-    "bannedAt": null,
-    "banReason": null,
-    "verifiedAt": null,
-    "verificationResult": null,
-    "adminAccepted": null,
-    "adminAcceptedBy": null,
-    "reglementAcceptedAt": null,
-    "firstMessageAt": null,
-    "warnings": [],
-    "anniversaire": null,
-    "visits": 1,
-    "history": [
-      {
-        "event": "join",
-        "date": "2026-05-30T18:11:49.353Z",
-        "detail": "Premier enregistrement"
-      },
-      {
-        "event": "sync_absent",
-        "date": "2026-08-20T01:08:41.643Z"
       }
     ]
   },
@@ -4432,86 +3318,6 @@
       }
     ]
   },
-  "170262542801698816": {
-    "id": "170262542801698816",
-    "username": "cyberjeje",
-    "tag": "cyberjeje",
-    "avatar": "492e2bcf0dba4d37f1edff977965827f",
-    "status": "left",
-    "present": false,
-    "firstSeen": "2026-05-30T18:11:49.356Z",
-    "joinedAt": "2026-05-06T19:04:49.886Z",
-    "leftAt": "2026-08-20T01:08:41.643Z",
-    "kickedAt": null,
-    "bannedAt": null,
-    "banReason": null,
-    "verifiedAt": null,
-    "verificationResult": null,
-    "adminAccepted": null,
-    "adminAcceptedBy": null,
-    "reglementAcceptedAt": null,
-    "firstMessageAt": null,
-    "warnings": [],
-    "anniversaire": null,
-    "visits": 1,
-    "history": [
-      {
-        "event": "join",
-        "date": "2026-05-30T18:11:49.356Z",
-        "detail": "Premier enregistrement"
-      },
-      {
-        "event": "message",
-        "date": "2026-05-31T14:35:41.130Z"
-      },
-      {
-        "event": "vocal",
-        "date": "2026-05-31T15:14:48.622Z"
-      },
-      {
-        "event": "vocal",
-        "date": "2026-06-01T21:17:52.024Z"
-      },
-      {
-        "event": "sync_absent",
-        "date": "2026-08-20T01:08:41.643Z"
-      }
-    ]
-  },
-  "1335277565249720432": {
-    "id": "1335277565249720432",
-    "username": "remisu_san",
-    "tag": "remisu_san",
-    "avatar": "3cfb906ed7e53894308c2e3cf949d8cb",
-    "status": "left",
-    "present": false,
-    "firstSeen": "2026-05-30T18:11:49.357Z",
-    "joinedAt": "2026-05-07T18:51:51.751Z",
-    "leftAt": "2026-08-20T01:08:41.643Z",
-    "kickedAt": null,
-    "bannedAt": null,
-    "banReason": null,
-    "verifiedAt": null,
-    "verificationResult": null,
-    "adminAccepted": null,
-    "adminAcceptedBy": null,
-    "reglementAcceptedAt": null,
-    "firstMessageAt": null,
-    "warnings": [],
-    "anniversaire": null,
-    "visits": 1,
-    "history": [
-      {
-        "event": "join",
-        "date": "2026-05-30T18:11:49.357Z",
-        "detail": "Premier enregistrement"
-      },
-      {
-        "event": "sync_absent",
-        "date": "2026-08-20T01:08:41.643Z"
-      }
-    ]
-  },
   "183975333362401280": {
     "id": "183975333362401280",
     "username": "nowing.",
@@ -4622,11 +3428,11 @@
     "username": "aho_knowledge_wolf",
     "tag": "aho_knowledge_wolf",
     "avatar": "b17049b21f8627aed66b1c9a4724adb0",
-    "status": "left",
-    "present": false,
+    "status": "active",
+    "present": true,
     "firstSeen": "2026-05-30T18:11:49.360Z",
-    "joinedAt": "2025-09-30T16:54:54.273Z",
-    "leftAt": "2026-08-20T01:08:41.643Z",
+    "joinedAt": "2026-08-24T15:18:59.136Z",
+    "leftAt": null,
     "kickedAt": null,
     "bannedAt": null,
     "banReason": null,
@@ -4638,7 +3444,7 @@
     "firstMessageAt": null,
     "warnings": [],
     "anniversaire": null,
-    "visits": 1,
+    "visits": 2,
     "history": [
       {
         "event": "join",
@@ -4652,6 +3458,10 @@
       {
         "event": "sync_absent",
         "date": "2026-08-20T01:08:41.643Z"
+      },
+      {
+        "event": "rejoin",
+        "date": "2026-09-03T01:09:20.867Z"
       }
     ]
   },
@@ -4687,113 +3497,6 @@
         "event": "kick",
         "date": "2026-05-30T18:47:11.159Z",
         "detail": "Expulsé via /expulsion par sihg_67"
-      }
-    ]
-  },
-  "585864897049395230": {
-    "id": "585864897049395230",
-    "username": "r_two_35",
-    "tag": "r_two_35",
-    "avatar": "09794c9e014e39d0f243a028c821b700",
-    "status": "left",
-    "present": false,
-    "firstSeen": "2026-05-30T18:11:49.362Z",
-    "joinedAt": "2026-02-01T09:50:41.672Z",
-    "leftAt": "2026-08-20T01:08:41.643Z",
-    "kickedAt": null,
-    "bannedAt": null,
-    "banReason": null,
-    "verifiedAt": null,
-    "verificationResult": null,
-    "adminAccepted": null,
-    "adminAcceptedBy": null,
-    "reglementAcceptedAt": null,
-    "firstMessageAt": null,
-    "warnings": [],
-    "anniversaire": null,
-    "visits": 1,
-    "history": [
-      {
-        "event": "join",
-        "date": "2026-05-30T18:11:49.362Z",
-        "detail": "Premier enregistrement"
-      },
-      {
-        "event": "message",
-        "date": "2026-05-30T18:56:38.544Z",
-        "detail": "#┊bavardage"
-      },
-      {
-        "event": "sync_absent",
-        "date": "2026-08-20T01:08:41.643Z"
-      }
-    ]
-  },
-  "284008235441061888": {
-    "id": "284008235441061888",
-    "username": "obscurenachan",
-    "tag": "obscurenachan",
-    "avatar": "cacbaf746fee55b9466491d0bece1aff",
-    "status": "left",
-    "present": false,
-    "firstSeen": "2026-05-30T18:11:49.362Z",
-    "joinedAt": "2026-04-26T17:17:37.299Z",
-    "leftAt": "2026-08-20T01:08:41.643Z",
-    "kickedAt": null,
-    "bannedAt": null,
-    "banReason": null,
-    "verifiedAt": null,
-    "verificationResult": null,
-    "adminAccepted": null,
-    "adminAcceptedBy": null,
-    "reglementAcceptedAt": null,
-    "firstMessageAt": null,
-    "warnings": [],
-    "anniversaire": null,
-    "visits": 1,
-    "history": [
-      {
-        "event": "join",
-        "date": "2026-05-30T18:11:49.362Z",
-        "detail": "Premier enregistrement"
-      },
-      {
-        "event": "sync_absent",
-        "date": "2026-08-20T01:08:41.643Z"
-      }
-    ]
-  },
-  "1431331554868854965": {
-    "id": "1431331554868854965",
-    "username": "poussain_58927",
-    "tag": "poussain_58927",
-    "avatar": null,
-    "status": "left",
-    "present": false,
-    "firstSeen": "2026-05-30T18:11:49.363Z",
-    "joinedAt": "2026-05-11T16:12:17.940Z",
-    "leftAt": "2026-08-20T01:08:41.643Z",
-    "kickedAt": null,
-    "bannedAt": null,
-    "banReason": null,
-    "verifiedAt": null,
-    "verificationResult": null,
-    "adminAccepted": null,
-    "adminAcceptedBy": null,
-    "reglementAcceptedAt": null,
-    "firstMessageAt": null,
-    "warnings": [],
-    "anniversaire": null,
-    "visits": 1,
-    "history": [
-      {
-        "event": "join",
-        "date": "2026-05-30T18:11:49.363Z",
-        "detail": "Premier enregistrement"
-      },
-      {
-        "event": "sync_absent",
-        "date": "2026-08-20T01:08:41.643Z"
       }
     ]
   },
@@ -4909,72 +3612,6 @@
       }
     ]
   },
-  "246354509897531392": {
-    "id": "246354509897531392",
-    "username": "equeo_fr",
-    "tag": "equeo_fr",
-    "avatar": "dfd99b266b440e52f164762eb7b5e3b2",
-    "status": "left",
-    "present": false,
-    "firstSeen": "2026-05-30T18:11:49.366Z",
-    "joinedAt": "2025-09-04T03:19:29.487Z",
-    "leftAt": "2026-08-20T01:08:41.643Z",
-    "kickedAt": null,
-    "bannedAt": null,
-    "banReason": null,
-    "verifiedAt": null,
-    "verificationResult": null,
-    "adminAccepted": null,
-    "adminAcceptedBy": null,
-    "reglementAcceptedAt": null,
-    "firstMessageAt": null,
-    "warnings": [],
-    "anniversaire": null,
-    "visits": 1,
-    "history": [
-      {
-        "event": "join",
-        "date": "2026-05-30T18:11:49.366Z",
-        "detail": "Premier enregistrement"
-      },
-      {
-        "event": "message",
-        "date": "2026-05-31T11:40:35.694Z"
-      },
-      {
-        "event": "message",
-        "date": "2026-05-31T12:31:30.984Z"
-      },
-      {
-        "event": "message",
-        "date": "2026-05-31T12:35:05.370Z"
-      },
-      {
-        "event": "vocal",
-        "date": "2026-06-01T20:29:04.899Z"
-      },
-      {
-        "event": "message",
-        "date": "2026-06-01T20:31:25.122Z"
-      },
-      {
-        "event": "message",
-        "date": "2026-06-01T20:31:33.544Z"
-      },
-      {
-        "event": "message",
-        "date": "2026-06-01T20:31:47.175Z"
-      },
-      {
-        "event": "message",
-        "date": "2026-06-01T21:19:39.225Z"
-      },
-      {
-        "event": "sync_absent",
-        "date": "2026-08-20T01:08:41.643Z"
-      }
-    ]
-  },
   "933000812047761508": {
     "id": "933000812047761508",
     "username": "donnie9483",
@@ -5007,74 +3644,6 @@
         "event": "kick",
         "date": "2026-05-30T19:18:13.935Z",
         "detail": "Expulsé via /expulsion par sihg_67"
-      }
-    ]
-  },
-  "240162179591045131": {
-    "id": "240162179591045131",
-    "username": "elerrio",
-    "tag": "elerrio",
-    "avatar": "7536b4f11ff394224ddd4229311eebbb",
-    "status": "left",
-    "present": false,
-    "firstSeen": "2026-05-30T18:11:49.368Z",
-    "joinedAt": "2026-05-27T15:22:43.171Z",
-    "leftAt": "2026-08-20T01:08:41.643Z",
-    "kickedAt": null,
-    "bannedAt": null,
-    "banReason": null,
-    "verifiedAt": null,
-    "verificationResult": null,
-    "adminAccepted": null,
-    "adminAcceptedBy": null,
-    "reglementAcceptedAt": null,
-    "firstMessageAt": null,
-    "warnings": [],
-    "anniversaire": null,
-    "visits": 1,
-    "history": [
-      {
-        "event": "join",
-        "date": "2026-05-30T18:11:49.368Z",
-        "detail": "Premier enregistrement"
-      },
-      {
-        "event": "sync_absent",
-        "date": "2026-08-20T01:08:41.643Z"
-      }
-    ]
-  },
-  "1267887894861975574": {
-    "id": "1267887894861975574",
-    "username": "61munurak61_63458",
-    "tag": "61munurak61_63458",
-    "avatar": "6bdfb9180af85d97fd9ad895b3ede9d5",
-    "status": "left",
-    "present": false,
-    "firstSeen": "2026-05-30T18:11:49.369Z",
-    "joinedAt": "2026-05-17T14:45:10.306Z",
-    "leftAt": "2026-08-20T01:08:41.643Z",
-    "kickedAt": null,
-    "bannedAt": null,
-    "banReason": null,
-    "verifiedAt": null,
-    "verificationResult": null,
-    "adminAccepted": null,
-    "adminAcceptedBy": null,
-    "reglementAcceptedAt": null,
-    "firstMessageAt": null,
-    "warnings": [],
-    "anniversaire": null,
-    "visits": 1,
-    "history": [
-      {
-        "event": "join",
-        "date": "2026-05-30T18:11:49.369Z",
-        "detail": "Premier enregistrement"
-      },
-      {
-        "event": "sync_absent",
-        "date": "2026-08-20T01:08:41.643Z"
       }
     ]
   },
@@ -5392,106 +3961,6 @@
       }
     ]
   },
-  "722524901071650996": {
-    "id": "722524901071650996",
-    "username": "ofingal",
-    "tag": "ofingal",
-    "avatar": "cb40743a429af60329c3ed5228a9ad15",
-    "status": "left",
-    "present": false,
-    "firstSeen": "2026-05-30T18:11:49.375Z",
-    "joinedAt": "2026-05-31T20:39:17.833Z",
-    "leftAt": "2026-08-20T01:08:41.643Z",
-    "kickedAt": "2026-05-31T14:30:38.021Z",
-    "bannedAt": null,
-    "banReason": null,
-    "verifiedAt": null,
-    "verificationResult": null,
-    "adminAccepted": null,
-    "adminAcceptedBy": null,
-    "reglementAcceptedAt": null,
-    "firstMessageAt": null,
-    "warnings": [],
-    "anniversaire": null,
-    "visits": 1,
-    "history": [
-      {
-        "event": "join",
-        "date": "2026-05-30T18:11:49.375Z",
-        "detail": "Premier enregistrement"
-      },
-      {
-        "event": "premier message dans #chat",
-        "date": "2026-05-31T14:05:13.425Z"
-      },
-      {
-        "event": "message",
-        "date": "2026-05-31T14:05:13.670Z"
-      },
-      {
-        "event": "message",
-        "date": "2026-05-31T14:05:26.116Z"
-      },
-      {
-        "event": "message",
-        "date": "2026-05-31T14:05:27.369Z"
-      },
-      {
-        "event": "message",
-        "date": "2026-05-31T14:06:45.542Z"
-      },
-      {
-        "event": "kick",
-        "date": "2026-05-31T14:30:36.361Z",
-        "detail": "Expulsé via /expulsion",
-        "moderator": "sihg_67"
-      },
-      {
-        "event": "kick",
-        "date": "2026-05-31T14:30:38.021Z",
-        "detail": "Expulsé via /expulsion par sihg_67",
-        "moderator": "DAMOCLES#6215"
-      },
-      {
-        "event": "sync_absent",
-        "date": "2026-08-20T01:08:41.643Z"
-      }
-    ]
-  },
-  "232160298574938113": {
-    "id": "232160298574938113",
-    "username": "totipotens",
-    "tag": "totipotens",
-    "avatar": "ce9e83dcc185cd7c47981f45b224bb09",
-    "status": "left",
-    "present": false,
-    "firstSeen": "2026-05-30T18:11:49.375Z",
-    "joinedAt": "2026-03-22T20:54:52.796Z",
-    "leftAt": "2026-08-20T01:08:41.643Z",
-    "kickedAt": null,
-    "bannedAt": null,
-    "banReason": null,
-    "verifiedAt": null,
-    "verificationResult": null,
-    "adminAccepted": null,
-    "adminAcceptedBy": null,
-    "reglementAcceptedAt": null,
-    "firstMessageAt": null,
-    "warnings": [],
-    "anniversaire": null,
-    "visits": 1,
-    "history": [
-      {
-        "event": "join",
-        "date": "2026-05-30T18:11:49.375Z",
-        "detail": "Premier enregistrement"
-      },
-      {
-        "event": "sync_absent",
-        "date": "2026-08-20T01:08:41.643Z"
-      }
-    ]
-  },
   "195984289190379520": {
     "id": "195984289190379520",
     "username": "_hyperio_",
@@ -5566,40 +4035,6 @@
         "event": "kick",
         "date": "2026-05-30T19:20:54.357Z",
         "detail": "Expulsé via /expulsion par sihg_67"
-      }
-    ]
-  },
-  "312238790557040642": {
-    "id": "312238790557040642",
-    "username": "dr.octopus",
-    "tag": "dr.octopus",
-    "avatar": "ad9832c7a2767059d864239bbc73335a",
-    "status": "left",
-    "present": false,
-    "firstSeen": "2026-05-30T18:11:49.377Z",
-    "joinedAt": "2026-05-06T07:02:31.309Z",
-    "leftAt": "2026-08-20T01:08:41.643Z",
-    "kickedAt": null,
-    "bannedAt": null,
-    "banReason": null,
-    "verifiedAt": null,
-    "verificationResult": null,
-    "adminAccepted": null,
-    "adminAcceptedBy": null,
-    "reglementAcceptedAt": null,
-    "firstMessageAt": null,
-    "warnings": [],
-    "anniversaire": null,
-    "visits": 1,
-    "history": [
-      {
-        "event": "join",
-        "date": "2026-05-30T18:11:49.377Z",
-        "detail": "Premier enregistrement"
-      },
-      {
-        "event": "sync_absent",
-        "date": "2026-08-20T01:08:41.643Z"
       }
     ]
   },
@@ -6130,40 +4565,6 @@
       }
     ]
   },
-  "386671552781090816": {
-    "id": "386671552781090816",
-    "username": "edrimos",
-    "tag": "edrimos",
-    "avatar": "6d41cca721d9975ab0b75ef6a4524509",
-    "status": "left",
-    "present": false,
-    "firstSeen": "2026-05-30T18:11:49.388Z",
-    "joinedAt": "2026-04-14T16:32:25.691Z",
-    "leftAt": "2026-08-20T01:08:41.643Z",
-    "kickedAt": null,
-    "bannedAt": null,
-    "banReason": null,
-    "verifiedAt": null,
-    "verificationResult": null,
-    "adminAccepted": null,
-    "adminAcceptedBy": null,
-    "reglementAcceptedAt": null,
-    "firstMessageAt": null,
-    "warnings": [],
-    "anniversaire": null,
-    "visits": 1,
-    "history": [
-      {
-        "event": "join",
-        "date": "2026-05-30T18:11:49.388Z",
-        "detail": "Premier enregistrement"
-      },
-      {
-        "event": "sync_absent",
-        "date": "2026-08-20T01:08:41.643Z"
-      }
-    ]
-  },
   "1032720183976017990": {
     "id": "1032720183976017990",
     "username": "rambob_38",
@@ -6286,40 +4687,6 @@
         "date": "2026-05-31T14:45:33.114Z",
         "detail": "Expulsé via /expulsion par sihg_67",
         "moderator": "DAMOCLES#6215"
-      }
-    ]
-  },
-  "388409783184523264": {
-    "id": "388409783184523264",
-    "username": "torvakov",
-    "tag": "torvakov",
-    "avatar": "96fbc19a62b231c55344f0717ef4d275",
-    "status": "left",
-    "present": false,
-    "firstSeen": "2026-05-30T18:11:49.390Z",
-    "joinedAt": "2026-05-24T00:08:56.370Z",
-    "leftAt": "2026-08-20T01:08:41.643Z",
-    "kickedAt": null,
-    "bannedAt": null,
-    "banReason": null,
-    "verifiedAt": null,
-    "verificationResult": null,
-    "adminAccepted": null,
-    "adminAcceptedBy": null,
-    "reglementAcceptedAt": null,
-    "firstMessageAt": null,
-    "warnings": [],
-    "anniversaire": null,
-    "visits": 1,
-    "history": [
-      {
-        "event": "join",
-        "date": "2026-05-30T18:11:49.390Z",
-        "detail": "Premier enregistrement"
-      },
-      {
-        "event": "sync_absent",
-        "date": "2026-08-20T01:08:41.643Z"
       }
     ]
   },
@@ -6449,40 +4816,6 @@
       }
     ]
   },
-  "440595961501319169": {
-    "id": "440595961501319169",
-    "username": "alastorian",
-    "tag": "alastorian",
-    "avatar": "de019bdc5b176c7afcf9002f0281681b",
-    "status": "left",
-    "present": false,
-    "firstSeen": "2026-05-30T18:11:49.393Z",
-    "joinedAt": "2025-10-13T14:17:10.627Z",
-    "leftAt": "2026-08-20T01:08:41.643Z",
-    "kickedAt": null,
-    "bannedAt": null,
-    "banReason": null,
-    "verifiedAt": null,
-    "verificationResult": null,
-    "adminAccepted": null,
-    "adminAcceptedBy": null,
-    "reglementAcceptedAt": null,
-    "firstMessageAt": null,
-    "warnings": [],
-    "anniversaire": null,
-    "visits": 1,
-    "history": [
-      {
-        "event": "join",
-        "date": "2026-05-30T18:11:49.393Z",
-        "detail": "Premier enregistrement"
-      },
-      {
-        "event": "sync_absent",
-        "date": "2026-08-20T01:08:41.643Z"
-      }
-    ]
-  },
   "1200789413387571254": {
     "id": "1200789413387571254",
     "username": "janson9800",
@@ -6606,48 +4939,6 @@
         "date": "2026-05-31T14:15:03.240Z",
         "detail": "Expulsé via /expulsion par sihg_67",
         "moderator": "DAMOCLES#6215"
-      }
-    ]
-  },
-  "407806287070625793": {
-    "id": "407806287070625793",
-    "username": "denver_regis",
-    "tag": "denver_regis",
-    "avatar": "0bef0cda5b6d6a7f30335612e6ee957b",
-    "status": "left",
-    "present": false,
-    "firstSeen": "2026-05-30T18:11:49.396Z",
-    "joinedAt": "2026-05-01T11:08:53.549Z",
-    "leftAt": "2026-08-20T01:08:41.643Z",
-    "kickedAt": null,
-    "bannedAt": null,
-    "banReason": null,
-    "verifiedAt": null,
-    "verificationResult": null,
-    "adminAccepted": null,
-    "adminAcceptedBy": null,
-    "reglementAcceptedAt": null,
-    "firstMessageAt": null,
-    "warnings": [],
-    "anniversaire": null,
-    "visits": 1,
-    "history": [
-      {
-        "event": "join",
-        "date": "2026-05-30T18:11:49.396Z",
-        "detail": "Premier enregistrement"
-      },
-      {
-        "event": "vocal",
-        "date": "2026-05-31T13:14:43.044Z"
-      },
-      {
-        "event": "vocal",
-        "date": "2026-06-01T20:14:10.040Z"
-      },
-      {
-        "event": "sync_absent",
-        "date": "2026-08-20T01:08:41.643Z"
       }
     ]
   },
@@ -7351,74 +5642,6 @@
       }
     ]
   },
-  "461456493624164353": {
-    "id": "461456493624164353",
-    "username": "kurasa_",
-    "tag": "kurasa_",
-    "avatar": "85504c0c0b1436b4c5a7bca4faa8a8a5",
-    "status": "left",
-    "present": false,
-    "firstSeen": "2026-05-30T18:11:49.411Z",
-    "joinedAt": "2026-05-02T14:59:29.875Z",
-    "leftAt": "2026-08-20T01:08:41.643Z",
-    "kickedAt": null,
-    "bannedAt": null,
-    "banReason": null,
-    "verifiedAt": null,
-    "verificationResult": null,
-    "adminAccepted": null,
-    "adminAcceptedBy": null,
-    "reglementAcceptedAt": null,
-    "firstMessageAt": null,
-    "warnings": [],
-    "anniversaire": null,
-    "visits": 1,
-    "history": [
-      {
-        "event": "join",
-        "date": "2026-05-30T18:11:49.411Z",
-        "detail": "Premier enregistrement"
-      },
-      {
-        "event": "sync_absent",
-        "date": "2026-08-20T01:08:41.643Z"
-      }
-    ]
-  },
-  "155654566040305665": {
-    "id": "155654566040305665",
-    "username": "madbriel",
-    "tag": "madbriel",
-    "avatar": "7a8145cd7bc2e77b23882b385d65c588",
-    "status": "left",
-    "present": false,
-    "firstSeen": "2026-05-30T18:11:49.412Z",
-    "joinedAt": "2026-04-28T22:42:05.687Z",
-    "leftAt": "2026-08-20T01:08:41.643Z",
-    "kickedAt": null,
-    "bannedAt": null,
-    "banReason": null,
-    "verifiedAt": null,
-    "verificationResult": null,
-    "adminAccepted": null,
-    "adminAcceptedBy": null,
-    "reglementAcceptedAt": null,
-    "firstMessageAt": null,
-    "warnings": [],
-    "anniversaire": null,
-    "visits": 1,
-    "history": [
-      {
-        "event": "join",
-        "date": "2026-05-30T18:11:49.412Z",
-        "detail": "Premier enregistrement"
-      },
-      {
-        "event": "sync_absent",
-        "date": "2026-08-20T01:08:41.643Z"
-      }
-    ]
-  },
   "878965554646511646": {
     "id": "878965554646511646",
     "username": "kyliwoog",
@@ -7998,52 +6221,6 @@
       }
     ]
   },
-  "926443540060454932": {
-    "id": "926443540060454932",
-    "username": "bell.cranell",
-    "tag": "bell.cranell",
-    "avatar": "264c8ecde782d2ee96cab8489247bcd7",
-    "status": "left",
-    "present": false,
-    "firstSeen": "2026-05-30T18:11:49.424Z",
-    "joinedAt": "2025-11-11T17:57:51.166Z",
-    "leftAt": "2026-08-20T01:08:41.643Z",
-    "kickedAt": null,
-    "bannedAt": null,
-    "banReason": null,
-    "verifiedAt": null,
-    "verificationResult": null,
-    "adminAccepted": null,
-    "adminAcceptedBy": null,
-    "reglementAcceptedAt": null,
-    "firstMessageAt": null,
-    "warnings": [],
-    "anniversaire": null,
-    "visits": 1,
-    "history": [
-      {
-        "event": "join",
-        "date": "2026-05-30T18:11:49.424Z",
-        "detail": "Premier enregistrement"
-      },
-      {
-        "event": "message",
-        "date": "2026-05-31T14:14:05.738Z"
-      },
-      {
-        "event": "message",
-        "date": "2026-05-31T14:16:56.371Z"
-      },
-      {
-        "event": "message",
-        "date": "2026-05-31T14:27:37.990Z"
-      },
-      {
-        "event": "sync_absent",
-        "date": "2026-08-20T01:08:41.643Z"
-      }
-    ]
-  },
   "1223696093242593365": {
     "id": "1223696093242593365",
     "username": "felichou26",
@@ -8254,40 +6431,6 @@
       }
     ]
   },
-  "222701191690190848": {
-    "id": "222701191690190848",
-    "username": "liam_picsou",
-    "tag": "liam_picsou",
-    "avatar": "454ccd05023eb9438a15ffd69364549c",
-    "status": "left",
-    "present": false,
-    "firstSeen": "2026-05-30T18:11:49.429Z",
-    "joinedAt": "2025-10-27T09:04:48.220Z",
-    "leftAt": "2026-08-20T01:08:41.643Z",
-    "kickedAt": null,
-    "bannedAt": null,
-    "banReason": null,
-    "verifiedAt": null,
-    "verificationResult": null,
-    "adminAccepted": null,
-    "adminAcceptedBy": null,
-    "reglementAcceptedAt": null,
-    "firstMessageAt": null,
-    "warnings": [],
-    "anniversaire": null,
-    "visits": 1,
-    "history": [
-      {
-        "event": "join",
-        "date": "2026-05-30T18:11:49.429Z",
-        "detail": "Premier enregistrement"
-      },
-      {
-        "event": "sync_absent",
-        "date": "2026-08-20T01:08:41.643Z"
-      }
-    ]
-  },
   "449618021284184064": {
     "id": "449618021284184064",
     "username": "avirek.",
@@ -8327,74 +6470,6 @@
         "date": "2026-05-31T14:15:09.497Z",
         "detail": "Expulsé via /expulsion par sihg_67",
         "moderator": "DAMOCLES#6215"
-      }
-    ]
-  },
-  "451357135796961310": {
-    "id": "451357135796961310",
-    "username": "tt1340",
-    "tag": "tt1340",
-    "avatar": "ee8bbcaa5bb7ca577a128f4ba5b27377",
-    "status": "left",
-    "present": false,
-    "firstSeen": "2026-05-30T18:11:49.430Z",
-    "joinedAt": "2026-05-14T12:17:15.508Z",
-    "leftAt": "2026-08-20T01:08:41.643Z",
-    "kickedAt": null,
-    "bannedAt": null,
-    "banReason": null,
-    "verifiedAt": null,
-    "verificationResult": null,
-    "adminAccepted": null,
-    "adminAcceptedBy": null,
-    "reglementAcceptedAt": null,
-    "firstMessageAt": null,
-    "warnings": [],
-    "anniversaire": null,
-    "visits": 1,
-    "history": [
-      {
-        "event": "join",
-        "date": "2026-05-30T18:11:49.430Z",
-        "detail": "Premier enregistrement"
-      },
-      {
-        "event": "sync_absent",
-        "date": "2026-08-20T01:08:41.643Z"
-      }
-    ]
-  },
-  "143778741900935168": {
-    "id": "143778741900935168",
-    "username": "kadtalyc",
-    "tag": "kadtalyc",
-    "avatar": "fe0ed0790ed8556cbb5dcd71b13529a8",
-    "status": "left",
-    "present": false,
-    "firstSeen": "2026-05-30T18:11:49.431Z",
-    "joinedAt": "2026-04-16T12:30:31.827Z",
-    "leftAt": "2026-08-20T01:08:41.643Z",
-    "kickedAt": null,
-    "bannedAt": null,
-    "banReason": null,
-    "verifiedAt": null,
-    "verificationResult": null,
-    "adminAccepted": null,
-    "adminAcceptedBy": null,
-    "reglementAcceptedAt": null,
-    "firstMessageAt": null,
-    "warnings": [],
-    "anniversaire": null,
-    "visits": 1,
-    "history": [
-      {
-        "event": "join",
-        "date": "2026-05-30T18:11:49.431Z",
-        "detail": "Premier enregistrement"
-      },
-      {
-        "event": "sync_absent",
-        "date": "2026-08-20T01:08:41.643Z"
       }
     ]
   },
@@ -8601,40 +6676,6 @@
       }
     ]
   },
-  "533670381257490432": {
-    "id": "533670381257490432",
-    "username": "clochette6962",
-    "tag": "clochette6962",
-    "avatar": "35210263d63998f52d8188b8078f09d7",
-    "status": "left",
-    "present": false,
-    "firstSeen": "2026-05-30T18:11:49.436Z",
-    "joinedAt": "2026-04-12T10:01:32.018Z",
-    "leftAt": "2026-08-20T01:08:41.643Z",
-    "kickedAt": null,
-    "bannedAt": null,
-    "banReason": null,
-    "verifiedAt": null,
-    "verificationResult": null,
-    "adminAccepted": null,
-    "adminAcceptedBy": null,
-    "reglementAcceptedAt": null,
-    "firstMessageAt": null,
-    "warnings": [],
-    "anniversaire": null,
-    "visits": 1,
-    "history": [
-      {
-        "event": "join",
-        "date": "2026-05-30T18:11:49.436Z",
-        "detail": "Premier enregistrement"
-      },
-      {
-        "event": "sync_absent",
-        "date": "2026-08-20T01:08:41.643Z"
-      }
-    ]
-  },
   "322761242051870720": {
     "id": "322761242051870720",
     "username": "_vorlon",
@@ -8674,40 +6715,6 @@
         "date": "2026-05-31T14:46:35.156Z",
         "detail": "Expulsé via /expulsion par sihg_67",
         "moderator": "DAMOCLES#6215"
-      }
-    ]
-  },
-  "927246692477177876": {
-    "id": "927246692477177876",
-    "username": "gapp_natural",
-    "tag": "gapp_natural",
-    "avatar": "e4a0f3e625c5b6e26d7886ab140af654",
-    "status": "left",
-    "present": false,
-    "firstSeen": "2026-05-30T18:11:49.437Z",
-    "joinedAt": "2026-05-16T20:17:35.789Z",
-    "leftAt": "2026-08-20T01:08:41.643Z",
-    "kickedAt": null,
-    "bannedAt": null,
-    "banReason": null,
-    "verifiedAt": null,
-    "verificationResult": null,
-    "adminAccepted": null,
-    "adminAcceptedBy": null,
-    "reglementAcceptedAt": null,
-    "firstMessageAt": null,
-    "warnings": [],
-    "anniversaire": null,
-    "visits": 1,
-    "history": [
-      {
-        "event": "join",
-        "date": "2026-05-30T18:11:49.437Z",
-        "detail": "Premier enregistrement"
-      },
-      {
-        "event": "sync_absent",
-        "date": "2026-08-20T01:08:41.643Z"
       }
     ]
   },
@@ -8792,40 +6799,6 @@
         "date": "2026-05-31T14:41:49.003Z",
         "detail": "Expulsé via /expulsion par sihg_67",
         "moderator": "DAMOCLES#6215"
-      }
-    ]
-  },
-  "287597152950288384": {
-    "id": "287597152950288384",
-    "username": "crepsman",
-    "tag": "crepsman",
-    "avatar": "6b7d5d64e684fc69d466835647a694b8",
-    "status": "left",
-    "present": false,
-    "firstSeen": "2026-05-30T18:11:49.440Z",
-    "joinedAt": "2026-05-29T17:19:10.382Z",
-    "leftAt": "2026-08-20T01:08:41.643Z",
-    "kickedAt": null,
-    "bannedAt": null,
-    "banReason": null,
-    "verifiedAt": null,
-    "verificationResult": null,
-    "adminAccepted": null,
-    "adminAcceptedBy": null,
-    "reglementAcceptedAt": null,
-    "firstMessageAt": null,
-    "warnings": [],
-    "anniversaire": null,
-    "visits": 1,
-    "history": [
-      {
-        "event": "join",
-        "date": "2026-05-30T18:11:49.440Z",
-        "detail": "Premier enregistrement"
-      },
-      {
-        "event": "sync_absent",
-        "date": "2026-08-20T01:08:41.643Z"
       }
     ]
   },
@@ -8952,74 +6925,6 @@
         "date": "2026-05-31T14:44:53.706Z",
         "detail": "Expulsé via /expulsion par sihg_67",
         "moderator": "DAMOCLES#6215"
-      }
-    ]
-  },
-  "512942623892176896": {
-    "id": "512942623892176896",
-    "username": "jubnnrd",
-    "tag": "jubnnrd",
-    "avatar": "6ac2ef4e19d58601b824889478a3c040",
-    "status": "left",
-    "present": false,
-    "firstSeen": "2026-05-30T18:11:49.443Z",
-    "joinedAt": "2026-05-27T20:38:01.828Z",
-    "leftAt": "2026-08-20T01:08:41.643Z",
-    "kickedAt": null,
-    "bannedAt": null,
-    "banReason": null,
-    "verifiedAt": null,
-    "verificationResult": null,
-    "adminAccepted": null,
-    "adminAcceptedBy": null,
-    "reglementAcceptedAt": null,
-    "firstMessageAt": null,
-    "warnings": [],
-    "anniversaire": null,
-    "visits": 1,
-    "history": [
-      {
-        "event": "join",
-        "date": "2026-05-30T18:11:49.443Z",
-        "detail": "Premier enregistrement"
-      },
-      {
-        "event": "sync_absent",
-        "date": "2026-08-20T01:08:41.643Z"
-      }
-    ]
-  },
-  "310767192276860928": {
-    "id": "310767192276860928",
-    "username": "fusion59.",
-    "tag": "fusion59.",
-    "avatar": "aff5823e542149434b9494f1eaaf6f74",
-    "status": "left",
-    "present": false,
-    "firstSeen": "2026-05-30T18:11:49.444Z",
-    "joinedAt": "2026-05-04T18:27:40.122Z",
-    "leftAt": "2026-08-20T01:08:41.643Z",
-    "kickedAt": null,
-    "bannedAt": null,
-    "banReason": null,
-    "verifiedAt": null,
-    "verificationResult": null,
-    "adminAccepted": null,
-    "adminAcceptedBy": null,
-    "reglementAcceptedAt": null,
-    "firstMessageAt": null,
-    "warnings": [],
-    "anniversaire": null,
-    "visits": 1,
-    "history": [
-      {
-        "event": "join",
-        "date": "2026-05-30T18:11:49.444Z",
-        "detail": "Premier enregistrement"
-      },
-      {
-        "event": "sync_absent",
-        "date": "2026-08-20T01:08:41.643Z"
       }
     ]
   },
@@ -9345,40 +7250,6 @@
       }
     ]
   },
-  "778584078143193088": {
-    "id": "778584078143193088",
-    "username": "nutellasauvage",
-    "tag": "nutellasauvage",
-    "avatar": "deeac716d11af67986671736bad2e31e",
-    "status": "left",
-    "present": false,
-    "firstSeen": "2026-05-30T18:11:49.452Z",
-    "joinedAt": "2026-05-14T11:18:21.171Z",
-    "leftAt": "2026-08-20T01:08:41.643Z",
-    "kickedAt": null,
-    "bannedAt": null,
-    "banReason": null,
-    "verifiedAt": null,
-    "verificationResult": null,
-    "adminAccepted": null,
-    "adminAcceptedBy": null,
-    "reglementAcceptedAt": null,
-    "firstMessageAt": null,
-    "warnings": [],
-    "anniversaire": null,
-    "visits": 1,
-    "history": [
-      {
-        "event": "join",
-        "date": "2026-05-30T18:11:49.452Z",
-        "detail": "Premier enregistrement"
-      },
-      {
-        "event": "sync_absent",
-        "date": "2026-08-20T01:08:41.643Z"
-      }
-    ]
-  },
   "282238743224516610": {
     "id": "282238743224516610",
     "username": "thibaut_vg",
@@ -9589,40 +7460,6 @@
       }
     ]
   },
-  "167112671697698816": {
-    "id": "167112671697698816",
-    "username": "i3uzzer",
-    "tag": "i3uzzer",
-    "avatar": "fe9e69c83d526f95aeb1862b041c4f1b",
-    "status": "left",
-    "present": false,
-    "firstSeen": "2026-05-30T18:11:49.457Z",
-    "joinedAt": "2026-05-13T00:45:18.538Z",
-    "leftAt": "2026-08-20T01:08:41.643Z",
-    "kickedAt": null,
-    "bannedAt": null,
-    "banReason": null,
-    "verifiedAt": null,
-    "verificationResult": null,
-    "adminAccepted": null,
-    "adminAcceptedBy": null,
-    "reglementAcceptedAt": null,
-    "firstMessageAt": null,
-    "warnings": [],
-    "anniversaire": null,
-    "visits": 1,
-    "history": [
-      {
-        "event": "join",
-        "date": "2026-05-30T18:11:49.457Z",
-        "detail": "Premier enregistrement"
-      },
-      {
-        "event": "sync_absent",
-        "date": "2026-08-20T01:08:41.643Z"
-      }
-    ]
-  },
   "308282745023496192": {
     "id": "308282745023496192",
     "username": "woojahx",
@@ -9809,74 +7646,6 @@
         "event": "kick",
         "date": "2026-05-30T19:19:41.303Z",
         "detail": "Expulsé via /expulsion par sihg_67"
-      }
-    ]
-  },
-  "314459010202075136": {
-    "id": "314459010202075136",
-    "username": "behemoth2950",
-    "tag": "behemoth2950",
-    "avatar": "bfbea05e9fa854842e6d3b378523b51e",
-    "status": "left",
-    "present": false,
-    "firstSeen": "2026-05-30T18:11:49.463Z",
-    "joinedAt": "2026-05-07T10:02:04.296Z",
-    "leftAt": "2026-08-20T01:08:41.643Z",
-    "kickedAt": null,
-    "bannedAt": null,
-    "banReason": null,
-    "verifiedAt": null,
-    "verificationResult": null,
-    "adminAccepted": null,
-    "adminAcceptedBy": null,
-    "reglementAcceptedAt": null,
-    "firstMessageAt": null,
-    "warnings": [],
-    "anniversaire": null,
-    "visits": 1,
-    "history": [
-      {
-        "event": "join",
-        "date": "2026-05-30T18:11:49.463Z",
-        "detail": "Premier enregistrement"
-      },
-      {
-        "event": "sync_absent",
-        "date": "2026-08-20T01:08:41.643Z"
-      }
-    ]
-  },
-  "1036277190129619024": {
-    "id": "1036277190129619024",
-    "username": "ocb_29",
-    "tag": "ocb_29",
-    "avatar": "6059e7cc1fed8557f854d9b53985d912",
-    "status": "left",
-    "present": false,
-    "firstSeen": "2026-05-30T18:11:49.463Z",
-    "joinedAt": "2026-05-18T09:50:24.907Z",
-    "leftAt": "2026-08-20T01:08:41.643Z",
-    "kickedAt": null,
-    "bannedAt": null,
-    "banReason": null,
-    "verifiedAt": null,
-    "verificationResult": null,
-    "adminAccepted": null,
-    "adminAcceptedBy": null,
-    "reglementAcceptedAt": null,
-    "firstMessageAt": null,
-    "warnings": [],
-    "anniversaire": null,
-    "visits": 1,
-    "history": [
-      {
-        "event": "join",
-        "date": "2026-05-30T18:11:49.463Z",
-        "detail": "Premier enregistrement"
-      },
-      {
-        "event": "sync_absent",
-        "date": "2026-08-20T01:08:41.643Z"
       }
     ]
   },
@@ -10244,40 +8013,6 @@
       }
     ]
   },
-  "1205591472020398080": {
-    "id": "1205591472020398080",
-    "username": "cuenca23_56323",
-    "tag": "cuenca23_56323",
-    "avatar": null,
-    "status": "left",
-    "present": false,
-    "firstSeen": "2026-05-30T18:11:49.474Z",
-    "joinedAt": "2026-05-17T16:48:20.637Z",
-    "leftAt": "2026-08-20T01:08:41.643Z",
-    "kickedAt": null,
-    "bannedAt": null,
-    "banReason": null,
-    "verifiedAt": null,
-    "verificationResult": null,
-    "adminAccepted": null,
-    "adminAcceptedBy": null,
-    "reglementAcceptedAt": null,
-    "firstMessageAt": null,
-    "warnings": [],
-    "anniversaire": null,
-    "visits": 1,
-    "history": [
-      {
-        "event": "join",
-        "date": "2026-05-30T18:11:49.474Z",
-        "detail": "Premier enregistrement"
-      },
-      {
-        "event": "sync_absent",
-        "date": "2026-08-20T01:08:41.643Z"
-      }
-    ]
-  },
   "237718338027913216": {
     "id": "237718338027913216",
     "username": "synople_",
@@ -10394,40 +8129,6 @@
         "date": "2026-05-31T14:32:24.341Z",
         "detail": "Expulsé via /expulsion par sihg_67",
         "moderator": "DAMOCLES#6215"
-      }
-    ]
-  },
-  "272314868286095361": {
-    "id": "272314868286095361",
-    "username": "eman8326",
-    "tag": "eman8326",
-    "avatar": "b27a620719e191158b2777666cdd07c3",
-    "status": "left",
-    "present": false,
-    "firstSeen": "2026-05-30T18:11:49.478Z",
-    "joinedAt": "2026-05-02T12:05:06.400Z",
-    "leftAt": "2026-08-20T01:08:41.643Z",
-    "kickedAt": null,
-    "bannedAt": null,
-    "banReason": null,
-    "verifiedAt": null,
-    "verificationResult": null,
-    "adminAccepted": null,
-    "adminAcceptedBy": null,
-    "reglementAcceptedAt": null,
-    "firstMessageAt": null,
-    "warnings": [],
-    "anniversaire": null,
-    "visits": 1,
-    "history": [
-      {
-        "event": "join",
-        "date": "2026-05-30T18:11:49.478Z",
-        "detail": "Premier enregistrement"
-      },
-      {
-        "event": "sync_absent",
-        "date": "2026-08-20T01:08:41.643Z"
       }
     ]
   },
@@ -10662,40 +8363,6 @@
       }
     ]
   },
-  "954077597493506139": {
-    "id": "954077597493506139",
-    "username": "pipito3742",
-    "tag": "pipito3742",
-    "avatar": "186d6db76447b3f50920c3d3994eae38",
-    "status": "left",
-    "present": false,
-    "firstSeen": "2026-05-30T18:11:49.484Z",
-    "joinedAt": "2026-05-08T08:14:42.097Z",
-    "leftAt": "2026-08-20T01:08:41.643Z",
-    "kickedAt": null,
-    "bannedAt": null,
-    "banReason": null,
-    "verifiedAt": null,
-    "verificationResult": null,
-    "adminAccepted": null,
-    "adminAcceptedBy": null,
-    "reglementAcceptedAt": null,
-    "firstMessageAt": null,
-    "warnings": [],
-    "anniversaire": null,
-    "visits": 1,
-    "history": [
-      {
-        "event": "join",
-        "date": "2026-05-30T18:11:49.484Z",
-        "detail": "Premier enregistrement"
-      },
-      {
-        "event": "sync_absent",
-        "date": "2026-08-20T01:08:41.643Z"
-      }
-    ]
-  },
   "371681295106965516": {
     "id": "371681295106965516",
     "username": "pirchlefon",
@@ -10812,40 +8479,6 @@
         "event": "kick",
         "date": "2026-05-30T19:20:00.418Z",
         "detail": "Expulsé via /expulsion par sihg_67"
-      }
-    ]
-  },
-  "412362278403309588": {
-    "id": "412362278403309588",
-    "username": "aymericbarge",
-    "tag": "aymericbarge",
-    "avatar": "bd4fa06b720b8fc1ded92592cf022920",
-    "status": "left",
-    "present": false,
-    "firstSeen": "2026-05-30T18:11:49.488Z",
-    "joinedAt": "2026-05-14T12:16:06.951Z",
-    "leftAt": "2026-08-20T01:08:41.643Z",
-    "kickedAt": null,
-    "bannedAt": null,
-    "banReason": null,
-    "verifiedAt": null,
-    "verificationResult": null,
-    "adminAccepted": null,
-    "adminAcceptedBy": null,
-    "reglementAcceptedAt": null,
-    "firstMessageAt": null,
-    "warnings": [],
-    "anniversaire": null,
-    "visits": 1,
-    "history": [
-      {
-        "event": "join",
-        "date": "2026-05-30T18:11:49.488Z",
-        "detail": "Premier enregistrement"
-      },
-      {
-        "event": "sync_absent",
-        "date": "2026-08-20T01:08:41.643Z"
       }
     ]
   },
@@ -11027,40 +8660,6 @@
       }
     ]
   },
-  "353579608236621824": {
-    "id": "353579608236621824",
-    "username": "vincent2k3",
-    "tag": "vincent2k3",
-    "avatar": "2c81ebb8df4dadde0358649884755617",
-    "status": "left",
-    "present": false,
-    "firstSeen": "2026-05-30T18:11:49.493Z",
-    "joinedAt": "2026-05-13T14:39:29.401Z",
-    "leftAt": "2026-08-20T01:08:41.643Z",
-    "kickedAt": null,
-    "bannedAt": null,
-    "banReason": null,
-    "verifiedAt": null,
-    "verificationResult": null,
-    "adminAccepted": null,
-    "adminAcceptedBy": null,
-    "reglementAcceptedAt": null,
-    "firstMessageAt": null,
-    "warnings": [],
-    "anniversaire": null,
-    "visits": 1,
-    "history": [
-      {
-        "event": "join",
-        "date": "2026-05-30T18:11:49.493Z",
-        "detail": "Premier enregistrement"
-      },
-      {
-        "event": "sync_absent",
-        "date": "2026-08-20T01:08:41.643Z"
-      }
-    ]
-  },
   "298889958557614080": {
     "id": "298889958557614080",
     "username": "afrosleepy",
@@ -11100,40 +8699,6 @@
         "date": "2026-05-31T14:46:43.965Z",
         "detail": "Expulsé via /expulsion par sihg_67",
         "moderator": "DAMOCLES#6215"
-      }
-    ]
-  },
-  "731879886104297502": {
-    "id": "731879886104297502",
-    "username": "cassoulet44",
-    "tag": "cassoulet44",
-    "avatar": "85aab79999ed739ec064ad19db0bc367",
-    "status": "left",
-    "present": false,
-    "firstSeen": "2026-05-30T18:11:49.495Z",
-    "joinedAt": "2026-05-17T20:49:29.589Z",
-    "leftAt": "2026-08-20T01:08:41.643Z",
-    "kickedAt": null,
-    "bannedAt": null,
-    "banReason": null,
-    "verifiedAt": null,
-    "verificationResult": null,
-    "adminAccepted": null,
-    "adminAcceptedBy": null,
-    "reglementAcceptedAt": null,
-    "firstMessageAt": null,
-    "warnings": [],
-    "anniversaire": null,
-    "visits": 1,
-    "history": [
-      {
-        "event": "join",
-        "date": "2026-05-30T18:11:49.495Z",
-        "detail": "Premier enregistrement"
-      },
-      {
-        "event": "sync_absent",
-        "date": "2026-08-20T01:08:41.643Z"
       }
     ]
   },
@@ -11337,40 +8902,6 @@
         "date": "2026-05-31T14:17:05.780Z",
         "detail": "Expulsé via /expulsion par sihg_67",
         "moderator": "DAMOCLES#6215"
-      }
-    ]
-  },
-  "454238167193878528": {
-    "id": "454238167193878528",
-    "username": "lyra12",
-    "tag": "lyra12",
-    "avatar": "9e68300cb938307e8f2b3b6aea398591",
-    "status": "left",
-    "present": false,
-    "firstSeen": "2026-05-30T18:11:49.501Z",
-    "joinedAt": "2025-04-21T11:20:06.944Z",
-    "leftAt": "2026-08-20T01:08:41.643Z",
-    "kickedAt": null,
-    "bannedAt": null,
-    "banReason": null,
-    "verifiedAt": null,
-    "verificationResult": null,
-    "adminAccepted": null,
-    "adminAcceptedBy": null,
-    "reglementAcceptedAt": null,
-    "firstMessageAt": null,
-    "warnings": [],
-    "anniversaire": null,
-    "visits": 1,
-    "history": [
-      {
-        "event": "join",
-        "date": "2026-05-30T18:11:49.501Z",
-        "detail": "Premier enregistrement"
-      },
-      {
-        "event": "sync_absent",
-        "date": "2026-08-20T01:08:41.643Z"
       }
     ]
   },
@@ -11609,74 +9140,6 @@
         "date": "2026-05-31T14:18:24.419Z",
         "detail": "Expulsé via /expulsion par sihg_67",
         "moderator": "DAMOCLES#6215"
-      }
-    ]
-  },
-  "161544480464437248": {
-    "id": "161544480464437248",
-    "username": "dareide",
-    "tag": "dareide",
-    "avatar": "caa3f73f54fa0437dd48396778907111",
-    "status": "left",
-    "present": false,
-    "firstSeen": "2026-05-30T18:11:49.508Z",
-    "joinedAt": "2026-04-30T22:54:12.772Z",
-    "leftAt": "2026-08-20T01:08:41.643Z",
-    "kickedAt": null,
-    "bannedAt": null,
-    "banReason": null,
-    "verifiedAt": null,
-    "verificationResult": null,
-    "adminAccepted": null,
-    "adminAcceptedBy": null,
-    "reglementAcceptedAt": null,
-    "firstMessageAt": null,
-    "warnings": [],
-    "anniversaire": null,
-    "visits": 1,
-    "history": [
-      {
-        "event": "join",
-        "date": "2026-05-30T18:11:49.508Z",
-        "detail": "Premier enregistrement"
-      },
-      {
-        "event": "sync_absent",
-        "date": "2026-08-20T01:08:41.643Z"
-      }
-    ]
-  },
-  "555099709300277249": {
-    "id": "555099709300277249",
-    "username": "megacraft",
-    "tag": "megacraft",
-    "avatar": "52ff4d946f6b64c13138c136e41adb1c",
-    "status": "left",
-    "present": false,
-    "firstSeen": "2026-05-30T18:11:49.509Z",
-    "joinedAt": "2026-05-10T18:03:20.302Z",
-    "leftAt": "2026-08-20T01:08:41.643Z",
-    "kickedAt": null,
-    "bannedAt": null,
-    "banReason": null,
-    "verifiedAt": null,
-    "verificationResult": null,
-    "adminAccepted": null,
-    "adminAcceptedBy": null,
-    "reglementAcceptedAt": null,
-    "firstMessageAt": null,
-    "warnings": [],
-    "anniversaire": null,
-    "visits": 1,
-    "history": [
-      {
-        "event": "join",
-        "date": "2026-05-30T18:11:49.509Z",
-        "detail": "Premier enregistrement"
-      },
-      {
-        "event": "sync_absent",
-        "date": "2026-08-20T01:08:41.643Z"
       }
     ]
   },
@@ -12282,40 +9745,6 @@
       }
     ]
   },
-  "1284589017605603359": {
-    "id": "1284589017605603359",
-    "username": "onibenshi_70172",
-    "tag": "onibenshi_70172",
-    "avatar": null,
-    "status": "left",
-    "present": false,
-    "firstSeen": "2026-05-30T18:11:49.527Z",
-    "joinedAt": "2026-04-27T10:45:58.763Z",
-    "leftAt": "2026-08-20T01:08:41.643Z",
-    "kickedAt": null,
-    "bannedAt": null,
-    "banReason": null,
-    "verifiedAt": null,
-    "verificationResult": null,
-    "adminAccepted": null,
-    "adminAcceptedBy": null,
-    "reglementAcceptedAt": null,
-    "firstMessageAt": null,
-    "warnings": [],
-    "anniversaire": null,
-    "visits": 1,
-    "history": [
-      {
-        "event": "join",
-        "date": "2026-05-30T18:11:49.527Z",
-        "detail": "Premier enregistrement"
-      },
-      {
-        "event": "sync_absent",
-        "date": "2026-08-20T01:08:41.643Z"
-      }
-    ]
-  },
   "760993085051109447": {
     "id": "760993085051109447",
     "username": "maxence9793",
@@ -12575,40 +10004,6 @@
       }
     ]
   },
-  "418877490899976192": {
-    "id": "418877490899976192",
-    "username": "mirajax",
-    "tag": "mirajax",
-    "avatar": "ae2f7f47c7099061f2c96f2264102e49",
-    "status": "left",
-    "present": false,
-    "firstSeen": "2026-05-30T18:11:49.536Z",
-    "joinedAt": "2026-05-26T14:50:45.983Z",
-    "leftAt": "2026-08-20T01:08:41.643Z",
-    "kickedAt": null,
-    "bannedAt": null,
-    "banReason": null,
-    "verifiedAt": null,
-    "verificationResult": null,
-    "adminAccepted": null,
-    "adminAcceptedBy": null,
-    "reglementAcceptedAt": null,
-    "firstMessageAt": null,
-    "warnings": [],
-    "anniversaire": null,
-    "visits": 1,
-    "history": [
-      {
-        "event": "join",
-        "date": "2026-05-30T18:11:49.536Z",
-        "detail": "Premier enregistrement"
-      },
-      {
-        "event": "sync_absent",
-        "date": "2026-08-20T01:08:41.643Z"
-      }
-    ]
-  },
   "227097236633419776": {
     "id": "227097236633419776",
     "username": "pere_zash",
@@ -12721,52 +10116,6 @@
       }
     ]
   },
-  "210845270949363712": {
-    "id": "210845270949363712",
-    "username": "spatioman",
-    "tag": "spatioman",
-    "avatar": "786eed2e5e5efaf99ac05e7ac5d9c8b5",
-    "status": "left",
-    "present": false,
-    "firstSeen": "2026-05-30T18:11:49.540Z",
-    "joinedAt": "2026-06-08T21:13:15.674Z",
-    "leftAt": "2026-08-20T01:08:41.643Z",
-    "kickedAt": "2026-05-31T14:16:54.568Z",
-    "bannedAt": null,
-    "banReason": null,
-    "verifiedAt": null,
-    "verificationResult": null,
-    "adminAccepted": null,
-    "adminAcceptedBy": null,
-    "reglementAcceptedAt": null,
-    "firstMessageAt": null,
-    "warnings": [],
-    "anniversaire": null,
-    "visits": 1,
-    "history": [
-      {
-        "event": "join",
-        "date": "2026-05-30T18:11:49.540Z",
-        "detail": "Premier enregistrement"
-      },
-      {
-        "event": "kick",
-        "date": "2026-05-31T14:16:52.954Z",
-        "detail": "Expulsé via /expulsion",
-        "moderator": "sihg_67"
-      },
-      {
-        "event": "kick",
-        "date": "2026-05-31T14:16:54.568Z",
-        "detail": "Expulsé via /expulsion par sihg_67",
-        "moderator": "DAMOCLES#6215"
-      },
-      {
-        "event": "sync_absent",
-        "date": "2026-08-20T01:08:41.643Z"
-      }
-    ]
-  },
   "506945768758837255": {
     "id": "506945768758837255",
     "username": "major4013",
@@ -12841,40 +10190,6 @@
         "event": "kick",
         "date": "2026-05-30T19:19:22.743Z",
         "detail": "Expulsé via /expulsion par sihg_67"
-      }
-    ]
-  },
-  "979479462813007872": {
-    "id": "979479462813007872",
-    "username": "sacha_a",
-    "tag": "sacha_a",
-    "avatar": "0c485ac2e4e40299b25b7cfba319e707",
-    "status": "left",
-    "present": false,
-    "firstSeen": "2026-05-30T18:11:49.543Z",
-    "joinedAt": "2026-05-05T12:53:02.392Z",
-    "leftAt": "2026-08-20T01:08:41.643Z",
-    "kickedAt": null,
-    "bannedAt": null,
-    "banReason": null,
-    "verifiedAt": null,
-    "verificationResult": null,
-    "adminAccepted": null,
-    "adminAcceptedBy": null,
-    "reglementAcceptedAt": null,
-    "firstMessageAt": null,
-    "warnings": [],
-    "anniversaire": null,
-    "visits": 1,
-    "history": [
-      {
-        "event": "join",
-        "date": "2026-05-30T18:11:49.543Z",
-        "detail": "Premier enregistrement"
-      },
-      {
-        "event": "sync_absent",
-        "date": "2026-08-20T01:08:41.643Z"
       }
     ]
   },
@@ -13417,40 +10732,6 @@
       }
     ]
   },
-  "435892049808588801": {
-    "id": "435892049808588801",
-    "username": "ofolarousse",
-    "tag": "ofolarousse",
-    "avatar": "bb1061dc94bafe6e6c490ae13ff4991e",
-    "status": "left",
-    "present": false,
-    "firstSeen": "2026-05-30T18:11:49.559Z",
-    "joinedAt": "2026-05-06T13:27:38.595Z",
-    "leftAt": "2026-08-20T01:08:41.643Z",
-    "kickedAt": null,
-    "bannedAt": null,
-    "banReason": null,
-    "verifiedAt": null,
-    "verificationResult": null,
-    "adminAccepted": null,
-    "adminAcceptedBy": null,
-    "reglementAcceptedAt": null,
-    "firstMessageAt": null,
-    "warnings": [],
-    "anniversaire": null,
-    "visits": 1,
-    "history": [
-      {
-        "event": "join",
-        "date": "2026-05-30T18:11:49.559Z",
-        "detail": "Premier enregistrement"
-      },
-      {
-        "event": "sync_absent",
-        "date": "2026-08-20T01:08:41.643Z"
-      }
-    ]
-  },
   "455432251694514177": {
     "id": "455432251694514177",
     "username": "cain_anavak",
@@ -13518,98 +10799,6 @@
         "event": "kick",
         "date": "2026-05-30T19:21:32.800Z",
         "detail": "Expulsé via /expulsion par sihg_67"
-      }
-    ]
-  },
-  "507179119289696267": {
-    "id": "507179119289696267",
-    "username": "baptisteperaud",
-    "tag": "baptisteperaud",
-    "avatar": "fef3fd44297ecd4b994d86e300cc8bdc",
-    "status": "left",
-    "present": false,
-    "firstSeen": "2026-05-30T18:11:49.562Z",
-    "joinedAt": "2025-08-14T15:29:04.595Z",
-    "leftAt": "2026-08-20T01:08:41.643Z",
-    "kickedAt": null,
-    "bannedAt": null,
-    "banReason": null,
-    "verifiedAt": null,
-    "verificationResult": null,
-    "adminAccepted": null,
-    "adminAcceptedBy": null,
-    "reglementAcceptedAt": null,
-    "firstMessageAt": null,
-    "warnings": [],
-    "anniversaire": null,
-    "visits": 1,
-    "history": [
-      {
-        "event": "join",
-        "date": "2026-05-30T18:11:49.562Z",
-        "detail": "Premier enregistrement"
-      },
-      {
-        "event": "message",
-        "date": "2026-05-31T12:01:11.692Z"
-      },
-      {
-        "event": "message",
-        "date": "2026-05-31T12:31:56.623Z"
-      },
-      {
-        "event": "message",
-        "date": "2026-05-31T12:35:39.926Z"
-      },
-      {
-        "event": "sync_absent",
-        "date": "2026-08-20T01:08:41.643Z"
-      }
-    ]
-  },
-  "305787836773433384": {
-    "id": "305787836773433384",
-    "username": "psyloh",
-    "tag": "psyloh",
-    "avatar": "7a9799b489e0b8d428584739a973d22f",
-    "status": "left",
-    "present": false,
-    "firstSeen": "2026-05-30T18:11:49.563Z",
-    "joinedAt": "2026-06-01T13:15:45.741Z",
-    "leftAt": "2026-08-20T01:08:41.643Z",
-    "kickedAt": "2026-05-31T14:30:35.882Z",
-    "bannedAt": null,
-    "banReason": null,
-    "verifiedAt": null,
-    "verificationResult": null,
-    "adminAccepted": null,
-    "adminAcceptedBy": null,
-    "reglementAcceptedAt": null,
-    "firstMessageAt": null,
-    "warnings": [],
-    "anniversaire": null,
-    "visits": 1,
-    "history": [
-      {
-        "event": "join",
-        "date": "2026-05-30T18:11:49.563Z",
-        "detail": "Premier enregistrement"
-      },
-      {
-        "event": "kick",
-        "date": "2026-05-31T14:30:34.209Z",
-        "detail": "Expulsé via /expulsion",
-        "moderator": "sihg_67"
-      },
-      {
-        "event": "kick",
-        "date": "2026-05-31T14:30:35.882Z",
-        "detail": "Expulsé via /expulsion par sihg_67",
-        "moderator": "DAMOCLES#6215"
-      },
-      {
-        "event": "sync_absent",
-        "date": "2026-08-20T01:08:41.643Z"
       }
     ]
   },
@@ -13809,40 +10998,6 @@
       }
     ]
   },
-  "1487521947540652123": {
-    "id": "1487521947540652123",
-    "username": "hallfdan_89924",
-    "tag": "hallfdan_89924",
-    "avatar": null,
-    "status": "left",
-    "present": false,
-    "firstSeen": "2026-05-30T18:11:49.571Z",
-    "joinedAt": "2026-05-07T12:18:07.101Z",
-    "leftAt": "2026-08-20T01:08:41.643Z",
-    "kickedAt": null,
-    "bannedAt": null,
-    "banReason": null,
-    "verifiedAt": null,
-    "verificationResult": null,
-    "adminAccepted": null,
-    "adminAcceptedBy": null,
-    "reglementAcceptedAt": null,
-    "firstMessageAt": null,
-    "warnings": [],
-    "anniversaire": null,
-    "visits": 1,
-    "history": [
-      {
-        "event": "join",
-        "date": "2026-05-30T18:11:49.571Z",
-        "detail": "Premier enregistrement"
-      },
-      {
-        "event": "sync_absent",
-        "date": "2026-08-20T01:08:41.643Z"
-      }
-    ]
-  },
   "225348921508102145": {
     "id": "225348921508102145",
     "username": "sha.217",
@@ -13882,40 +11037,6 @@
         "date": "2026-05-31T14:28:40.424Z",
         "detail": "Expulsé via /expulsion par sihg_67",
         "moderator": "DAMOCLES#6215"
-      }
-    ]
-  },
-  "399493834729586688": {
-    "id": "399493834729586688",
-    "username": "barbare17",
-    "tag": "barbare17",
-    "avatar": "b96d3861c936971d28688e1e048bb8c9",
-    "status": "left",
-    "present": false,
-    "firstSeen": "2026-05-30T18:11:49.573Z",
-    "joinedAt": "2025-10-05T15:14:21.252Z",
-    "leftAt": "2026-08-20T01:08:41.643Z",
-    "kickedAt": null,
-    "bannedAt": null,
-    "banReason": null,
-    "verifiedAt": null,
-    "verificationResult": null,
-    "adminAccepted": null,
-    "adminAcceptedBy": null,
-    "reglementAcceptedAt": null,
-    "firstMessageAt": null,
-    "warnings": [],
-    "anniversaire": null,
-    "visits": 1,
-    "history": [
-      {
-        "event": "join",
-        "date": "2026-05-30T18:11:49.573Z",
-        "detail": "Premier enregistrement"
-      },
-      {
-        "event": "sync_absent",
-        "date": "2026-08-20T01:08:41.643Z"
       }
     ]
   },
@@ -14122,40 +11243,6 @@
       }
     ]
   },
-  "229299129770049536": {
-    "id": "229299129770049536",
-    "username": "traeng_5284",
-    "tag": "traeng_5284",
-    "avatar": "e098d27dae650cf44ac4135bcc9965f4",
-    "status": "left",
-    "present": false,
-    "firstSeen": "2026-05-30T18:11:49.580Z",
-    "joinedAt": "2026-05-05T16:52:47.369Z",
-    "leftAt": "2026-08-20T01:08:41.643Z",
-    "kickedAt": null,
-    "bannedAt": null,
-    "banReason": null,
-    "verifiedAt": null,
-    "verificationResult": null,
-    "adminAccepted": null,
-    "adminAcceptedBy": null,
-    "reglementAcceptedAt": null,
-    "firstMessageAt": null,
-    "warnings": [],
-    "anniversaire": null,
-    "visits": 1,
-    "history": [
-      {
-        "event": "join",
-        "date": "2026-05-30T18:11:49.580Z",
-        "detail": "Premier enregistrement"
-      },
-      {
-        "event": "sync_absent",
-        "date": "2026-08-20T01:08:41.643Z"
-      }
-    ]
-  },
   "441986873725026305": {
     "id": "441986873725026305",
     "username": "lamantox",
@@ -14359,40 +11446,6 @@
       }
     ]
   },
-  "792368290558115871": {
-    "id": "792368290558115871",
-    "username": "martii67",
-    "tag": "martii67",
-    "avatar": "68e391878299eaada0fcf36049690a94",
-    "status": "left",
-    "present": false,
-    "firstSeen": "2026-05-30T18:11:49.587Z",
-    "joinedAt": "2026-04-24T09:09:37.647Z",
-    "leftAt": "2026-08-20T01:08:41.643Z",
-    "kickedAt": null,
-    "bannedAt": null,
-    "banReason": null,
-    "verifiedAt": null,
-    "verificationResult": null,
-    "adminAccepted": null,
-    "adminAcceptedBy": null,
-    "reglementAcceptedAt": null,
-    "firstMessageAt": null,
-    "warnings": [],
-    "anniversaire": null,
-    "visits": 1,
-    "history": [
-      {
-        "event": "join",
-        "date": "2026-05-30T18:11:49.587Z",
-        "detail": "Premier enregistrement"
-      },
-      {
-        "event": "sync_absent",
-        "date": "2026-08-20T01:08:41.643Z"
-      }
-    ]
-  },
   "322053937119363072": {
     "id": "322053937119363072",
     "username": "sirgoute11",
@@ -14467,40 +11520,6 @@
         "event": "kick",
         "date": "2026-05-30T19:22:16.506Z",
         "detail": "Expulsé via /expulsion par sihg_67"
-      }
-    ]
-  },
-  "291990758536249356": {
-    "id": "291990758536249356",
-    "username": "tagmail",
-    "tag": "tagmail",
-    "avatar": "1f95cdf329febaf72f5e76ed3c32c39e",
-    "status": "left",
-    "present": false,
-    "firstSeen": "2026-05-30T18:11:49.591Z",
-    "joinedAt": "2025-01-18T17:15:28.345Z",
-    "leftAt": "2026-08-20T01:08:41.643Z",
-    "kickedAt": null,
-    "bannedAt": null,
-    "banReason": null,
-    "verifiedAt": null,
-    "verificationResult": null,
-    "adminAccepted": null,
-    "adminAcceptedBy": null,
-    "reglementAcceptedAt": null,
-    "firstMessageAt": null,
-    "warnings": [],
-    "anniversaire": null,
-    "visits": 1,
-    "history": [
-      {
-        "event": "join",
-        "date": "2026-05-30T18:11:49.591Z",
-        "detail": "Premier enregistrement"
-      },
-      {
-        "event": "sync_absent",
-        "date": "2026-08-20T01:08:41.643Z"
       }
     ]
   },
@@ -14662,40 +11681,6 @@
         "date": "2026-05-31T14:30:25.859Z",
         "detail": "Expulsé via /expulsion par sihg_67",
         "moderator": "DAMOCLES#6215"
-      }
-    ]
-  },
-  "275893673877569537": {
-    "id": "275893673877569537",
-    "username": "mave_foxy",
-    "tag": "mave_foxy",
-    "avatar": "6219a01ee4857484c8f939f38186ad99",
-    "status": "left",
-    "present": false,
-    "firstSeen": "2026-05-30T18:11:49.597Z",
-    "joinedAt": "2026-05-15T07:25:11.739Z",
-    "leftAt": "2026-08-20T01:08:41.643Z",
-    "kickedAt": null,
-    "bannedAt": null,
-    "banReason": null,
-    "verifiedAt": null,
-    "verificationResult": null,
-    "adminAccepted": null,
-    "adminAcceptedBy": null,
-    "reglementAcceptedAt": null,
-    "firstMessageAt": null,
-    "warnings": [],
-    "anniversaire": null,
-    "visits": 1,
-    "history": [
-      {
-        "event": "join",
-        "date": "2026-05-30T18:11:49.597Z",
-        "detail": "Premier enregistrement"
-      },
-      {
-        "event": "sync_absent",
-        "date": "2026-08-20T01:08:41.643Z"
       }
     ]
   },
@@ -15471,40 +12456,6 @@
       }
     ]
   },
-  "132906196914012160": {
-    "id": "132906196914012160",
-    "username": "spinylobster4201",
-    "tag": "spinylobster4201",
-    "avatar": "dad0f99e6bc0d7dc84d0a562b7fa958b",
-    "status": "left",
-    "present": false,
-    "firstSeen": "2026-05-30T18:11:49.623Z",
-    "joinedAt": "2026-05-07T12:19:58.359Z",
-    "leftAt": "2026-08-20T01:08:41.643Z",
-    "kickedAt": null,
-    "bannedAt": null,
-    "banReason": null,
-    "verifiedAt": null,
-    "verificationResult": null,
-    "adminAccepted": null,
-    "adminAcceptedBy": null,
-    "reglementAcceptedAt": null,
-    "firstMessageAt": null,
-    "warnings": [],
-    "anniversaire": null,
-    "visits": 1,
-    "history": [
-      {
-        "event": "join",
-        "date": "2026-05-30T18:11:49.623Z",
-        "detail": "Premier enregistrement"
-      },
-      {
-        "event": "sync_absent",
-        "date": "2026-08-20T01:08:41.643Z"
-      }
-    ]
-  },
   "284102576000073730": {
     "id": "284102576000073730",
     "username": "mistered972",
@@ -15544,40 +12495,6 @@
         "date": "2026-05-31T14:32:06.333Z",
         "detail": "Expulsé via /expulsion par sihg_67",
         "moderator": "DAMOCLES#6215"
-      }
-    ]
-  },
-  "1420624465632428133": {
-    "id": "1420624465632428133",
-    "username": "ourstique2_63188",
-    "tag": "ourstique2_63188",
-    "avatar": "99f6ba4fca1b25be3d3f40b200b96d39",
-    "status": "left",
-    "present": false,
-    "firstSeen": "2026-05-30T18:11:49.625Z",
-    "joinedAt": "2025-09-25T09:38:12.112Z",
-    "leftAt": "2026-08-20T01:08:41.643Z",
-    "kickedAt": null,
-    "bannedAt": null,
-    "banReason": null,
-    "verifiedAt": null,
-    "verificationResult": null,
-    "adminAccepted": null,
-    "adminAcceptedBy": null,
-    "reglementAcceptedAt": null,
-    "firstMessageAt": null,
-    "warnings": [],
-    "anniversaire": null,
-    "visits": 1,
-    "history": [
-      {
-        "event": "join",
-        "date": "2026-05-30T18:11:49.625Z",
-        "detail": "Premier enregistrement"
-      },
-      {
-        "event": "sync_absent",
-        "date": "2026-08-20T01:08:41.643Z"
       }
     ]
   },
@@ -15623,74 +12540,6 @@
       }
     ]
   },
-  "931610270520999986": {
-    "id": "931610270520999986",
-    "username": "mr_crabyco_516",
-    "tag": "mr_crabyco_516",
-    "avatar": "0cc1823f33a48cbd4ff04ff71eb17ea8",
-    "status": "left",
-    "present": false,
-    "firstSeen": "2026-05-30T18:11:49.628Z",
-    "joinedAt": "2026-03-29T11:04:22.784Z",
-    "leftAt": "2026-08-20T01:08:41.643Z",
-    "kickedAt": null,
-    "bannedAt": null,
-    "banReason": null,
-    "verifiedAt": null,
-    "verificationResult": null,
-    "adminAccepted": null,
-    "adminAcceptedBy": null,
-    "reglementAcceptedAt": null,
-    "firstMessageAt": null,
-    "warnings": [],
-    "anniversaire": null,
-    "visits": 1,
-    "history": [
-      {
-        "event": "join",
-        "date": "2026-05-30T18:11:49.628Z",
-        "detail": "Premier enregistrement"
-      },
-      {
-        "event": "sync_absent",
-        "date": "2026-08-20T01:08:41.643Z"
-      }
-    ]
-  },
-  "716279251032080418": {
-    "id": "716279251032080418",
-    "username": "vladsection",
-    "tag": "vladsection",
-    "avatar": "95ce56a7771ed5f56a9a04bc5cef0cd4",
-    "status": "left",
-    "present": false,
-    "firstSeen": "2026-05-30T18:11:49.629Z",
-    "joinedAt": "2026-05-04T15:33:11.578Z",
-    "leftAt": "2026-08-20T01:08:41.643Z",
-    "kickedAt": null,
-    "bannedAt": null,
-    "banReason": null,
-    "verifiedAt": null,
-    "verificationResult": null,
-    "adminAccepted": null,
-    "adminAcceptedBy": null,
-    "reglementAcceptedAt": null,
-    "firstMessageAt": null,
-    "warnings": [],
-    "anniversaire": null,
-    "visits": 1,
-    "history": [
-      {
-        "event": "join",
-        "date": "2026-05-30T18:11:49.629Z",
-        "detail": "Premier enregistrement"
-      },
-      {
-        "event": "sync_absent",
-        "date": "2026-08-20T01:08:41.643Z"
-      }
-    ]
-  },
   "317730464012042241": {
     "id": "317730464012042241",
     "username": "majeta",
@@ -15730,40 +12579,6 @@
         "date": "2026-05-31T14:16:15.850Z",
         "detail": "Expulsé via /expulsion par sihg_67",
         "moderator": "DAMOCLES#6215"
-      }
-    ]
-  },
-  "1242105241735008410": {
-    "id": "1242105241735008410",
-    "username": "lachipsaloignon",
-    "tag": "lachipsaloignon",
-    "avatar": "6f09bb5231c42cd7c4d4a0058efce5ab",
-    "status": "left",
-    "present": false,
-    "firstSeen": "2026-05-30T18:11:49.632Z",
-    "joinedAt": "2026-05-06T12:01:27.159Z",
-    "leftAt": "2026-08-20T01:08:41.643Z",
-    "kickedAt": null,
-    "bannedAt": null,
-    "banReason": null,
-    "verifiedAt": null,
-    "verificationResult": null,
-    "adminAccepted": null,
-    "adminAcceptedBy": null,
-    "reglementAcceptedAt": null,
-    "firstMessageAt": null,
-    "warnings": [],
-    "anniversaire": null,
-    "visits": 1,
-    "history": [
-      {
-        "event": "join",
-        "date": "2026-05-30T18:11:49.632Z",
-        "detail": "Premier enregistrement"
-      },
-      {
-        "event": "sync_absent",
-        "date": "2026-08-20T01:08:41.643Z"
       }
     ]
   },
@@ -15981,75 +12796,6 @@
       }
     ]
   },
-  "202443615065079808": {
-    "id": "202443615065079808",
-    "username": "thery69",
-    "tag": "thery69",
-    "avatar": null,
-    "status": "left",
-    "present": false,
-    "firstSeen": "2026-05-30T18:11:49.641Z",
-    "joinedAt": "2025-11-06T16:45:03.690Z",
-    "leftAt": "2026-05-30T19:12:05.410Z",
-    "kickedAt": null,
-    "bannedAt": null,
-    "banReason": null,
-    "verifiedAt": null,
-    "verificationResult": null,
-    "adminAccepted": null,
-    "adminAcceptedBy": null,
-    "reglementAcceptedAt": null,
-    "firstMessageAt": null,
-    "warnings": [],
-    "anniversaire": null,
-    "visits": 1,
-    "history": [
-      {
-        "event": "join",
-        "date": "2026-05-30T18:11:49.641Z",
-        "detail": "Premier enregistrement"
-      },
-      {
-        "event": "leave",
-        "date": "2026-05-30T19:12:05.410Z",
-        "detail": "A quitté le serveur"
-      }
-    ]
-  },
-  "989622358631411732": {
-    "id": "989622358631411732",
-    "username": "moon_risne_",
-    "tag": "moon_risne_",
-    "avatar": "4ec4ff82512a25f4873993d178e020a1",
-    "status": "left",
-    "present": false,
-    "firstSeen": "2026-05-30T18:11:49.642Z",
-    "joinedAt": "2026-05-01T11:04:13.839Z",
-    "leftAt": "2026-08-20T01:08:41.643Z",
-    "kickedAt": null,
-    "bannedAt": null,
-    "banReason": null,
-    "verifiedAt": null,
-    "verificationResult": null,
-    "adminAccepted": null,
-    "adminAcceptedBy": null,
-    "reglementAcceptedAt": null,
-    "firstMessageAt": null,
-    "warnings": [],
-    "anniversaire": null,
-    "visits": 1,
-    "history": [
-      {
-        "event": "join",
-        "date": "2026-05-30T18:11:49.642Z",
-        "detail": "Premier enregistrement"
-      },
-      {
-        "event": "sync_absent",
-        "date": "2026-08-20T01:08:41.643Z"
-      }
-    ]
-  },
   "693421846057582682": {
     "id": "693421846057582682",
     "username": "blackstone82",
@@ -16155,40 +12901,6 @@
       }
     ]
   },
-  "1411366057905487912": {
-    "id": "1411366057905487912",
-    "username": "bk27_12438",
-    "tag": "bk27_12438",
-    "avatar": null,
-    "status": "left",
-    "present": false,
-    "firstSeen": "2026-05-30T18:11:49.647Z",
-    "joinedAt": "2026-05-07T19:12:41.815Z",
-    "leftAt": "2026-08-20T01:08:41.643Z",
-    "kickedAt": null,
-    "bannedAt": null,
-    "banReason": null,
-    "verifiedAt": null,
-    "verificationResult": null,
-    "adminAccepted": null,
-    "adminAcceptedBy": null,
-    "reglementAcceptedAt": null,
-    "firstMessageAt": null,
-    "warnings": [],
-    "anniversaire": null,
-    "visits": 1,
-    "history": [
-      {
-        "event": "join",
-        "date": "2026-05-30T18:11:49.647Z",
-        "detail": "Premier enregistrement"
-      },
-      {
-        "event": "sync_absent",
-        "date": "2026-08-20T01:08:41.643Z"
-      }
-    ]
-  },
   "159379003906588672": {
     "id": "159379003906588672",
     "username": "alfadom",
@@ -16228,74 +12940,6 @@
         "date": "2026-05-31T14:22:16.634Z",
         "detail": "Expulsé via /expulsion par sihg_67",
         "moderator": "DAMOCLES#6215"
-      }
-    ]
-  },
-  "318092496892854275": {
-    "id": "318092496892854275",
-    "username": "xopion",
-    "tag": "xopion",
-    "avatar": "8cf9f3981f78e29cc03ca446e64331d9",
-    "status": "left",
-    "present": false,
-    "firstSeen": "2026-05-30T18:11:49.650Z",
-    "joinedAt": "2025-09-21T13:25:41.388Z",
-    "leftAt": "2026-08-20T01:08:41.643Z",
-    "kickedAt": null,
-    "bannedAt": null,
-    "banReason": null,
-    "verifiedAt": null,
-    "verificationResult": null,
-    "adminAccepted": null,
-    "adminAcceptedBy": null,
-    "reglementAcceptedAt": null,
-    "firstMessageAt": null,
-    "warnings": [],
-    "anniversaire": null,
-    "visits": 1,
-    "history": [
-      {
-        "event": "join",
-        "date": "2026-05-30T18:11:49.650Z",
-        "detail": "Premier enregistrement"
-      },
-      {
-        "event": "sync_absent",
-        "date": "2026-08-20T01:08:41.643Z"
-      }
-    ]
-  },
-  "251384215348838401": {
-    "id": "251384215348838401",
-    "username": "_cain_",
-    "tag": "_cain_",
-    "avatar": "adcd9dd7f7a9ed249321af0bda06d492",
-    "status": "left",
-    "present": false,
-    "firstSeen": "2026-05-30T18:11:49.651Z",
-    "joinedAt": "2025-06-28T20:15:42.991Z",
-    "leftAt": "2026-08-20T01:08:41.643Z",
-    "kickedAt": null,
-    "bannedAt": null,
-    "banReason": null,
-    "verifiedAt": null,
-    "verificationResult": null,
-    "adminAccepted": null,
-    "adminAcceptedBy": null,
-    "reglementAcceptedAt": null,
-    "firstMessageAt": null,
-    "warnings": [],
-    "anniversaire": null,
-    "visits": 1,
-    "history": [
-      {
-        "event": "join",
-        "date": "2026-05-30T18:11:49.651Z",
-        "detail": "Premier enregistrement"
-      },
-      {
-        "event": "sync_absent",
-        "date": "2026-08-20T01:08:41.643Z"
       }
     ]
   },
@@ -16464,80 +13108,6 @@
         "date": "2026-05-31T14:42:03.218Z",
         "detail": "Expulsé via /expulsion par sihg_67",
         "moderator": "DAMOCLES#6215"
-      }
-    ]
-  },
-  "603921841656168478": {
-    "id": "603921841656168478",
-    "username": "shanoedeneph",
-    "tag": "shanoedeneph",
-    "avatar": "be37b48c761864bd3423d65894e320c0",
-    "status": "left",
-    "present": false,
-    "firstSeen": "2026-05-30T18:11:49.658Z",
-    "joinedAt": "2026-05-14T20:17:17.979Z",
-    "leftAt": "2026-08-20T01:08:41.643Z",
-    "kickedAt": null,
-    "bannedAt": null,
-    "banReason": null,
-    "verifiedAt": null,
-    "verificationResult": null,
-    "adminAccepted": null,
-    "adminAcceptedBy": null,
-    "reglementAcceptedAt": null,
-    "firstMessageAt": null,
-    "warnings": [],
-    "anniversaire": null,
-    "visits": 1,
-    "history": [
-      {
-        "event": "join",
-        "date": "2026-05-30T18:11:49.658Z",
-        "detail": "Premier enregistrement"
-      },
-      {
-        "event": "sync_absent",
-        "date": "2026-08-20T01:08:41.643Z"
-      }
-    ]
-  },
-  "1458041498334396578": {
-    "id": "1458041498334396578",
-    "username": "malappris",
-    "tag": "malappris",
-    "avatar": null,
-    "status": "left",
-    "present": false,
-    "firstSeen": "2026-05-30T18:11:49.659Z",
-    "joinedAt": "2026-01-06T10:37:26.610Z",
-    "leftAt": "2026-05-31T14:44:01.943Z",
-    "kickedAt": "2026-05-31T14:43:58.948Z",
-    "bannedAt": null,
-    "banReason": null,
-    "verifiedAt": null,
-    "verificationResult": null,
-    "adminAccepted": null,
-    "adminAcceptedBy": null,
-    "reglementAcceptedAt": null,
-    "firstMessageAt": null,
-    "warnings": [],
-    "anniversaire": null,
-    "visits": 1,
-    "history": [
-      {
-        "event": "join",
-        "date": "2026-05-30T18:11:49.659Z",
-        "detail": "Premier enregistrement"
-      },
-      {
-        "event": "kick",
-        "date": "2026-05-31T14:43:58.948Z",
-        "detail": "Expulsé via /expulsion",
-        "moderator": "sihg_67"
-      },
-      {
-        "event": "leave",
-        "date": "2026-05-31T14:44:01.943Z"
       }
     ]
   },
@@ -16981,40 +13551,6 @@
       }
     ]
   },
-  "144122171319517185": {
-    "id": "144122171319517185",
-    "username": "unsanglier",
-    "tag": "unsanglier",
-    "avatar": "a_b8c5de81ee86a2021f750b80c53f6a09",
-    "status": "left",
-    "present": false,
-    "firstSeen": "2026-05-30T18:11:49.667Z",
-    "joinedAt": "2026-04-26T23:32:47.862Z",
-    "leftAt": "2026-08-20T01:08:41.643Z",
-    "kickedAt": null,
-    "bannedAt": null,
-    "banReason": null,
-    "verifiedAt": null,
-    "verificationResult": null,
-    "adminAccepted": null,
-    "adminAcceptedBy": null,
-    "reglementAcceptedAt": null,
-    "firstMessageAt": null,
-    "warnings": [],
-    "anniversaire": null,
-    "visits": 1,
-    "history": [
-      {
-        "event": "join",
-        "date": "2026-05-30T18:11:49.667Z",
-        "detail": "Premier enregistrement"
-      },
-      {
-        "event": "sync_absent",
-        "date": "2026-08-20T01:08:41.643Z"
-      }
-    ]
-  },
   "1005922715930214470": {
     "id": "1005922715930214470",
     "username": "fofo67",
@@ -17096,40 +13632,6 @@
         "date": "2026-05-31T14:16:00.263Z",
         "detail": "Expulsé via /expulsion par sihg_67",
         "moderator": "DAMOCLES#6215"
-      }
-    ]
-  },
-  "249950355520094208": {
-    "id": "249950355520094208",
-    "username": "onibenshi",
-    "tag": "onibenshi",
-    "avatar": "b9441b9fc236ef47d00eb9297636cb8e",
-    "status": "left",
-    "present": false,
-    "firstSeen": "2026-05-30T18:11:49.670Z",
-    "joinedAt": "2026-04-12T15:13:37.888Z",
-    "leftAt": "2026-08-20T01:08:41.643Z",
-    "kickedAt": null,
-    "bannedAt": null,
-    "banReason": null,
-    "verifiedAt": null,
-    "verificationResult": null,
-    "adminAccepted": null,
-    "adminAcceptedBy": null,
-    "reglementAcceptedAt": null,
-    "firstMessageAt": null,
-    "warnings": [],
-    "anniversaire": null,
-    "visits": 1,
-    "history": [
-      {
-        "event": "join",
-        "date": "2026-05-30T18:11:49.670Z",
-        "detail": "Premier enregistrement"
-      },
-      {
-        "event": "sync_absent",
-        "date": "2026-08-20T01:08:41.643Z"
       }
     ]
   },
@@ -17217,40 +13719,6 @@
       }
     ]
   },
-  "445603704884822017": {
-    "id": "445603704884822017",
-    "username": "zharthemad",
-    "tag": "zharthemad",
-    "avatar": "093ea2a88adf922c09858c516fb45a3c",
-    "status": "left",
-    "present": false,
-    "firstSeen": "2026-05-30T18:11:49.675Z",
-    "joinedAt": "2026-04-02T06:13:00.529Z",
-    "leftAt": "2026-08-20T01:08:41.643Z",
-    "kickedAt": null,
-    "bannedAt": null,
-    "banReason": null,
-    "verifiedAt": null,
-    "verificationResult": null,
-    "adminAccepted": null,
-    "adminAcceptedBy": null,
-    "reglementAcceptedAt": null,
-    "firstMessageAt": null,
-    "warnings": [],
-    "anniversaire": null,
-    "visits": 1,
-    "history": [
-      {
-        "event": "join",
-        "date": "2026-05-30T18:11:49.675Z",
-        "detail": "Premier enregistrement"
-      },
-      {
-        "event": "sync_absent",
-        "date": "2026-08-20T01:08:41.643Z"
-      }
-    ]
-  },
   "334775616199065601": {
     "id": "334775616199065601",
     "username": "alkymik",
@@ -17283,40 +13751,6 @@
         "event": "kick",
         "date": "2026-05-30T19:20:51.487Z",
         "detail": "Expulsé via /expulsion par sihg_67"
-      }
-    ]
-  },
-  "513391908236558339": {
-    "id": "513391908236558339",
-    "username": "luciusbrant",
-    "tag": "luciusbrant",
-    "avatar": "a_e195fed22941e551a4392a2d4b648527",
-    "status": "left",
-    "present": false,
-    "firstSeen": "2026-05-30T18:11:49.677Z",
-    "joinedAt": "2026-05-04T23:01:43.777Z",
-    "leftAt": "2026-08-20T01:08:41.643Z",
-    "kickedAt": null,
-    "bannedAt": null,
-    "banReason": null,
-    "verifiedAt": null,
-    "verificationResult": null,
-    "adminAccepted": null,
-    "adminAcceptedBy": null,
-    "reglementAcceptedAt": null,
-    "firstMessageAt": null,
-    "warnings": [],
-    "anniversaire": null,
-    "visits": 1,
-    "history": [
-      {
-        "event": "join",
-        "date": "2026-05-30T18:11:49.677Z",
-        "detail": "Premier enregistrement"
-      },
-      {
-        "event": "sync_absent",
-        "date": "2026-08-20T01:08:41.643Z"
       }
     ]
   },
@@ -17520,40 +13954,6 @@
         "date": "2026-05-31T14:26:45.107Z",
         "detail": "Expulsé via /expulsion par sihg_67",
         "moderator": "DAMOCLES#6215"
-      }
-    ]
-  },
-  "1194029052206530714": {
-    "id": "1194029052206530714",
-    "username": "sid940937",
-    "tag": "sid940937",
-    "avatar": "835b0214bedc576d4b2ae641d58dc331",
-    "status": "left",
-    "present": false,
-    "firstSeen": "2026-05-30T18:11:49.685Z",
-    "joinedAt": "2026-05-19T18:14:27.938Z",
-    "leftAt": "2026-08-20T01:08:41.643Z",
-    "kickedAt": null,
-    "bannedAt": null,
-    "banReason": null,
-    "verifiedAt": null,
-    "verificationResult": null,
-    "adminAccepted": null,
-    "adminAcceptedBy": null,
-    "reglementAcceptedAt": null,
-    "firstMessageAt": null,
-    "warnings": [],
-    "anniversaire": null,
-    "visits": 1,
-    "history": [
-      {
-        "event": "join",
-        "date": "2026-05-30T18:11:49.685Z",
-        "detail": "Premier enregistrement"
-      },
-      {
-        "event": "sync_absent",
-        "date": "2026-08-20T01:08:41.643Z"
       }
     ]
   },
@@ -17963,40 +14363,6 @@
       }
     ]
   },
-  "283392791663476738": {
-    "id": "283392791663476738",
-    "username": "dogleponge",
-    "tag": "dogleponge",
-    "avatar": "bd858c6f97243939c803f8fe22c64f26",
-    "status": "left",
-    "present": false,
-    "firstSeen": "2026-05-30T18:11:49.701Z",
-    "joinedAt": "2026-05-29T17:53:35.591Z",
-    "leftAt": "2026-08-20T01:08:41.643Z",
-    "kickedAt": null,
-    "bannedAt": null,
-    "banReason": null,
-    "verifiedAt": null,
-    "verificationResult": null,
-    "adminAccepted": null,
-    "adminAcceptedBy": null,
-    "reglementAcceptedAt": null,
-    "firstMessageAt": null,
-    "warnings": [],
-    "anniversaire": null,
-    "visits": 1,
-    "history": [
-      {
-        "event": "join",
-        "date": "2026-05-30T18:11:49.701Z",
-        "detail": "Premier enregistrement"
-      },
-      {
-        "event": "sync_absent",
-        "date": "2026-08-20T01:08:41.643Z"
-      }
-    ]
-  },
   "210733463144235010": {
     "id": "210733463144235010",
     "username": "kyro_leo",
@@ -18327,40 +14693,6 @@
       }
     ]
   },
-  "689388797510811679": {
-    "id": "689388797510811679",
-    "username": "rocciamathieu",
-    "tag": "rocciamathieu",
-    "avatar": null,
-    "status": "left",
-    "present": false,
-    "firstSeen": "2026-05-30T18:11:49.713Z",
-    "joinedAt": "2026-05-28T18:48:06.302Z",
-    "leftAt": "2026-08-20T01:08:41.643Z",
-    "kickedAt": null,
-    "bannedAt": null,
-    "banReason": null,
-    "verifiedAt": null,
-    "verificationResult": null,
-    "adminAccepted": null,
-    "adminAcceptedBy": null,
-    "reglementAcceptedAt": null,
-    "firstMessageAt": null,
-    "warnings": [],
-    "anniversaire": null,
-    "visits": 1,
-    "history": [
-      {
-        "event": "join",
-        "date": "2026-05-30T18:11:49.713Z",
-        "detail": "Premier enregistrement"
-      },
-      {
-        "event": "sync_absent",
-        "date": "2026-08-20T01:08:41.643Z"
-      }
-    ]
-  },
   "243013717803925505": {
     "id": "243013717803925505",
     "username": "jacquessullivan",
@@ -18526,40 +14858,6 @@
         "date": "2026-05-31T14:26:53.133Z",
         "detail": "Expulsé via /expulsion par sihg_67",
         "moderator": "DAMOCLES#6215"
-      }
-    ]
-  },
-  "145558901100642305": {
-    "id": "145558901100642305",
-    "username": "sinpou",
-    "tag": "sinpou",
-    "avatar": null,
-    "status": "left",
-    "present": false,
-    "firstSeen": "2026-05-30T18:11:49.720Z",
-    "joinedAt": "2026-05-24T18:10:14.028Z",
-    "leftAt": "2026-08-20T01:08:41.643Z",
-    "kickedAt": null,
-    "bannedAt": null,
-    "banReason": null,
-    "verifiedAt": null,
-    "verificationResult": null,
-    "adminAccepted": null,
-    "adminAcceptedBy": null,
-    "reglementAcceptedAt": null,
-    "firstMessageAt": null,
-    "warnings": [],
-    "anniversaire": null,
-    "visits": 1,
-    "history": [
-      {
-        "event": "join",
-        "date": "2026-05-30T18:11:49.720Z",
-        "detail": "Premier enregistrement"
-      },
-      {
-        "event": "sync_absent",
-        "date": "2026-08-20T01:08:41.643Z"
       }
     ]
   },
@@ -18927,40 +15225,6 @@
       }
     ]
   },
-  "1083102342406217771": {
-    "id": "1083102342406217771",
-    "username": "wolfe03416",
-    "tag": "wolfe03416",
-    "avatar": "157e517cdbf371a47aaead44675714a3",
-    "status": "left",
-    "present": false,
-    "firstSeen": "2026-05-30T18:11:49.734Z",
-    "joinedAt": "2026-04-10T15:41:38.819Z",
-    "leftAt": "2026-08-20T01:08:41.643Z",
-    "kickedAt": null,
-    "bannedAt": null,
-    "banReason": null,
-    "verifiedAt": null,
-    "verificationResult": null,
-    "adminAccepted": null,
-    "adminAcceptedBy": null,
-    "reglementAcceptedAt": null,
-    "firstMessageAt": null,
-    "warnings": [],
-    "anniversaire": null,
-    "visits": 1,
-    "history": [
-      {
-        "event": "join",
-        "date": "2026-05-30T18:11:49.734Z",
-        "detail": "Premier enregistrement"
-      },
-      {
-        "event": "sync_absent",
-        "date": "2026-08-20T01:08:41.643Z"
-      }
-    ]
-  },
   "276308305842798593": {
     "id": "276308305842798593",
     "username": "evo5826",
@@ -19042,118 +15306,6 @@
         "date": "2026-05-31T14:22:50.912Z",
         "detail": "Expulsé via /expulsion par sihg_67",
         "moderator": "DAMOCLES#6215"
-      }
-    ]
-  },
-  "258344042302144513": {
-    "id": "258344042302144513",
-    "username": "meka2575",
-    "tag": "meka2575",
-    "avatar": "d404ac24bd076162e55429e6c7debc80",
-    "status": "left",
-    "present": false,
-    "firstSeen": "2026-05-30T18:11:49.738Z",
-    "joinedAt": "2026-05-01T17:28:24.986Z",
-    "leftAt": "2026-08-20T01:08:41.643Z",
-    "kickedAt": null,
-    "bannedAt": null,
-    "banReason": null,
-    "verifiedAt": null,
-    "verificationResult": null,
-    "adminAccepted": null,
-    "adminAcceptedBy": null,
-    "reglementAcceptedAt": null,
-    "firstMessageAt": null,
-    "warnings": [],
-    "anniversaire": null,
-    "visits": 1,
-    "history": [
-      {
-        "event": "join",
-        "date": "2026-05-30T18:11:49.738Z",
-        "detail": "Premier enregistrement"
-      },
-      {
-        "event": "sync_absent",
-        "date": "2026-08-20T01:08:41.643Z"
-      }
-    ]
-  },
-  "274322167746002946": {
-    "id": "274322167746002946",
-    "username": "mouton_noir_dorkmouton",
-    "tag": "mouton_noir_dorkmouton",
-    "avatar": "cc3f088fb54ff2bccf5ca98bc73ac759",
-    "status": "left",
-    "present": false,
-    "firstSeen": "2026-05-30T18:11:49.740Z",
-    "joinedAt": "2025-09-06T07:14:36.985Z",
-    "leftAt": "2026-08-20T01:08:41.643Z",
-    "kickedAt": null,
-    "bannedAt": null,
-    "banReason": null,
-    "verifiedAt": null,
-    "verificationResult": null,
-    "adminAccepted": null,
-    "adminAcceptedBy": null,
-    "reglementAcceptedAt": null,
-    "firstMessageAt": null,
-    "warnings": [],
-    "anniversaire": null,
-    "visits": 1,
-    "history": [
-      {
-        "event": "join",
-        "date": "2026-05-30T18:11:49.740Z",
-        "detail": "Premier enregistrement"
-      },
-      {
-        "event": "message",
-        "date": "2026-05-30T18:54:46.855Z",
-        "detail": "#┊bavardage"
-      },
-      {
-        "event": "message",
-        "date": "2026-05-30T18:59:12.051Z",
-        "detail": "#┊bavardage"
-      },
-      {
-        "event": "message",
-        "date": "2026-05-30T19:09:15.769Z",
-        "detail": "#┊bavardage"
-      },
-      {
-        "event": "message",
-        "date": "2026-05-30T19:12:30.826Z",
-        "detail": "#┊bavardage"
-      },
-      {
-        "event": "message",
-        "date": "2026-05-30T19:13:53.584Z",
-        "detail": "#┊active-toi"
-      },
-      {
-        "event": "activated",
-        "date": "2026-05-30T19:13:54.475Z",
-        "detail": "Via message"
-      },
-      {
-        "event": "message",
-        "date": "2026-05-30T19:14:04.935Z",
-        "detail": "#┊bavardage"
-      },
-      {
-        "event": "vocal",
-        "date": "2026-05-30T19:14:07.321Z",
-        "detail": "#┊cree-ton-salon"
-      },
-      {
-        "event": "vocal",
-        "date": "2026-05-31T13:50:04.024Z"
-      },
-      {
-        "event": "sync_absent",
-        "date": "2026-08-20T01:08:41.643Z"
       }
     ]
   },
@@ -19474,40 +15626,6 @@
       }
     ]
   },
-  "228969790822154242": {
-    "id": "228969790822154242",
-    "username": "kodlah",
-    "tag": "kodlah",
-    "avatar": "bc09269ba82a92f451dfab3a0482df2e",
-    "status": "left",
-    "present": false,
-    "firstSeen": "2026-05-30T18:11:49.752Z",
-    "joinedAt": "2026-05-25T15:42:00.980Z",
-    "leftAt": "2026-08-20T01:08:41.643Z",
-    "kickedAt": null,
-    "bannedAt": null,
-    "banReason": null,
-    "verifiedAt": null,
-    "verificationResult": null,
-    "adminAccepted": null,
-    "adminAcceptedBy": null,
-    "reglementAcceptedAt": null,
-    "firstMessageAt": null,
-    "warnings": [],
-    "anniversaire": null,
-    "visits": 1,
-    "history": [
-      {
-        "event": "join",
-        "date": "2026-05-30T18:11:49.752Z",
-        "detail": "Premier enregistrement"
-      },
-      {
-        "event": "sync_absent",
-        "date": "2026-08-20T01:08:41.643Z"
-      }
-    ]
-  },
   "240077528990089217": {
     "id": "240077528990089217",
     "username": "repentietresor",
@@ -19617,40 +15735,6 @@
         "event": "kick",
         "date": "2026-05-30T19:15:28.270Z",
         "detail": "Expulsé via /expulsion par sihg_67"
-      }
-    ]
-  },
-  "543130792830959617": {
-    "id": "543130792830959617",
-    "username": "minegaz",
-    "tag": "minegaz",
-    "avatar": "26a76c329175753990a30879d09bf38b",
-    "status": "left",
-    "present": false,
-    "firstSeen": "2026-05-30T18:11:49.759Z",
-    "joinedAt": "2026-05-15T10:55:04.013Z",
-    "leftAt": "2026-08-20T01:08:41.643Z",
-    "kickedAt": null,
-    "bannedAt": null,
-    "banReason": null,
-    "verifiedAt": null,
-    "verificationResult": null,
-    "adminAccepted": null,
-    "adminAcceptedBy": null,
-    "reglementAcceptedAt": null,
-    "firstMessageAt": null,
-    "warnings": [],
-    "anniversaire": null,
-    "visits": 1,
-    "history": [
-      {
-        "event": "join",
-        "date": "2026-05-30T18:11:49.759Z",
-        "detail": "Premier enregistrement"
-      },
-      {
-        "event": "sync_absent",
-        "date": "2026-08-20T01:08:41.643Z"
       }
     ]
   },
@@ -19864,52 +15948,6 @@
       }
     ]
   },
-  "200376641258651660": {
-    "id": "200376641258651660",
-    "username": "partypancakes06",
-    "tag": "partypancakes06",
-    "avatar": "e039a6506bb285e10c0217f50f126f07",
-    "status": "left",
-    "present": false,
-    "firstSeen": "2026-05-30T18:11:49.773Z",
-    "joinedAt": "2026-05-31T16:43:53.744Z",
-    "leftAt": "2026-08-20T01:08:41.643Z",
-    "kickedAt": "2026-05-31T14:46:48.083Z",
-    "bannedAt": null,
-    "banReason": null,
-    "verifiedAt": null,
-    "verificationResult": null,
-    "adminAccepted": null,
-    "adminAcceptedBy": null,
-    "reglementAcceptedAt": null,
-    "firstMessageAt": null,
-    "warnings": [],
-    "anniversaire": null,
-    "visits": 1,
-    "history": [
-      {
-        "event": "join",
-        "date": "2026-05-30T18:11:49.773Z",
-        "detail": "Premier enregistrement"
-      },
-      {
-        "event": "kick",
-        "date": "2026-05-31T14:46:46.416Z",
-        "detail": "Expulsé via /expulsion",
-        "moderator": "sihg_67"
-      },
-      {
-        "event": "kick",
-        "date": "2026-05-31T14:46:48.083Z",
-        "detail": "Expulsé via /expulsion par sihg_67",
-        "moderator": "DAMOCLES#6215"
-      },
-      {
-        "event": "sync_absent",
-        "date": "2026-08-20T01:08:41.643Z"
-      }
-    ]
-  },
   "133090602211475456": {
     "id": "133090602211475456",
     "username": "deadstar",
@@ -19980,40 +16018,6 @@
       }
     ]
   },
-  "1356455565248958464": {
-    "id": "1356455565248958464",
-    "username": "philibertdegasnier_08415",
-    "tag": "philibertdegasnier_08415",
-    "avatar": null,
-    "status": "left",
-    "present": false,
-    "firstSeen": "2026-05-30T18:11:49.777Z",
-    "joinedAt": "2026-04-03T13:42:47.382Z",
-    "leftAt": "2026-08-20T01:08:41.643Z",
-    "kickedAt": null,
-    "bannedAt": null,
-    "banReason": null,
-    "verifiedAt": null,
-    "verificationResult": null,
-    "adminAccepted": null,
-    "adminAcceptedBy": null,
-    "reglementAcceptedAt": null,
-    "firstMessageAt": null,
-    "warnings": [],
-    "anniversaire": null,
-    "visits": 1,
-    "history": [
-      {
-        "event": "join",
-        "date": "2026-05-30T18:11:49.777Z",
-        "detail": "Premier enregistrement"
-      },
-      {
-        "event": "sync_absent",
-        "date": "2026-08-20T01:08:41.643Z"
-      }
-    ]
-  },
   "1436095722759000217": {
     "id": "1436095722759000217",
     "username": "nardier_01920",
@@ -20046,51 +16050,6 @@
         "event": "kick",
         "date": "2026-05-30T19:11:30.366Z",
         "detail": "Expulsé via /expulsion par sihg_67"
-      }
-    ]
-  },
-  "1350882174424842250": {
-    "id": "1350882174424842250",
-    "username": "samuel062000",
-    "tag": "samuel062000",
-    "avatar": null,
-    "status": "left",
-    "present": false,
-    "firstSeen": "2026-05-31T11:28:07.380Z",
-    "joinedAt": "2026-05-31T12:12:25.006Z",
-    "leftAt": "2026-05-31T12:29:32.255Z",
-    "kickedAt": null,
-    "bannedAt": null,
-    "banReason": null,
-    "verifiedAt": null,
-    "verificationResult": null,
-    "adminAccepted": null,
-    "adminAcceptedBy": null,
-    "reglementAcceptedAt": null,
-    "firstMessageAt": null,
-    "warnings": [],
-    "anniversaire": null,
-    "visits": 1,
-    "history": [
-      {
-        "event": "join",
-        "date": "2026-05-31T11:28:07.380Z"
-      },
-      {
-        "event": "vocal",
-        "date": "2026-05-31T12:08:40.102Z"
-      },
-      {
-        "event": "leave",
-        "date": "2026-05-31T12:12:19.464Z"
-      },
-      {
-        "event": "vocal",
-        "date": "2026-05-31T12:12:42.517Z"
-      },
-      {
-        "event": "leave",
-        "date": "2026-05-31T12:29:32.255Z"
       }
     ]
   },
@@ -20363,336 +16322,6 @@
       }
     ]
   },
-  "320954837355331584": {
-    "id": "320954837355331584",
-    "username": "artheniaa",
-    "tag": "artheniaa",
-    "avatar": null,
-    "status": "left",
-    "present": false,
-    "firstSeen": "2026-06-01T19:45:20.780Z",
-    "joinedAt": "2026-06-01T15:54:46.574Z",
-    "leftAt": "2026-08-20T01:08:41.643Z",
-    "kickedAt": null,
-    "bannedAt": null,
-    "banReason": null,
-    "verifiedAt": null,
-    "verificationResult": null,
-    "adminAccepted": null,
-    "adminAcceptedBy": null,
-    "reglementAcceptedAt": null,
-    "firstMessageAt": null,
-    "warnings": [],
-    "anniversaire": null,
-    "visits": 1,
-    "history": [
-      {
-        "event": "join",
-        "date": "2026-06-01T19:45:20.780Z"
-      },
-      {
-        "event": "sync_absent",
-        "date": "2026-08-20T01:08:41.643Z"
-      }
-    ]
-  },
-  "198122691935469568": {
-    "id": "198122691935469568",
-    "username": ".benenuts",
-    "tag": ".benenuts",
-    "avatar": null,
-    "status": "left",
-    "present": false,
-    "firstSeen": "2026-06-16T16:25:12.042Z",
-    "joinedAt": "2026-06-06T21:42:57.929Z",
-    "leftAt": "2026-08-20T01:08:41.643Z",
-    "kickedAt": null,
-    "bannedAt": null,
-    "banReason": null,
-    "verifiedAt": null,
-    "verificationResult": null,
-    "adminAccepted": null,
-    "adminAcceptedBy": null,
-    "reglementAcceptedAt": null,
-    "firstMessageAt": null,
-    "warnings": [],
-    "anniversaire": null,
-    "visits": 1,
-    "history": [
-      {
-        "event": "join",
-        "date": "2026-06-16T16:25:12.042Z"
-      },
-      {
-        "event": "sync_absent",
-        "date": "2026-08-20T01:08:41.643Z"
-      }
-    ]
-  },
-  "310641198152941570": {
-    "id": "310641198152941570",
-    "username": "4goose",
-    "tag": "4goose",
-    "avatar": null,
-    "status": "left",
-    "present": false,
-    "firstSeen": "2026-06-16T16:25:12.060Z",
-    "joinedAt": "2026-06-08T00:09:08.544Z",
-    "leftAt": "2026-08-20T01:08:41.643Z",
-    "kickedAt": null,
-    "bannedAt": null,
-    "banReason": null,
-    "verifiedAt": null,
-    "verificationResult": null,
-    "adminAccepted": null,
-    "adminAcceptedBy": null,
-    "reglementAcceptedAt": null,
-    "firstMessageAt": null,
-    "warnings": [],
-    "anniversaire": null,
-    "visits": 1,
-    "history": [
-      {
-        "event": "join",
-        "date": "2026-06-16T16:25:12.060Z"
-      },
-      {
-        "event": "sync_absent",
-        "date": "2026-08-20T01:08:41.643Z"
-      }
-    ]
-  },
-  "917792768921862234": {
-    "id": "917792768921862234",
-    "username": "airden1922",
-    "tag": "airden1922",
-    "avatar": null,
-    "status": "left",
-    "present": false,
-    "firstSeen": "2026-06-16T16:25:12.114Z",
-    "joinedAt": "2026-06-08T02:59:57.661Z",
-    "leftAt": "2026-08-20T01:08:41.643Z",
-    "kickedAt": null,
-    "bannedAt": null,
-    "banReason": null,
-    "verifiedAt": null,
-    "verificationResult": null,
-    "adminAccepted": null,
-    "adminAcceptedBy": null,
-    "reglementAcceptedAt": null,
-    "firstMessageAt": null,
-    "warnings": [],
-    "anniversaire": null,
-    "visits": 1,
-    "history": [
-      {
-        "event": "join",
-        "date": "2026-06-16T16:25:12.114Z"
-      },
-      {
-        "event": "sync_absent",
-        "date": "2026-08-20T01:08:41.643Z"
-      }
-    ]
-  },
-  "1507717380493676564": {
-    "id": "1507717380493676564",
-    "username": "amelie_ch38",
-    "tag": "amelie_ch38",
-    "avatar": null,
-    "status": "left",
-    "present": false,
-    "firstSeen": "2026-06-16T16:25:12.118Z",
-    "joinedAt": "2026-06-09T14:27:04.933Z",
-    "leftAt": "2026-08-20T01:08:41.643Z",
-    "kickedAt": null,
-    "bannedAt": null,
-    "banReason": null,
-    "verifiedAt": null,
-    "verificationResult": null,
-    "adminAccepted": null,
-    "adminAcceptedBy": null,
-    "reglementAcceptedAt": null,
-    "firstMessageAt": null,
-    "warnings": [],
-    "anniversaire": null,
-    "visits": 1,
-    "history": [
-      {
-        "event": "join",
-        "date": "2026-06-16T16:25:12.118Z"
-      },
-      {
-        "event": "sync_absent",
-        "date": "2026-08-20T01:08:41.643Z"
-      }
-    ]
-  },
-  "1240704990654365746": {
-    "id": "1240704990654365746",
-    "username": "pololodu19",
-    "tag": "pololodu19",
-    "avatar": null,
-    "status": "left",
-    "present": false,
-    "firstSeen": "2026-06-16T16:25:12.128Z",
-    "joinedAt": "2026-06-13T12:36:28.218Z",
-    "leftAt": "2026-08-20T01:08:41.643Z",
-    "kickedAt": null,
-    "bannedAt": null,
-    "banReason": null,
-    "verifiedAt": null,
-    "verificationResult": null,
-    "adminAccepted": null,
-    "adminAcceptedBy": null,
-    "reglementAcceptedAt": null,
-    "firstMessageAt": null,
-    "warnings": [],
-    "anniversaire": null,
-    "visits": 1,
-    "history": [
-      {
-        "event": "join",
-        "date": "2026-06-16T16:25:12.128Z"
-      },
-      {
-        "event": "sync_absent",
-        "date": "2026-08-20T01:08:41.643Z"
-      }
-    ]
-  },
-  "237680155978366988": {
-    "id": "237680155978366988",
-    "username": "games4everybody",
-    "tag": "games4everybody",
-    "avatar": null,
-    "status": "left",
-    "present": false,
-    "firstSeen": "2026-06-16T16:25:12.181Z",
-    "joinedAt": "2026-06-15T23:14:45.201Z",
-    "leftAt": "2026-08-20T01:08:41.643Z",
-    "kickedAt": null,
-    "bannedAt": null,
-    "banReason": null,
-    "verifiedAt": null,
-    "verificationResult": null,
-    "adminAccepted": null,
-    "adminAcceptedBy": null,
-    "reglementAcceptedAt": null,
-    "firstMessageAt": null,
-    "warnings": [],
-    "anniversaire": null,
-    "visits": 1,
-    "history": [
-      {
-        "event": "join",
-        "date": "2026-06-16T16:25:12.181Z"
-      },
-      {
-        "event": "sync_absent",
-        "date": "2026-08-20T01:08:41.643Z"
-      }
-    ]
-  },
-  "498158573742981155": {
-    "id": "498158573742981155",
-    "username": "guardsman6236",
-    "tag": "guardsman6236",
-    "avatar": null,
-    "status": "left",
-    "present": false,
-    "firstSeen": "2026-06-16T16:25:12.190Z",
-    "joinedAt": "2026-06-08T16:06:54.643Z",
-    "leftAt": "2026-08-20T01:08:41.643Z",
-    "kickedAt": null,
-    "bannedAt": null,
-    "banReason": null,
-    "verifiedAt": null,
-    "verificationResult": null,
-    "adminAccepted": null,
-    "adminAcceptedBy": null,
-    "reglementAcceptedAt": null,
-    "firstMessageAt": null,
-    "warnings": [],
-    "anniversaire": null,
-    "visits": 1,
-    "history": [
-      {
-        "event": "join",
-        "date": "2026-06-16T16:25:12.190Z"
-      },
-      {
-        "event": "sync_absent",
-        "date": "2026-08-20T01:08:41.643Z"
-      }
-    ]
-  },
-  "644829157657804800": {
-    "id": "644829157657804800",
-    "username": "nairuza",
-    "tag": "nairuza",
-    "avatar": null,
-    "status": "left",
-    "present": false,
-    "firstSeen": "2026-06-16T16:25:12.197Z",
-    "joinedAt": "2026-06-14T17:35:15.896Z",
-    "leftAt": "2026-08-20T01:08:41.643Z",
-    "kickedAt": null,
-    "bannedAt": null,
-    "banReason": null,
-    "verifiedAt": null,
-    "verificationResult": null,
-    "adminAccepted": null,
-    "adminAcceptedBy": null,
-    "reglementAcceptedAt": null,
-    "firstMessageAt": null,
-    "warnings": [],
-    "anniversaire": null,
-    "visits": 1,
-    "history": [
-      {
-        "event": "join",
-        "date": "2026-06-16T16:25:12.197Z"
-      },
-      {
-        "event": "sync_absent",
-        "date": "2026-08-20T01:08:41.643Z"
-      }
-    ]
-  },
-  "411494189486833664": {
-    "id": "411494189486833664",
-    "username": "scoosyc",
-    "tag": "scoosyc",
-    "avatar": null,
-    "status": "left",
-    "present": false,
-    "firstSeen": "2026-06-16T16:25:12.213Z",
-    "joinedAt": "2026-06-07T18:21:16.352Z",
-    "leftAt": "2026-08-20T01:08:41.643Z",
-    "kickedAt": null,
-    "bannedAt": null,
-    "banReason": null,
-    "verifiedAt": null,
-    "verificationResult": null,
-    "adminAccepted": null,
-    "adminAcceptedBy": null,
-    "reglementAcceptedAt": null,
-    "firstMessageAt": null,
-    "warnings": [],
-    "anniversaire": null,
-    "visits": 1,
-    "history": [
-      {
-        "event": "join",
-        "date": "2026-06-16T16:25:12.213Z"
-      },
-      {
-        "event": "sync_absent",
-        "date": "2026-08-20T01:08:41.643Z"
-      }
-    ]
-  },
   "264745690784202753": {
     "id": "264745690784202753",
     "username": "alexdse",
@@ -20785,11 +16414,11 @@
     "username": ".__nexus__",
     "tag": ".__nexus__",
     "avatar": null,
-    "status": "left",
-    "present": false,
+    "status": "active",
+    "present": true,
     "firstSeen": "2026-08-16T13:33:06.586Z",
-    "joinedAt": "2026-08-15T22:00:59.195Z",
-    "leftAt": "2026-08-20T01:08:41.643Z",
+    "joinedAt": "2026-08-21T16:41:19.927Z",
+    "leftAt": null,
     "kickedAt": null,
     "bannedAt": null,
     "banReason": null,
@@ -20801,7 +16430,7 @@
     "firstMessageAt": null,
     "warnings": [],
     "anniversaire": null,
-    "visits": 1,
+    "visits": 2,
     "history": [
       {
         "event": "join",
@@ -20810,6 +16439,10 @@
       {
         "event": "sync_absent",
         "date": "2026-08-20T01:08:41.643Z"
+      },
+      {
+        "event": "rejoin",
+        "date": "2026-09-03T01:09:20.920Z"
       }
     ]
   },
@@ -20852,72 +16485,6 @@
         "event": "anniversaire_set",
         "date": "2026-08-18T14:57:00.595Z",
         "detail": "02/11/2003"
-      }
-    ]
-  },
-  "1025789180896354378": {
-    "id": "1025789180896354378",
-    "username": "mouglys",
-    "tag": "mouglys",
-    "avatar": null,
-    "status": "left",
-    "present": false,
-    "firstSeen": "2026-08-16T13:33:06.602Z",
-    "joinedAt": "2026-08-13T22:06:03.693Z",
-    "leftAt": "2026-08-20T01:08:41.643Z",
-    "kickedAt": null,
-    "bannedAt": null,
-    "banReason": null,
-    "verifiedAt": null,
-    "verificationResult": null,
-    "adminAccepted": null,
-    "adminAcceptedBy": null,
-    "reglementAcceptedAt": null,
-    "firstMessageAt": null,
-    "warnings": [],
-    "anniversaire": null,
-    "visits": 1,
-    "history": [
-      {
-        "event": "join",
-        "date": "2026-08-16T13:33:06.602Z"
-      },
-      {
-        "event": "sync_absent",
-        "date": "2026-08-20T01:08:41.643Z"
-      }
-    ]
-  },
-  "1484949007217463347": {
-    "id": "1484949007217463347",
-    "username": "gibusssss_32660",
-    "tag": "gibusssss_32660",
-    "avatar": null,
-    "status": "left",
-    "present": false,
-    "firstSeen": "2026-08-16T13:33:06.617Z",
-    "joinedAt": "2026-08-14T17:54:47.935Z",
-    "leftAt": "2026-08-20T01:08:41.643Z",
-    "kickedAt": null,
-    "bannedAt": null,
-    "banReason": null,
-    "verifiedAt": null,
-    "verificationResult": null,
-    "adminAccepted": null,
-    "adminAcceptedBy": null,
-    "reglementAcceptedAt": null,
-    "firstMessageAt": null,
-    "warnings": [],
-    "anniversaire": null,
-    "visits": 1,
-    "history": [
-      {
-        "event": "join",
-        "date": "2026-08-16T13:33:06.617Z"
-      },
-      {
-        "event": "sync_absent",
-        "date": "2026-08-20T01:08:41.643Z"
       }
     ]
   },
@@ -21029,64 +16596,6 @@
       {
         "event": "reglement_accepted",
         "date": "2026-08-19T21:08:55.777Z"
-      }
-    ]
-  },
-  "220308469469675521": {
-    "id": "220308469469675521",
-    "username": "xstormee",
-    "tag": "xstormee",
-    "avatar": null,
-    "status": "active",
-    "present": true,
-    "firstSeen": "2026-08-19T23:42:08.980Z",
-    "joinedAt": "2026-08-18T21:47:12.116Z",
-    "leftAt": null,
-    "kickedAt": null,
-    "bannedAt": null,
-    "banReason": null,
-    "verifiedAt": null,
-    "verificationResult": null,
-    "adminAccepted": null,
-    "adminAcceptedBy": null,
-    "reglementAcceptedAt": null,
-    "firstMessageAt": null,
-    "warnings": [],
-    "anniversaire": null,
-    "visits": 1,
-    "history": [
-      {
-        "event": "join_retroactif",
-        "date": "2026-08-19T23:42:08.980Z"
-      }
-    ]
-  },
-  "291667190577496064": {
-    "id": "291667190577496064",
-    "username": "maxime0597",
-    "tag": "maxime0597",
-    "avatar": null,
-    "status": "active",
-    "present": true,
-    "firstSeen": "2026-08-19T23:42:08.981Z",
-    "joinedAt": "2026-08-18T07:38:45.342Z",
-    "leftAt": null,
-    "kickedAt": null,
-    "bannedAt": null,
-    "banReason": null,
-    "verifiedAt": null,
-    "verificationResult": null,
-    "adminAccepted": null,
-    "adminAcceptedBy": null,
-    "reglementAcceptedAt": null,
-    "firstMessageAt": null,
-    "warnings": [],
-    "anniversaire": null,
-    "visits": 1,
-    "history": [
-      {
-        "event": "join_retroactif",
-        "date": "2026-08-19T23:42:08.981Z"
       }
     ]
   },
@@ -21321,6 +16830,267 @@
         "value": false,
         "passed": true,
         "detail": null
+      }
+    ]
+  },
+  "1540008727262797935": {
+    "id": "1540008727262797935",
+    "tag": "fred055850",
+    "username": "fred055850",
+    "avatar": "c82b3fa769ed6e6ffdea579381ed5f5c",
+    "status": "active",
+    "present": true,
+    "firstSeen": "2026-09-03T01:09:20.845Z",
+    "joinedAt": "2026-08-29T07:02:41.683Z",
+    "leftAt": null,
+    "kickedAt": null,
+    "bannedAt": null,
+    "banReason": null,
+    "verifiedAt": null,
+    "verificationResult": null,
+    "adminAccepted": null,
+    "adminAcceptedBy": null,
+    "reglementAcceptedAt": null,
+    "firstMessageAt": null,
+    "anniversaire": null,
+    "warnings": [],
+    "visits": 1,
+    "history": [
+      {
+        "event": "join",
+        "date": "2026-08-29T07:02:41.683Z"
+      }
+    ]
+  },
+  "475273612480479242": {
+    "id": "475273612480479242",
+    "tag": "maxou6fps_twitch",
+    "username": "maxou6fps_twitch",
+    "avatar": "845189f36e29ee04616d0bb8f19a2709",
+    "status": "active",
+    "present": true,
+    "firstSeen": "2026-09-03T01:09:20.850Z",
+    "joinedAt": "2026-08-20T16:37:37.302Z",
+    "leftAt": null,
+    "kickedAt": null,
+    "bannedAt": null,
+    "banReason": null,
+    "verifiedAt": null,
+    "verificationResult": null,
+    "adminAccepted": null,
+    "adminAcceptedBy": null,
+    "reglementAcceptedAt": null,
+    "firstMessageAt": null,
+    "anniversaire": null,
+    "warnings": [],
+    "visits": 1,
+    "history": [
+      {
+        "event": "join",
+        "date": "2026-08-20T16:37:37.302Z"
+      }
+    ]
+  },
+  "281119579034615818": {
+    "id": "281119579034615818",
+    "tag": "bystronic7458",
+    "username": "bystronic7458",
+    "avatar": null,
+    "status": "active",
+    "present": true,
+    "firstSeen": "2026-09-03T01:09:20.860Z",
+    "joinedAt": "2026-08-30T18:32:03.058Z",
+    "leftAt": null,
+    "kickedAt": null,
+    "bannedAt": null,
+    "banReason": null,
+    "verifiedAt": null,
+    "verificationResult": null,
+    "adminAccepted": null,
+    "adminAcceptedBy": null,
+    "reglementAcceptedAt": null,
+    "firstMessageAt": null,
+    "anniversaire": null,
+    "warnings": [],
+    "visits": 1,
+    "history": [
+      {
+        "event": "join",
+        "date": "2026-08-30T18:32:03.058Z"
+      }
+    ]
+  },
+  "450319189186707466": {
+    "id": "450319189186707466",
+    "tag": ".byag",
+    "username": ".byag",
+    "avatar": "1742d94ce4f05dcb0e84b0c9f2c05dd9",
+    "status": "active",
+    "present": true,
+    "firstSeen": "2026-09-03T01:09:20.886Z",
+    "joinedAt": "2026-08-23T17:12:35.916Z",
+    "leftAt": null,
+    "kickedAt": null,
+    "bannedAt": null,
+    "banReason": null,
+    "verifiedAt": null,
+    "verificationResult": null,
+    "adminAccepted": null,
+    "adminAcceptedBy": null,
+    "reglementAcceptedAt": null,
+    "firstMessageAt": null,
+    "anniversaire": null,
+    "warnings": [],
+    "visits": 1,
+    "history": [
+      {
+        "event": "join",
+        "date": "2026-08-23T17:12:35.916Z"
+      }
+    ]
+  },
+  "1404137589128040581": {
+    "id": "1404137589128040581",
+    "tag": "laurent04650",
+    "username": "laurent04650",
+    "avatar": "2622f71bce9f13422041bad66359cefd",
+    "status": "active",
+    "present": true,
+    "firstSeen": "2026-09-03T01:09:20.892Z",
+    "joinedAt": "2026-08-24T15:17:07.336Z",
+    "leftAt": null,
+    "kickedAt": null,
+    "bannedAt": null,
+    "banReason": null,
+    "verifiedAt": null,
+    "verificationResult": null,
+    "adminAccepted": null,
+    "adminAcceptedBy": null,
+    "reglementAcceptedAt": null,
+    "firstMessageAt": null,
+    "anniversaire": null,
+    "warnings": [],
+    "visits": 1,
+    "history": [
+      {
+        "event": "join",
+        "date": "2026-08-24T15:17:07.336Z"
+      }
+    ]
+  },
+  "294219315069059072": {
+    "id": "294219315069059072",
+    "tag": "keltores",
+    "username": "keltores",
+    "avatar": "3f429331466176bbaefcd75af1cde5d7",
+    "status": "active",
+    "present": true,
+    "firstSeen": "2026-09-03T01:09:20.961Z",
+    "joinedAt": "2026-08-21T12:51:07.260Z",
+    "leftAt": null,
+    "kickedAt": null,
+    "bannedAt": null,
+    "banReason": null,
+    "verifiedAt": null,
+    "verificationResult": null,
+    "adminAccepted": null,
+    "adminAcceptedBy": null,
+    "reglementAcceptedAt": null,
+    "firstMessageAt": null,
+    "anniversaire": null,
+    "warnings": [],
+    "visits": 1,
+    "history": [
+      {
+        "event": "join",
+        "date": "2026-08-21T12:51:07.260Z"
+      }
+    ]
+  },
+  "1241465859973714041": {
+    "id": "1241465859973714041",
+    "tag": "lerenardhinoo0809",
+    "username": "lerenardhinoo0809",
+    "avatar": "d34db142e399f306f175f8f22d9a45b1",
+    "status": "active",
+    "present": true,
+    "firstSeen": "2026-09-03T01:09:20.989Z",
+    "joinedAt": "2026-08-21T22:09:01.596Z",
+    "leftAt": null,
+    "kickedAt": null,
+    "bannedAt": null,
+    "banReason": null,
+    "verifiedAt": null,
+    "verificationResult": null,
+    "adminAccepted": null,
+    "adminAcceptedBy": null,
+    "reglementAcceptedAt": null,
+    "firstMessageAt": null,
+    "anniversaire": null,
+    "warnings": [],
+    "visits": 1,
+    "history": [
+      {
+        "event": "join",
+        "date": "2026-08-21T22:09:01.596Z"
+      }
+    ]
+  },
+  "1475486616318509108": {
+    "id": "1475486616318509108",
+    "tag": "riri_2835",
+    "username": "riri_2835",
+    "avatar": "a765d42097e79a09d9de4a7f446353c9",
+    "status": "active",
+    "present": true,
+    "firstSeen": "2026-09-03T01:09:20.994Z",
+    "joinedAt": "2026-08-29T06:55:12.291Z",
+    "leftAt": null,
+    "kickedAt": null,
+    "bannedAt": null,
+    "banReason": null,
+    "verifiedAt": null,
+    "verificationResult": null,
+    "adminAccepted": null,
+    "adminAcceptedBy": null,
+    "reglementAcceptedAt": null,
+    "firstMessageAt": null,
+    "anniversaire": null,
+    "warnings": [],
+    "visits": 1,
+    "history": [
+      {
+        "event": "join",
+        "date": "2026-08-29T06:55:12.291Z"
+      }
+    ]
+  },
+  "429616742797541376": {
+    "id": "429616742797541376",
+    "tag": "killian_mg_o",
+    "username": "killian_mg_o",
+    "avatar": "dff49354c975591a296e4f2443a41c32",
+    "status": "active",
+    "present": true,
+    "firstSeen": "2026-09-03T01:09:21.042Z",
+    "joinedAt": "2026-09-02T19:01:35.886Z",
+    "leftAt": null,
+    "kickedAt": null,
+    "bannedAt": null,
+    "banReason": null,
+    "verifiedAt": null,
+    "verificationResult": null,
+    "adminAccepted": null,
+    "adminAcceptedBy": null,
+    "reglementAcceptedAt": null,
+    "firstMessageAt": null,
+    "anniversaire": null,
+    "warnings": [],
+    "visits": 1,
+    "history": [
+      {
+        "event": "join",
+        "date": "2026-09-02T19:01:35.886Z"
       }
     ]
   }

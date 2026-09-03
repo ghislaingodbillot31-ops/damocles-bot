@@ -1,7 +1,11 @@
 require('dotenv').config();
 const db = require('./database');
 
-const STATUS_CHANNEL_ID = process.env.STATUS_CHANNEL_ID;
+let _cfgStatus = '';
+try { _cfgStatus = require('./config').get().STATUS_CHANNEL_ID || ''; } catch {}
+
+// Salon « bot-status » — priorité au .env, puis à la config dashboard, sinon valeur fixe
+const STATUS_CHANNEL_ID = process.env.STATUS_CHANNEL_ID || _cfgStatus || '1538533342150918246';
 const sleep = ms => new Promise(r => setTimeout(r, ms));
 
 async function clearStatusChannel(channel, clientId) {
