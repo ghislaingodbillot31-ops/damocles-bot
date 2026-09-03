@@ -24,6 +24,7 @@ const { startFS25Monitor }                             = require('./fs25-monitor
 const contrat                                          = require('./commands/contrat');
 const { startDailyTasks }                              = require('./dailytasks');
 const { updateStatusMessage }                          = require('./statusbot');
+const tempvoice                                        = require('./tempvoice');
 const cron                                             = require('node-cron');
 
 const VERIFICATION_ROLE_ID = process.env.VERIFICATION_ROLE_ID;
@@ -41,6 +42,7 @@ const client = new Client({
     GatewayIntentBits.GuildMessages,
     GatewayIntentBits.MessageContent,
     GatewayIntentBits.GuildBans,
+    GatewayIntentBits.GuildVoiceStates,
   ],
   partials: [Partials.Message, Partials.Channel],
 });
@@ -60,6 +62,7 @@ client.once(Events.ClientReady, async () => {
   startBirthdayTasks(client, cron);
   startFS25Monitor(client);
   startDailyTasks(client, cron);
+  tempvoice.startTempVoice(client);
 
   // Publier le HUB des exploitants
   try {
@@ -118,6 +121,11 @@ client.on(Events.GuildMemberRemove, async member => {
 // ── Ban ───────────────────────────────────────────────────────────────────────
 client.on(Events.GuildBanAdd, async ban => {
   await db.banMember(ban.user, ban.reason || 'Aucune raison', 'Discord');
+});
+
+// ── Vocal : supprimer les salons temporaires vides ───────────────────────────
+client.on(Events.VoiceStateUpdate, (oldState) => {
+  tempvoice.handleVoiceState(oldState).catch(() => {});
 });
 
 // ── Messages ──────────────────────────────────────────────────────────────────
@@ -211,6 +219,7 @@ client.on(Events.InteractionCreate, async interaction => {
       if (cid.startsWith('hub_expl_prodmodal_')) { await hub.handleHubExplProdModal(interaction); return; }
       if (cid.startsWith('contrat_modal_'))     { await contrat.handleContratModal(interaction);  return; }
       if (cid.startsWith('besoin_modal_'))      { await contrat.handleBesoinModal(interaction);   return; }
+      if (cid.startsWith('voice_rename_modal_') || cid.startsWith('voice_limit_modal_')) { await tempvoice.handleVoiceModal(interaction); return; }
     } catch (err) { console.error('Erreur modal :', err.message); }
     return;
   }
@@ -234,6 +243,12 @@ client.on(Events.InteractionCreate, async interaction => {
     if (id.startsWith('contrat_deal_done_'))    { await contrat.handleContratDealDone(interaction);    return; }
     if (id.startsWith('contrat_supprimer_'))    { await contrat.handleContratSupprimer(interaction);   return; }
   } catch (err) { console.error('Erreur bouton farming :', err.message); }
+
+  // Boutons salons vocaux temporaires
+  try {
+    if (id === 'voice_create')                { await tempvoice.handleVoiceCreate(interaction);  return; }
+    if (/^voice_(rename|limit|lock|delete)_/.test(id)) { await tempvoice.handleVoiceControl(interaction); return; }
+  } catch (err) { console.error('Erreur bouton vocal :', err.message); }
 
   // Vérification admin
   if (id.startsWith('verify_')) {
