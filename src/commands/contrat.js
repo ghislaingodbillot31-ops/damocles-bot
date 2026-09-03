@@ -1,3 +1,5 @@
+const fs   = require('fs');
+const path = require('path');
 const {
   SlashCommandBuilder, ActionRowBuilder, ButtonBuilder, ButtonStyle,
   ModalBuilder, TextInputBuilder, TextInputStyle, ChannelType, PermissionFlagsBits,
@@ -6,6 +8,7 @@ const exp = require('../exploitation');
 const { agrilog } = require('../agrilog');
 
 const CONTRAT_CHANNEL = '1544735442589450270';
+const SESSION_PATH    = path.join(__dirname, '..', '..', 'data', 'contrat-sessions.json');
 
 function autoClean(interaction, delay = 4000) {
   setTimeout(() => { interaction.deleteReply().catch(() => {}); }, delay);
@@ -47,7 +50,30 @@ async function startContratFlow(interaction) {
   await interaction.showModal(modal);
 }
 
+// ── Sessions de contrat (persistées : survivent aux redémarrages) ───────────
 const contratSession = new Map();
+
+function loadSessions() {
+  try {
+    const obj = JSON.parse(fs.readFileSync(SESSION_PATH, 'utf-8'));
+    for (const [k, v] of Object.entries(obj)) contratSession.set(k, v);
+    console.log('📋 ' + contratSession.size + ' session(s) de contrat rechargée(s)');
+  } catch {}
+}
+
+function saveSessions() {
+  try {
+    fs.mkdirSync(path.dirname(SESSION_PATH), { recursive: true });
+    fs.writeFileSync(SESSION_PATH, JSON.stringify(Object.fromEntries(contratSession), null, 2), 'utf-8');
+  } catch (err) {
+    console.error('⚠️ contrat — sauvegarde sessions :', err.message);
+  }
+}
+
+function setSession(key, data) { contratSession.set(key, data); saveSessions(); }
+function delSession(key)       { contratSession.delete(key); saveSessions(); }
+
+loadSessions();
 
 module.exports = {
   data: new SlashCommandBuilder()
@@ -89,7 +115,7 @@ async function handleContratModal(interaction) {
 
   const msg = await channel.send(disponibleMessage(data));
   data.messageId = msg.id;
-  contratSession.set('msg_' + msg.id, data);
+  setSession('msg_' + msg.id, data);
 
   await agrilog(interaction.guild, '🆕 **' + exploit.nom + '** a publié un contrat — ' + travail);
 
@@ -206,7 +232,7 @@ async function handleContratAccepter(interaction) {
   }
 
   data.negoChannelId = negoChannel.id;
-  contratSession.set('msg_' + data.messageId, data);
+  setSession('msg_' + data.messageId, data);
 
   await agrilog(interaction.guild, (isBesoin(data) ? '📦' : '📋') + ' **' + accepteurExploit.nom + '** prend le '
     + (isBesoin(data) ? 'besoin' : 'contrat') + ' de **' + data.exploit.nom + '** — ' + objetShort(data));
@@ -271,17 +297,37 @@ async function handleContratDealOk(interaction) {
     components: [dealRow(mId, true)],
   });
 
+  data.status = 'confirme';
+  setSession('msg_' + mId, data);
+
   await agrilog(interaction.guild, '🤝 Accord confirmé : **' + data.exploit.nom + '** × **' + data.accepteurExploit.nom + '** — ' + objetShort(data));
+}
+
+// Ferme le salon de négociation même si la session est perdue (bot redémarré)
+async function ackSansData(interaction, titre) {
+  await interaction.update({
+    embeds: [{ title: titre, description: 'La session a été perdue (le bot a redémarré). Ce salon sera supprimé dans 10 secondes.', color: 0x95A5A6 }],
+    components: [],
+  }).catch(() => {});
+  setTimeout(() => interaction.channel?.delete().catch(() => {}), 10000);
 }
 
 // ── « Contrat refusé » → salon supprimé + contrat redevient disponible ──────
 async function handleContratDealRefuse(interaction) {
   const mId  = interaction.customId.replace('contrat_deal_refuse_', '');
   const data = contratSession.get('msg_' + mId);
-  if (!data) { await interaction.reply({ content: '❌ Données introuvables.', flags: 64 }); autoClean(interaction); return; }
+  if (!data)                          { await ackSansData(interaction, '❌ NÉGOCIATION REFUSÉE'); return; }
   if (!canDecide(interaction, data)) { await interaction.reply({ content: '❌ Seuls les deux exploitants concernés peuvent décider.', flags: 64 }); autoClean(interaction); return; }
 
-  // Remettre le contrat public en disponible
+  // 1) Acquitter le clic tout de suite (avant tout appel réseau lent)
+  await interaction.update({
+    embeds: [{ title: '❌ ' + LABEL(data) + ' REFUSÉ', description: 'L\'annonce redevient disponible. Ce salon sera supprimé dans quelques secondes.', color: 0xE74C3C }],
+    components: [],
+  });
+  setTimeout(() => interaction.channel.delete().catch(() => {}), 8000);
+
+  // 2) Remettre le contrat public en disponible
+  const accepteurNom = data.accepteurExploit?.nom || '?';
   try {
     const ch = interaction.guild.channels.cache.get(data.contratChannelId)
       || await interaction.guild.channels.fetch(data.contratChannelId).catch(() => null);
@@ -289,18 +335,11 @@ async function handleContratDealRefuse(interaction) {
     if (contratMsg) await contratMsg.edit(disponibleMessage(data));
   } catch {}
 
-  const accepteurNom = data.accepteurExploit?.nom || '?';
   data.status = 'disponible';
   delete data.accepteurId;
   delete data.accepteurExploit;
   delete data.negoChannelId;
-  contratSession.set('msg_' + mId, data);
-
-  await interaction.update({
-    embeds: [{ title: '❌ ' + LABEL(data) + ' REFUSÉ', description: 'L\'annonce redevient disponible. Ce salon sera supprimé dans quelques secondes.', color: 0xE74C3C }],
-    components: [],
-  });
-  setTimeout(() => interaction.channel.delete().catch(() => {}), 8000);
+  setSession('msg_' + mId, data);
 
   await agrilog(interaction.guild, '❌ ' + (isBesoin(data) ? 'Besoin' : 'Contrat') + ' refusé : **' + data.exploit.nom + '** × **' + accepteurNom + '** — annonce remise en disponible');
 }
@@ -309,10 +348,17 @@ async function handleContratDealRefuse(interaction) {
 async function handleContratDealDone(interaction) {
   const mId  = interaction.customId.replace('contrat_deal_done_', '');
   const data = contratSession.get('msg_' + mId);
-  if (!data) { await interaction.reply({ content: '❌ Données introuvables.', flags: 64 }); autoClean(interaction); return; }
+  if (!data)                          { await ackSansData(interaction, '🏁 NÉGOCIATION TERMINÉE'); return; }
   if (!canDecide(interaction, data)) { await interaction.reply({ content: '❌ Seuls les deux exploitants concernés peuvent décider.', flags: 64 }); autoClean(interaction); return; }
 
-  // Supprimer le contrat public
+  // 1) Acquitter le clic tout de suite
+  await interaction.update({
+    embeds: [{ title: '🏁 ' + LABEL(data) + ' TERMINÉ', description: 'L\'annonce a été retirée. Ce salon sera supprimé dans 10 secondes.', color: 0x2ECC71 }],
+    components: [],
+  });
+  setTimeout(() => interaction.channel.delete().catch(() => {}), 10000);
+
+  // 2) Supprimer le contrat public
   try {
     const ch = interaction.guild.channels.cache.get(data.contratChannelId)
       || await interaction.guild.channels.fetch(data.contratChannelId).catch(() => null);
@@ -320,13 +366,7 @@ async function handleContratDealDone(interaction) {
     if (contratMsg) await contratMsg.delete().catch(() => {});
   } catch {}
 
-  contratSession.delete('msg_' + mId);
-
-  await interaction.update({
-    embeds: [{ title: '🏁 ' + LABEL(data) + ' TERMINÉ', description: 'L\'annonce a été retirée. Ce salon sera supprimé dans 10 secondes.', color: 0x2ECC71 }],
-    components: [],
-  });
-  setTimeout(() => interaction.channel.delete().catch(() => {}), 10000);
+  delSession('msg_' + mId);
 
   await agrilog(interaction.guild, '🏁 ' + (isBesoin(data) ? 'Besoin effectué' : 'Contrat terminé')
     + ' : **' + data.exploit.nom + '** (client) × **' + (data.accepteurExploit?.nom || '?') + '** (prestataire) — ' + objetShort(data));
@@ -347,7 +387,7 @@ async function handleContratSupprimer(interaction) {
       || await interaction.guild.channels.fetch(data.negoChannelId).catch(() => null);
     if (negoCh) await negoCh.delete().catch(() => {});
   }
-  contratSession.delete('msg_' + interaction.message.id);
+  delSession('msg_' + interaction.message.id);
 
   await interaction.message.delete().catch(() => {});
   await interaction.reply({ embeds: [{ description: '🗑️ Annonce supprimée.', color: 0x95A5A6 }], flags: 64 });
@@ -398,7 +438,7 @@ async function handleBesoinModal(interaction) {
   const data = { kind: 'besoin', exploit, type, quantite, ownerId: userId, status: 'disponible' };
   const msg  = await channel.send(disponibleMessage(data));
   data.messageId = msg.id;
-  contratSession.set('msg_' + msg.id, data);
+  setSession('msg_' + msg.id, data);
 
   await agrilog(interaction.guild, '🆕 **' + exploit.nom + '** recherche : ' + objetShort(data));
 

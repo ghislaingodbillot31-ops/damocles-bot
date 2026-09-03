@@ -26,6 +26,7 @@ const { startDailyTasks }                              = require('./dailytasks')
 const { updateStatusMessage }                          = require('./statusbot');
 const tempvoice                                        = require('./tempvoice');
 const levels                                           = require('./levels');
+const { postRolesHeader }                              = require('./roles');
 const cron                                             = require('node-cron');
 
 const VERIFICATION_ROLE_ID = process.env.VERIFICATION_ROLE_ID;
@@ -66,6 +67,13 @@ client.once(Events.ClientReady, async () => {
   startDailyTasks(client, cron);
   tempvoice.startTempVoice(client);
   levels.startLevels(client);
+
+  // En-tête explicatif du salon des rôles
+  try {
+    await postRolesHeader(client);
+  } catch (err) {
+    console.error('⚠️ Erreur en-tête des rôles :', err.message);
+  }
 
   // Publier le HUB des exploitants
   try {

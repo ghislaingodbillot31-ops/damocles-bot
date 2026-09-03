@@ -25,19 +25,23 @@ function levelFromXp(xp)      { let l = 0; while (xp >= totalXpForLevel(l + 1)) 
 // ── État ─────────────────────────────────────────────────────────────────────
 let _client = null;
 let _leaderboardMsgId = null;
+let _baremeMsgId = null;
 let _refreshTimer = null;
 const cooldowns = new Map();   // userId -> { msg, img }
-const voiceSince = new Map();  // userId -> timestamp de la dernière minute créditée
 const pending   = new Map();   // userId -> { dxp, dvoiceMs, dinvites, user }
 const inviteCache = new Map(); // code -> uses
 
 function loadState() {
-  try { _leaderboardMsgId = JSON.parse(fs.readFileSync(STATE_PATH, 'utf-8')).leaderboardMsgId || null; } catch {}
+  try {
+    const s = JSON.parse(fs.readFileSync(STATE_PATH, 'utf-8'));
+    _leaderboardMsgId = s.leaderboardMsgId || null;
+    _baremeMsgId      = s.baremeMsgId || null;
+  } catch {}
 }
 function saveState() {
   try {
     if (!fs.existsSync(path.dirname(STATE_PATH))) fs.mkdirSync(path.dirname(STATE_PATH), { recursive: true });
-    fs.writeFileSync(STATE_PATH, JSON.stringify({ leaderboardMsgId: _leaderboardMsgId }, null, 2), 'utf-8');
+    fs.writeFileSync(STATE_PATH, JSON.stringify({ leaderboardMsgId: _leaderboardMsgId, baremeMsgId: _baremeMsgId }, null, 2), 'utf-8');
   } catch {}
 }
 
@@ -104,6 +108,23 @@ function baremeTexte() {
 
 const MEDAILLE = ['🥇', '🥈', '🥉'];
 
+// Bloc 1 : explication (statique)
+function baremeEmbed() {
+  return {
+    title: '📖  COMMENT GAGNER DES POINTS',
+    description: [
+      baremeTexte(),
+      '',
+      '━━━━━━━━━━━━━━━━━━━━',
+      '🎚️ **Niveaux** — ton XP total te fait monter de niveau.',
+      'Tape **/niveau** pour voir ta progression, ton rang, ton temps vocal et tes invitations.',
+      'Tape **/classement** pour le classement complet.',
+    ].join('\n'),
+    color: 0x5865F2,
+  };
+}
+
+// Bloc 2 : le classement (mis à jour en continu)
 async function classementEmbed() {
   const top = await getClassement(15);
   const lignes = top.length
@@ -114,10 +135,6 @@ async function classementEmbed() {
     title: '🏆  CLASSEMENT XP',
     description: lignes,
     color: 0xF1C40F,
-    fields: [
-      { name: '💡 Comment gagner des points ?', value: baremeTexte(), inline: false },
-      { name: '🎚️ Niveaux', value: 'Ton XP total te fait monter de niveau. Tape **/niveau** pour ta progression, ton rang, ton temps vocal et tes invitations.', inline: false },
-    ],
     footer: { text: 'EURO-AGRI — Mis à jour' },
     timestamp: new Date().toISOString(),
   };
@@ -150,15 +167,30 @@ async function editLeaderboard() {
   } finally { _refreshing = false; }
 }
 
-// Supprime et republie EN BAS du salon (démarrage, après un level-up, chaque heure)
+// Nettoie les anciens messages de classement du bot (garde les 🎉 montées de niveau)
+async function _clearChannel(ch) {
+  try {
+    const msgs = await ch.messages.fetch({ limit: 50 });
+    for (const [, m] of msgs) {
+      if (m.author.id !== _client.user.id) continue;
+      const estLevelUp = (m.embeds[0]?.description || '').startsWith('🎉');
+      if (!estLevelUp) await m.delete().catch(() => {}); // classement + tout autre message du bot
+    }
+  } catch {}
+}
+
+// Supprime TOUT message du bot et republie les 2 blocs EN BAS
+// (démarrage, après un level-up, chaque heure)
 async function refreshLeaderboard() {
   if (_refreshing) return;
   _refreshing = true;
   try {
     const ch = await _channel();
     if (!ch) return;
-    if (_leaderboardMsgId) await ch.messages.delete(_leaderboardMsgId).catch(() => {});
+    await _clearChannel(ch);
+    const b = await ch.send({ embeds: [baremeEmbed()] }).catch(() => null);
     const m = await ch.send({ embeds: [await classementEmbed()] }).catch(() => null);
+    _baremeMsgId      = b ? b.id : null;
     _leaderboardMsgId = m ? m.id : null;
     saveState();
   } finally { _refreshing = false; }
@@ -183,26 +215,28 @@ function onMessage(message) {
 }
 
 // ── Vocal ────────────────────────────────────────────────────────────────────
-function onVoice(oldState, newState) {
-  const uid = newState.id;
-  if (!newState.channelId) voiceSince.delete(uid);            // a quitté
-  else if (!voiceSince.has(uid)) voiceSince.set(uid, Date.now()); // vient d'arriver
-}
+// Le comptage se fait entièrement dans sweepVoice (scan des salons) — onVoice
+// est conservé pour l'API mais n'a plus rien à faire.
+function onVoice() {}
 
+// Balaye TOUS les salons vocaux du serveur toutes les minutes et crédite
+// chaque humain actif — fonctionne même s'il était déjà connecté au démarrage.
 function sweepVoice() {
   if (!_client) return;
   const guild = _client.guilds.cache.first();
   if (!guild) return;
 
-  for (const [uid] of [...voiceSince.entries()]) {
-    const gm = guild.members.cache.get(uid);
-    const vs = gm?.voice;
-    if (!vs || !vs.channelId || !vs.channel) { voiceSince.delete(uid); continue; }
-    if (gm.user.bot) { voiceSince.delete(uid); continue; }
+  const salonsVocaux = guild.channels.cache.filter(c => c.isVoiceBased && c.isVoiceBased());
+  for (const [, ch] of salonsVocaux) {
+    const humains = ch.members.filter(m => !m.user.bot);
+    if (humains.size < 2) continue; // besoin d'au moins 2 personnes
 
-    const humains = vs.channel.members.filter(m => !m.user.bot).size;
-    const actif   = humains >= 2 && !vs.selfMute && !vs.selfDeaf && !vs.serverMute && !vs.serverDeaf;
-    if (actif) queue(uid, gm.user, { xp: XP.VOICE_PER_MIN, voiceMs: 60_000 });
+    for (const [uid, gm] of humains) {
+      const vs = gm.voice;
+      if (!vs) continue;
+      if (vs.selfMute || vs.selfDeaf || vs.serverMute || vs.serverDeaf) continue;
+      queue(uid, gm.user, { xp: XP.VOICE_PER_MIN, voiceMs: 60_000 });
+    }
   }
 }
 
@@ -328,5 +362,5 @@ module.exports = {
   startLevels, onMessage, onVoice, onMemberAdd, cacheInvites, checkRetention, flush,
   levelFromXp, totalXpForLevel,
   getClassement, getRang, adminAjuster, adminReset,
-  classementEmbed, refreshLeaderboard,
+  baremeEmbed, classementEmbed, refreshLeaderboard,
 };

@@ -284,7 +284,7 @@ async function getStats() {
 }
 
 module.exports = {
-  initMongo, upsertMember, addWarning, banMember, kickMember, memberLeft,
+  initMongo, upsertMember, updateMember, addWarning, banMember, kickMember, memberLeft,
   reglementAccepted, setAnniversaire, getAnniversairesDuMois,
   getAnniversairesAujourdhui, getMember, getAllMembers, getPresentMembers,
   getAbsentMembers, recordActivity, getStats, STATUS,

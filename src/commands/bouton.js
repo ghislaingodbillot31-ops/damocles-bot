@@ -1,7 +1,8 @@
 const { SlashCommandBuilder, PermissionFlagsBits, ActionRowBuilder, ButtonBuilder, ButtonStyle } = require('discord.js');
 require('dotenv').config();
 
-const ROLES_CHANNEL_ID = process.env.ROLES_CHANNEL_ID;
+const { ROLES_CHANNEL } = require('../roles');
+const ROLES_CHANNEL_ID = process.env.ROLES_CHANNEL_ID || ROLES_CHANNEL;
 
 module.exports = {
   data: new SlashCommandBuilder()
