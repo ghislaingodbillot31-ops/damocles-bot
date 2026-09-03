@@ -76,8 +76,28 @@ async function _channel(client) {
     || await client.channels.fetch(ROLES_CHANNEL).catch(() => null);
 }
 
-// Rend le panneau : édite le message existant sur place (il ne bouge pas),
-// sinon en poste un nouveau.
+// Vide entièrement le salon (messages du bot ET des membres).
+async function _viderSalon(channel) {
+  for (let i = 0; i < 10; i++) {
+    const lot = await channel.messages.fetch({ limit: 100 }).catch(() => null);
+    if (!lot || lot.size === 0) return;
+
+    const recents = lot.filter(m => Date.now() - m.createdTimestamp < 14 * 86_400_000);
+    const vieux   = lot.filter(m => Date.now() - m.createdTimestamp >= 14 * 86_400_000);
+
+    if (recents.size >= 2) {
+      await channel.bulkDelete(recents, true).catch(() => {});
+    } else {
+      for (const [, m] of recents) await m.delete().catch(() => {});
+    }
+    for (const [, m] of vieux) await m.delete().catch(() => {});
+
+    if (lot.size < 100) return;
+  }
+}
+
+// Rend le panneau : vide le salon puis republie [explication + boutons] en bas.
+// → l'ordre est toujours : texte, puis boutons. Rien au-dessus.
 async function renderPanel(client) {
   const channel = await _channel(client);
   if (!channel) {
@@ -88,20 +108,12 @@ async function renderPanel(client) {
   const store   = loadStore();
   const payload = { embeds: [headerEmbed()], components: buildComponents(store.buttons) };
 
-  if (store.messageId) {
-    const msg = await channel.messages.fetch(store.messageId).catch(() => null);
-    if (msg && msg.author.id === client.user.id) {
-      await msg.edit(payload).catch(() => {});
-      console.log('🎭 Panneau des rôles actualisé (' + store.buttons.length + ' bouton(s))');
-      return;
-    }
-  }
-
+  await _viderSalon(channel);
   const sent = await channel.send(payload).catch(() => null);
   if (sent) {
     store.messageId = sent.id;
     saveStore(store);
-    console.log('🎭 Panneau des rôles publié');
+    console.log('🎭 Panneau des rôles republié (' + store.buttons.length + ' bouton(s))');
   }
 }
 
