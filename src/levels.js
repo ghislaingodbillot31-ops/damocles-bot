@@ -351,6 +351,84 @@ async function checkRetention() {
   return bonus;
 }
 
+// ── Backfill : reconstruit l'XP « message » depuis l'historique des salons ──
+// Parcourt tous les salons texte visibles, compte les messages par membre
+// (règle 1 message / minute comme en direct) et FIXE l'XP message de chacun.
+// voiceMs / invites / bonus déjà acquis sont conservés.
+async function backfillFromHistory(guild, { jours = 90, maxParSalon = 8000, onProgress } = {}) {
+  const depuis = Date.now() - jours * 86_400_000;
+
+  // 1) collecte des timestamps de messages par auteur
+  const parAuteur = new Map(); // userId -> number[] (ms)
+  const moi = guild.members.me || await guild.members.fetchMe().catch(() => null);
+  const salons = guild.channels.cache.filter(c => {
+    try {
+      if (!c.isTextBased || !c.isTextBased()) return false;
+      if (c.isThread && c.isThread()) return false;
+      if (!c.viewable) return false;
+      return !moi || !!c.permissionsFor(moi)?.has('ReadMessageHistory');
+    } catch { return false; }
+  });
+
+  let salonsFaits = 0;
+  let messagesLus = 0;
+
+  for (const [, ch] of salons) {
+    let before;
+    let lusIci = 0;
+    try {
+      while (lusIci < maxParSalon) {
+        const lot = await ch.messages.fetch({ limit: 100, before }).catch(() => null);
+        if (!lot || lot.size === 0) break;
+
+        let stop = false;
+        for (const [, msg] of lot) {
+          before = msg.id;
+          if (msg.createdTimestamp < depuis) { stop = true; continue; }
+          if (msg.author.bot) continue;
+          const arr = parAuteur.get(msg.author.id) || [];
+          arr.push(msg.createdTimestamp);
+          parAuteur.set(msg.author.id, arr);
+        }
+        lusIci      += lot.size;
+        messagesLus += lot.size;
+        if (stop || lot.size < 100) break;
+      }
+    } catch (e) { console.error('⚠️ backfill ' + ch.name + ' :', e.message); }
+
+    salonsFaits++;
+    if (onProgress) await onProgress({ salon: ch.name, salonsFaits, total: salons.size, messagesLus }).catch(() => {});
+  }
+
+  // 2) conversion → XP avec la règle 1 message / minute
+  let membresCredites = 0;
+  for (const [uid, tsList] of parAuteur) {
+    tsList.sort((a, b) => a - b);
+    let comptes = 0;
+    let dernier = -Infinity;
+    for (const ts of tsList) {
+      if (ts - dernier >= XP.MESSAGE_CD_MS) { comptes++; dernier = ts; }
+    }
+    const xpMsg = comptes * XP.MESSAGE;
+    const r = rec(uid);
+    r.xp    = xpMsg;                 // on FIXE l'XP d'après l'historique des messages
+    r.level = levelFromXp(r.xp);
+    r.messages = comptes;           // info : nombre de messages comptés
+    r.backfilledAt = new Date().toISOString();
+    if (xpMsg > 0) membresCredites++;
+  }
+
+  saveXpNow();
+  await refreshLeaderboard();
+
+  return {
+    salons: salons.size,
+    messagesLus,
+    membresCredites,
+    jours,
+  };
+}
+
 // ── Getters pour les commandes ───────────────────────────────────────────────
 function getClassement(limit = 15) {
   return Object.entries(_xp)
@@ -443,4 +521,5 @@ module.exports = {
   levelFromXp, totalXpForLevel,
   getClassement, getRang, adminAjuster, adminReset,
   baremeEmbed, classementEmbed, refreshLeaderboard,
+  backfillFromHistory,
 };
