@@ -4,3 +4,6 @@ data/images/
 data/role-panels.json
 data/scheduled-messages.json
 data/feeds.json
+graphify-out/
+data/config.json
+data/translation.json

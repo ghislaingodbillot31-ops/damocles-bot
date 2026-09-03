@@ -1,5 +1,4 @@
 const { SlashCommandBuilder, PermissionFlagsBits, ActionRowBuilder, ButtonBuilder, ButtonStyle } = require('discord.js');
-const { getMemberStatus, getDaysInactive, getLastActivity, EXPEL_DAYS } = require('../activity');
 const db = require('../database');
 require('dotenv').config();
 
@@ -12,7 +11,7 @@ const queues = new Map();
 module.exports = {
   data: new SlashCommandBuilder()
     .setName('expulsion')
-    .setDescription('Liste les membres inactifs depuis +' + EXPEL_DAYS + ' jours, un par un')
+    .setDescription('Liste les membres inactifs et permet de les expulser')
     .setDefaultMemberPermissions(PermissionFlagsBits.KickMembers),
 
   async execute(interaction) {

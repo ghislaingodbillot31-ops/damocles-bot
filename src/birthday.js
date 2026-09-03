@@ -53,7 +53,8 @@ async function updateBirthdayChannel(client) {
   const todayMois = today.getMonth() + 1;
 
   // Récupérer tous les membres avec anniversaire
-  const allMembers = await db.getAllMembers().filter(m => m.anniversaire);
+  const allMembersRaw = await db.getAllMembers();
+  const allMembers = allMembersRaw.filter(m => m.anniversaire);
 
   // Grouper par mois
   const parMois = {};

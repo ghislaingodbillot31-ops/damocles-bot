@@ -19,7 +19,9 @@ const { createDashboard, setClient }                   = require('./dashboard');
 const scheduledMessages                                = require('./scheduled-messages');
 const { startKeepAlive }                               = require('./keepalive');
 const { startBirthdayTasks }                           = require('./birthday');
+const hub                                              = require('./hub');
 const { startFS25Monitor }                             = require('./fs25-monitor');
+const contrat                                          = require('./commands/contrat');
 const cron                                             = require('node-cron');
 
 const VERIFICATION_ROLE_ID = process.env.VERIFICATION_ROLE_ID;
@@ -55,6 +57,31 @@ client.once(Events.ClientReady, async () => {
   startKeepAlive();
   startBirthdayTasks(client, cron);
   startFS25Monitor(client);
+
+  // Publier le HUB des exploitants
+  try {
+    const hubChannel = client.channels.cache.get(hub.HUB_CHANNEL);
+    if (hubChannel) await hub.postHub(hubChannel);
+    console.log('🌾 HUB des exploitants publié');
+  } catch (err) {
+    console.error('⚠️ Erreur publication HUB :', err.message);
+  }
+
+  // Ré-attribuer le rôle Exploitant aux exploitants existants
+  try {
+    const guild = client.guilds.cache.first();
+    const exploitations = require('./exploitation').getAll();
+    for (const exploit of exploitations) {
+      const member = await guild.members.fetch(exploit.ownerId).catch(() => null);
+      if (member && !member.roles.cache.has(hub.EXPLOITANT_ROLE_ID)) {
+        await member.roles.add(hub.EXPLOITANT_ROLE_ID).catch(() => {});
+        console.log('✅ Rôle Exploitant attribué : ' + member.user.tag);
+      }
+    }
+    if (exploitations.length) console.log('🌾 ' + exploitations.length + ' exploitation(s)');
+  } catch (err) {
+    console.error('⚠️ Erreur rôles exploitants :', err.message);
+  }
 });
 
 // ── Nouveau membre ────────────────────────────────────────────────────────────
@@ -118,6 +145,7 @@ client.on(Events.InteractionCreate, async interaction => {
       'anniversaire': './commands/anniversaire',
       'verifier':     './commands/verifier',
       'sync-db':      './commands/sync-db',
+      'contrat':      './commands/contrat',
       'expulsion':    './commands/expulsion',
       'banid':        './commands/banid',
       'sanction':     './commands/sanction',
@@ -142,8 +170,59 @@ client.on(Events.InteractionCreate, async interaction => {
     return;
   }
 
+  // Select menu utilisateur (@) → ajout ouvrier
+  if (interaction.isUserSelectMenu()) {
+    try {
+      if (interaction.customId.startsWith('hub_expl_ouvadd_')) { await hub.handleHubExplOuvAdd(interaction); return; }
+    } catch (err) { console.error('Erreur user select :', err.message); }
+    return;
+  }
+
+  // Select menu (texte)
+  if (interaction.isStringSelectMenu()) {
+    const cid = interaction.customId;
+    try {
+      if (cid.startsWith('hub_expl_manage_'))  { await hub.handleHubExplManage(interaction);  return; }
+      if (cid.startsWith('hub_expl_setact_'))  { await hub.handleHubExplSetAct(interaction);  return; }
+      if (cid.startsWith('hub_expl_ouvdel_'))  { await hub.handleHubExplOuvDel(interaction);  return; }
+      if (cid.startsWith('hub_expl_recrute_')) { await hub.handleHubExplRecrute(interaction); return; }
+      if (cid.startsWith('hub_expl_proddel_')) { await hub.handleHubExplProdDel(interaction); return; }
+    } catch (err) { console.error('Erreur select menu :', err.message); }
+    return;
+  }
+
+  // Modal
+  if (interaction.isModalSubmit()) {
+    const cid = interaction.customId;
+    try {
+      if (cid === 'hub_expl_creer_modal')       { await hub.handleHubExplCreerModal(interaction); return; }
+      if (cid.startsWith('hub_expl_nom_'))      { await hub.handleHubExplNom(interaction);        return; }
+      if (cid.startsWith('hub_expl_prodmodal_')) { await hub.handleHubExplProdModal(interaction); return; }
+      if (cid.startsWith('contrat_modal_'))     { await contrat.handleContratModal(interaction);  return; }
+      if (cid.startsWith('besoin_modal_'))      { await contrat.handleBesoinModal(interaction);   return; }
+    } catch (err) { console.error('Erreur modal :', err.message); }
+    return;
+  }
+
   if (!interaction.isButton()) return;
   const id = interaction.customId;
+
+  // Boutons HUB des exploitants
+  try {
+    if (id === 'hub_expl')                    { await hub.handleHubExpl(interaction);        return; }
+    if (id === 'hub_expl_creer')              { await hub.handleHubExplCreer(interaction);   return; }
+    if (id === 'hub_contrat')                 { await contrat.startContratFlow(interaction); return; }
+    if (id === 'hub_besoin')                  { await contrat.handleBesoinButton(interaction); return; }
+    if (id === 'hub_annuaire')                { await hub.handleHubAnnuaire(interaction);    return; }
+    if (id === 'hub_annuaire_off')            { await hub.handleHubAnnuaireOff(interaction); return; }
+    if (id.startsWith('hub_expl_prodadd_'))   { await hub.handleHubExplProdAdd(interaction); return; }
+    if (id.startsWith('hub_expl_done_'))      { await hub.handleHubExplDone(interaction);    return; }
+    if (id.startsWith('contrat_accepter_'))     { await contrat.handleContratAccepter(interaction);    return; }
+    if (id.startsWith('contrat_deal_ok_'))      { await contrat.handleContratDealOk(interaction);      return; }
+    if (id.startsWith('contrat_deal_refuse_'))  { await contrat.handleContratDealRefuse(interaction);  return; }
+    if (id.startsWith('contrat_deal_done_'))    { await contrat.handleContratDealDone(interaction);    return; }
+    if (id.startsWith('contrat_supprimer_'))    { await contrat.handleContratSupprimer(interaction);   return; }
+  } catch (err) { console.error('Erreur bouton farming :', err.message); }
 
   // Vérification admin
   if (id.startsWith('verify_')) {

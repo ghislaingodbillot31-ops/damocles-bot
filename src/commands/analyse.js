@@ -1,5 +1,6 @@
 const { SlashCommandBuilder, PermissionFlagsBits } = require('discord.js');
-const { getMemberStatus, getDaysInactive, INACTIVE_DAYS, EXPEL_DAYS } = require('../activity');
+const INACTIVE_DAYS = 30;
+const EXPEL_DAYS = 60;
 const db = require('../database');
 require('dotenv').config();
 

@@ -50,13 +50,13 @@ function parseStats(xml) {
   const attrs    = serverM?.[1] || '';
   const mapName  = attrs.match(/mapName="([^"]*)"/)?.[1] || '?';
   // Le nom du serveur est dans l'attribut "name", pas "mapOverviewFilename"
-  let srvName = attrs.match(/(?<![a-zA-Z])name="([^"]*)"/)?.[1] || 'Euro Agri';
+  let srvName = attrs.match(/(?<![a-zA-Z])name="([^"]*)"/)?.[1] || 'EURO-AGRI';
   // Nettoyer si c'est un chemin de fichier
-  if (srvName.includes('/') || srvName.includes('$moddir$')) srvName = 'Euro Agri';
+  if (srvName.includes('/') || srvName.includes('$moddir$')) srvName = 'EURO-AGRI';
   const dayTime  = parseInt(attrs.match(/dayTime="([^"]*)"/)?.[1] || '0');
   const version  = attrs.match(/version="([^"]*)"/)?.[1] || '?';
   const numPlayers = attrs.match(/numPlayers="([^"]*)"/)?.[1] || '0';
-  const maxPlayers = attrs.match(/maxPlayers="([^"]*)"/)?.[1] || '?';
+  const maxPlayers = attrs.match(/maxPlayers="([^"]*)"/)?.[1] || attrs.match(/capacity="([^"]*)"/)?.[1] || '?';
 
   const h  = Math.floor(dayTime / 3600000);
   const mn = Math.floor(dayTime / 60000) % 60;
@@ -83,6 +83,13 @@ async function sendNotification(client, embed) {
   await channel.send({ embeds: [embed] }).catch(console.error);
 }
 
+// Log serveur en une seule ligne (connexion / déconnexion), sans ping
+async function sendLine(client, text) {
+  const channel = client.channels.cache.get(NOTIF_CHANNEL);
+  if (!channel) return;
+  await channel.send({ content: text, allowedMentions: { parse: [] } }).catch(console.error);
+}
+
 async function poll(client) {
   try {
     const res = await fetchStats();
@@ -91,27 +98,29 @@ async function poll(client) {
     const stats          = parseStats(res.data);
     const currentPlayers = stats.players;
 
+    const joueurs = stats.maxPlayers && stats.maxPlayers !== '?'
+      ? stats.numPlayers + '/' + stats.maxPlayers
+      : stats.numPlayers;
+
     if (isFirstPoll) {
       isFirstPoll = false;
       previousPlayers = currentPlayers;
       console.log('🎮 FS25 Monitor démarré — ' + currentPlayers.size + ' joueur(s)');
 
       const playerList = currentPlayers.size === 0
-        ? '*Aucun joueur connecté*'
-        : [...currentPlayers.entries()].map(([name, d]) =>
-            `🟢 **${name}**${d.isAdmin ? ' 👑' : ''}
-┗ Session : ${formatUptime(d.uptime)}`
-          ).join('\n');
+        ? 'Aucun joueur connecté'
+        : [...currentPlayers.entries()]
+            .map(([name, d]) => '🟢 ' + name + (d.isAdmin ? ' 👑' : '') + ' — ' + formatUptime(d.uptime))
+            .join('\n');
 
       await sendNotification(client, {
-        title: '🚜 ' + stats.srvName + ' — En ligne',
-        fields: [
-          { name: '🗺️ Carte',        value: stats.mapName,                                  inline: true },
-          { name: '🕐 Heure',         value: stats.time,                                     inline: true },
-          { name: '👥 Joueurs',        value: stats.numPlayers + '/' + stats.maxPlayers,      inline: true },
-          { name: '🎮 Version',        value: stats.version,                                  inline: true },
-          { name: '👤 En ligne',       value: playerList,                                     inline: false },
-        ],
+        description: [
+          '🚜 **Serveur** En ligne  /  🗺️ **Carte** ' + stats.mapName + '  /  🕐 **Heure** ' + stats.time,
+          '👥 **Joueurs** ' + joueurs + '  /  🎮 **Version** ' + stats.version,
+          '',
+          '👤 **Actuellement en ligne**',
+          playerList,
+        ].join('\n'),
         color: 0x2ECC71,
         footer: { text: 'FS25 Monitor — Damoclès Bot' },
         timestamp: new Date().toISOString(),
@@ -123,18 +132,7 @@ async function poll(client) {
     for (const [name, data] of currentPlayers) {
       if (!previousPlayers.has(name)) {
         console.log('🟢 FS25 — Connexion : ' + name);
-        await sendNotification(client, {
-          title: '🟢 Connexion au serveur',
-          fields: [
-            { name: '👤 Joueur',   value: name + (data.isAdmin ? ' 👑 Admin' : ''), inline: true },
-            { name: '👥 En ligne', value: currentPlayers.size + '/' + stats.maxPlayers + ' joueur(s)', inline: true },
-            { name: '🕐 Heure',   value: stats.time, inline: true },
-            { name: '📍 Position', value: `X: ${data.x} | Y: ${data.y} | Z: ${data.z}`, inline: false },
-          ],
-          color: 0x2ECC71,
-          footer: { text: 'FS25 Monitor — Damoclès Bot' },
-          timestamp: new Date().toISOString(),
-        });
+        await sendLine(client, '🟢 **' + name + '**' + (data.isAdmin ? ' 👑' : '') + ' s\'est connecté au serveur');
       }
     }
 
@@ -142,17 +140,7 @@ async function poll(client) {
     for (const [name, data] of previousPlayers) {
       if (!currentPlayers.has(name)) {
         console.log('🔴 FS25 — Déconnexion : ' + name);
-        await sendNotification(client, {
-          title: '🔴 Déconnexion du serveur',
-          fields: [
-            { name: '👤 Joueur',       value: name + (data.isAdmin ? ' 👑 Admin' : ''), inline: true },
-            { name: '👥 Restants',     value: currentPlayers.size + '/' + stats.maxPlayers + ' joueur(s)', inline: true },
-            { name: '⏱️ Session',      value: formatUptime(data.uptime), inline: true },
-          ],
-          color: 0xE74C3C,
-          footer: { text: 'FS25 Monitor — Damoclès Bot' },
-          timestamp: new Date().toISOString(),
-        });
+        await sendLine(client, '🔴 **' + name + '**' + (data.isAdmin ? ' 👑' : '') + ' s\'est déconnecté  ·  session ' + formatUptime(data.uptime));
       }
     }
 
