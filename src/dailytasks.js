@@ -13,6 +13,15 @@ async function refreshMembers(guild) {
     synced++;
   }
 
+  // Garde-fou : si le fetch renvoie beaucoup moins de monde que le serveur n'en
+  // compte (rate limit, cache partiel…), on ne touche à rien pour éviter de
+  // marquer par erreur des membres présents comme « partis ».
+  const attendu = guild.memberCount || membres.size;
+  if (membres.size < attendu * 0.8) {
+    console.warn('   ⚠️ Fetch incomplet (' + membres.size + '/' + attendu + ') — réconciliation des départs ignorée');
+    return { synced, left: 0 };
+  }
+
   // Marquer « partis » ceux qui ne sont plus sur le serveur
   const all = await db.getAllMembers();
   let left = 0;

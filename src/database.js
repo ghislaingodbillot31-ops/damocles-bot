@@ -220,18 +220,30 @@ async function removeMember(userId) {
   if (db[userId]) { delete db[userId]; saveDB(db); }
 }
 
-// Supprime les fiches obsolètes : membres partis sans historique de modération.
-// On garde : membres présents, bannis, et toute fiche avec au moins un avertissement.
+// Supprime UNIQUEMENT les fiches sans aucune information utile : membres qui ont
+// juste rejoint puis quitté, sans vérification, sans règlement, sans anniversaire,
+// sans avertissement, sans historique de modération.
+// Tout le reste est conservé (présents, bannis, kickés, vérifiés, anniversaires…).
 async function cleanDatabase() {
   const all = await getAllMembers();
   let removed = 0;
+
   for (const m of all) {
-    const keep = m.present
+    const keep =
+         m.present
       || m.status === STATUS.BANNED
       || m.status === STATUS.KICKED
-      || (Array.isArray(m.warnings) && m.warnings.length > 0);
+      || m.anniversaire
+      || m.reglementAcceptedAt
+      || m.verificationResult === 'ok'
+      || (m.visits || 1) > 1
+      || (Array.isArray(m.warnings) && m.warnings.length > 0)
+      || (Array.isArray(m.history) && m.history.some(h =>
+           !['join', 'rejoin', 'leave'].includes(h.event)));
+
     if (!keep) { await removeMember(m.id); removed++; }
   }
+
   return { before: all.length, removed, after: all.length - removed };
 }
 
