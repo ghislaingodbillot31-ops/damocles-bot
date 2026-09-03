@@ -49,6 +49,8 @@ function queue(userId, user, { xp = 0, voiceMs = 0, invites = 0 }) {
 }
 
 async function flush() {
+  let bougé = false;
+  let leveledUp = false;
   for (const [uid, p] of [...pending.entries()]) {
     pending.delete(uid);
     try {
@@ -67,10 +69,13 @@ async function flush() {
         voiceMs: (m.voiceMs || 0) + p.dvoiceMs,
         invites: (m.invites || 0) + p.dinvites,
       });
+      bougé = true;
 
-      if (newLevel > oldLevel) await announceLevelUp(uid, newLevel);
+      if (newLevel > oldLevel) { leveledUp = true; await announceLevelUp(uid, newLevel); }
     } catch (e) { console.error('⚠️ levels flush :', e.message); }
   }
+  if (leveledUp) await refreshLeaderboard();  // republie en bas après les 🎉
+  else if (bougé) await editLeaderboard();     // simple mise à jour du contenu
 }
 
 async function announceLevelUp(userId, level) {
@@ -84,8 +89,6 @@ async function announceLevelUp(userId, level) {
       color: 0xF1C40F,
     }],
   }).catch(() => {});
-  // Remonter le classement en bas du salon
-  await refreshLeaderboard();
 }
 
 // ── Bloc « comment gagner des points » ──────────────────────────────────────
@@ -122,21 +125,43 @@ async function classementEmbed() {
 
 // ── Message de classement permanent (toujours en bas du salon) ──────────────
 let _refreshing = false;
-async function refreshLeaderboard() {
-  if (!_client || !LEADERBOARD_CHANNEL || _refreshing) return;
+
+async function _channel() {
+  if (!_client || !LEADERBOARD_CHANNEL) return null;
+  return _client.channels.cache.get(LEADERBOARD_CHANNEL)
+    || await _client.channels.fetch(LEADERBOARD_CHANNEL).catch(() => null);
+}
+
+// Met à jour le contenu SANS déplacer le message (utilisé quand l'XP bouge)
+async function editLeaderboard() {
+  if (_refreshing) return;
   _refreshing = true;
   try {
-    const ch = _client.channels.cache.get(LEADERBOARD_CHANNEL)
-      || await _client.channels.fetch(LEADERBOARD_CHANNEL).catch(() => null);
+    const ch = await _channel();
     if (!ch) return;
-
-    if (_leaderboardMsgId) await ch.messages.delete(_leaderboardMsgId).catch(() => {});
-    const msg = await ch.send({ embeds: [await classementEmbed()] }).catch(() => null);
-    _leaderboardMsgId = msg ? msg.id : null;
+    const embed = await classementEmbed();
+    if (_leaderboardMsgId) {
+      const msg = await ch.messages.fetch(_leaderboardMsgId).catch(() => null);
+      if (msg) { await msg.edit({ embeds: [embed] }).catch(() => {}); return; }
+    }
+    const m = await ch.send({ embeds: [embed] }).catch(() => null);
+    _leaderboardMsgId = m ? m.id : null;
     saveState();
-  } finally {
-    _refreshing = false;
-  }
+  } finally { _refreshing = false; }
+}
+
+// Supprime et republie EN BAS du salon (démarrage, après un level-up, chaque heure)
+async function refreshLeaderboard() {
+  if (_refreshing) return;
+  _refreshing = true;
+  try {
+    const ch = await _channel();
+    if (!ch) return;
+    if (_leaderboardMsgId) await ch.messages.delete(_leaderboardMsgId).catch(() => {});
+    const m = await ch.send({ embeds: [await classementEmbed()] }).catch(() => null);
+    _leaderboardMsgId = m ? m.id : null;
+    saveState();
+  } finally { _refreshing = false; }
 }
 
 // ── Messages ─────────────────────────────────────────────────────────────────
