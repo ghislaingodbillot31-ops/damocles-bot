@@ -9,22 +9,38 @@ const DATA_DIR  = process.env.DATA_DIR ? path.resolve(process.env.DATA_DIR) : RE
 
 try { fs.mkdirSync(DATA_DIR, { recursive: true }); } catch {}
 
-// Premier montage d'un disque persistant vide : on y recopie les fichiers de
-// base versionnés dans le dépôt pour ne pas repartir de zéro.
+// Premier montage d'un disque persistant vide : on y recopie TOUS les fichiers
+// présents dans le data/ du dépôt (et le sous-dossier images/) pour ne pas
+// repartir de zéro. Un fichier déjà sur le disque n'est jamais écrasé.
 if (DATA_DIR !== REPO_DATA) {
-  for (const f of ['members.json', 'exploitations.json', 'config.json', 'welcome-config.json']) {
-    const dst = path.join(DATA_DIR, f);
-    const src = path.join(REPO_DATA, f);
-    try {
-      if (!fs.existsSync(dst) && fs.existsSync(src)) {
-        fs.copyFileSync(src, dst);
-        console.log('📦 Copie initiale ' + f + ' → ' + DATA_DIR);
+  const copierDossier = (srcDir, dstDir) => {
+    let entries = [];
+    try { entries = fs.readdirSync(srcDir, { withFileTypes: true }); } catch { return; }
+    for (const e of entries) {
+      const src = path.join(srcDir, e.name);
+      const dst = path.join(dstDir, e.name);
+      try {
+        if (e.isDirectory()) {
+          fs.mkdirSync(dst, { recursive: true });
+          copierDossier(src, dst);
+        } else if (!fs.existsSync(dst)) {
+          fs.copyFileSync(src, dst);
+          console.log('📦 Copie initiale ' + path.relative(REPO_DATA, src) + ' → ' + DATA_DIR);
+        }
+      } catch (err) {
+        console.error('⚠️ paths — copie ' + e.name + ' :', err.message);
       }
-    } catch (e) {
-      console.error('⚠️ paths — copie initiale ' + f + ' :', e.message);
     }
-  }
+  };
+  copierDossier(REPO_DATA, DATA_DIR);
 }
+
+// Récap au démarrage
+try {
+  const fichiers = fs.readdirSync(DATA_DIR).filter(f => f.endsWith('.json'));
+  console.log('💾 Stockage : ' + DATA_DIR + (DATA_DIR === REPO_DATA ? ' (local)' : ' (disque persistant)')
+    + ' — ' + fichiers.length + ' fichier(s)');
+} catch {}
 
 function dataPath(name) { return path.join(DATA_DIR, name); }
 
