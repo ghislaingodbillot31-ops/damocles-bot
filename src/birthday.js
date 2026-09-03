@@ -41,37 +41,19 @@ async function sendBirthdayMessages(client) {
   }
 }
 
-// ── Afficher TOUS les anniversaires de l'année groupés par mois ───────────────
+// ── Liste globale : prochain anniversaire en tête + tous les suivants ────────
 async function updateBirthdayChannel(client) {
   const guild   = client.guilds.cache.first();
   if (!guild) return;
   const channel = guild.channels.cache.get(BIRTHDAY_CHANNEL_ID);
   if (!channel) return;
 
-  const today    = new Date();
-  const todayDay = today.getDate();
-  const todayMois = today.getMonth() + 1;
+  const now    = new Date();
+  const today0 = new Date(now.getFullYear(), now.getMonth(), now.getDate());
 
-  // Récupérer tous les membres avec anniversaire
-  const allMembersRaw = await db.getAllMembers();
-  const allMembers = allMembersRaw.filter(m => m.anniversaire);
-
-  // Grouper par mois
-  const parMois = {};
-  for (let i = 1; i <= 12; i++) parMois[i] = [];
-
-  for (const m of allMembers) {
-    const parts = m.anniversaire.split('/');
-    const mois  = parseInt(parts[1]);
-    if (mois >= 1 && mois <= 12) parMois[mois].push(m);
-  }
-
-  // Trier chaque mois par jour
-  for (let i = 1; i <= 12; i++) {
-    parMois[i].sort((a, b) => {
-      return parseInt(a.anniversaire.split('/')[0]) - parseInt(b.anniversaire.split('/')[0]);
-    });
-  }
+  // Membres avec un anniversaire valide JJ/MM/AAAA
+  const all = (await db.getAllMembers())
+    .filter(m => m.anniversaire && /^\d{1,2}\/\d{1,2}\/\d{4}$/.test(m.anniversaire));
 
   // Effacer les anciens messages du bot
   try {
@@ -81,56 +63,69 @@ async function updateBirthdayChannel(client) {
     }
   } catch {}
 
-  // Message d'explication
+  if (!all.length) {
+    await channel.send({
+      embeds: [{
+        title: '🎂  ANNIVERSAIRES',
+        description: '*Aucun anniversaire enregistré pour le moment.*\n\nEnregistre le tien avec `/anniversaire JJ/MM/AAAA` (ex : `/anniversaire 20/11/1988`).',
+        color: 0xF1C40F,
+      }]
+    }).catch(console.error);
+    return;
+  }
+
+  // Prochaine occurrence de chaque anniversaire
+  const list = all.map(m => {
+    const [jj, mm, aaaa] = m.anniversaire.split('/').map(Number);
+    let next = new Date(now.getFullYear(), mm - 1, jj);
+    if (next < today0) next = new Date(now.getFullYear() + 1, mm - 1, jj);
+    const jours = Math.round((next - today0) / 86400000);
+    return { id: m.id, jj, mm, aaaa, next, jours, age: next.getFullYear() - aaaa, isToday: jours === 0 };
+  }).sort((a, b) => a.next - b.next);
+
+  const dateLongue = e => e.jj + ' ' + MOIS[e.mm].toLowerCase() + ' ' + e.next.getFullYear();
+  const dateCourte = e => String(e.jj).padStart(2, '0') + '/' + String(e.mm).padStart(2, '0');
+
+  const prochain = list[0];
+  const suivants = list.slice(1);
+
+  const tete = prochain.isToday
+    ? '## 🎉 Aujourd\'hui !\n> C\'est l\'anniversaire de <@' + prochain.id + '> — **' + prochain.age + ' ans** 🥳'
+    : '## 🎂 Prochain anniversaire\n> **le ' + dateLongue(prochain) + '** de <@' + prochain.id + '>\n'
+      + '> dans **' + prochain.jours + ' jour' + (prochain.jours > 1 ? 's' : '') + '** — il/elle aura **' + prochain.age + ' ans**';
+
+  const lignes = suivants.map(e =>
+    '• `' + dateCourte(e) + '` — <@' + e.id + '>  ·  ' + e.age + ' ans  ·  dans ' + e.jours + ' j'
+  );
+
+  // Respecter la limite de 4096 caractères
+  let corps = '';
+  let affiches = 0;
+  for (const l of lignes) {
+    if (corps.length + l.length + 1 > 3400) break;
+    corps += (corps ? '\n' : '') + l;
+    affiches++;
+  }
+  if (affiches < lignes.length) corps += '\n*… et ' + (lignes.length - affiches) + ' autre(s)*';
+
   await channel.send({
     embeds: [{
-      title: '🎂 Anniversaires — ' + today.getFullYear(),
+      title: '🎂  ANNIVERSAIRES  —  ' + all.length + ' enregistré' + (all.length > 1 ? 's' : ''),
       description: [
-        '**Comment enregistrer ton anniversaire ?**',
-        '> Utilise la commande `/anniversaire` suivie de ta date de naissance',
-        '> **Exemple :** `/anniversaire 20/11/1988`',
+        tete,
         '',
-        'Le jour de ton anniversaire, un message apparaîtra automatiquement dans le salon général !',
+        '**📋 Anniversaires suivants**',
+        corps || '*aucun autre*',
+        '',
+        '-# Enregistre le tien avec `/anniversaire JJ/MM/AAAA`',
       ].join('\n'),
       color: 0xF1C40F,
-      footer: { text: 'Mis à jour le ' + today.toLocaleDateString('fr-FR') + ' — Damoclès Bot' },
-      timestamp: new Date().toISOString(),
+      footer: { text: 'Mis à jour le ' + now.toLocaleDateString('fr-FR') + ' — Damoclès Bot' },
+      timestamp: now.toISOString(),
     }]
   }).catch(console.error);
 
-  // Un embed par mois (seulement les mois non vides)
-  for (let mois = 1; mois <= 12; mois++) {
-    const membres = parMois[mois];
-    if (!membres.length) continue;
-
-    const isMoisActuel = mois === todayMois;
-
-    const lines = membres.map(m => {
-      const parts  = m.anniversaire.split('/');
-      const jour   = parseInt(parts[0]);
-      const annee  = parseInt(parts[2]);
-      const age    = today.getFullYear() - annee;
-      const isToday = jour === todayDay && mois === todayMois;
-
-      const emoji  = isToday ? '🎉' : (mois < todayMois || (mois === todayMois && jour < todayDay) ? '✅' : '📅');
-      const name   = m.username || 'Inconnu';
-      const dateStr = String(jour).padStart(2, '0') + '/' + String(mois).padStart(2, '0');
-
-      return emoji + ' **' + name + '** — ' + dateStr + (isToday ? ' 🎂' : '') + ' *(' + age + ' ans)*';
-    }).join('\n');
-
-    await channel.send({
-      embeds: [{
-        title: (isMoisActuel ? '📍 ' : '') + MOIS[mois],
-        description: lines,
-        color: isMoisActuel ? 0xF1C40F : 0x2F3136,
-      }]
-    }).catch(console.error);
-
-    await new Promise(r => setTimeout(r, 300));
-  }
-
-  console.log('🎂 Salon anniversaires mis à jour — ' + allMembers.length + ' anniversaire(s)');
+  console.log('🎂 Salon anniversaires mis à jour — ' + all.length + ' anniversaire(s)');
 }
 
 // ── Tâches cron ───────────────────────────────────────────────────────────────
