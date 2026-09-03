@@ -9,7 +9,17 @@ const LOG_CHANNEL_ID     = process.env.LOG_CHANNEL_ID;
 // ── Config personnalisable ────────────────────────────────────────────────────
 function loadWelcomeConfig() {
   if (!fs.existsSync(CONFIG_PATH)) return {
-    message: "Bienvenue {pseudo} ! Tu as passé les premières étapes de ta vérification, désormais il ne te reste plus qu'à te présenter et à saluer le discord pour obtenir ton dernier rôle.\n\nSans cela tu seras automatiquement expulsé sous 24 heures.",
+    message: [
+      "Bienvenue {pseudo} ! Tu as passé les premières étapes de ta vérification, désormais il ne te reste plus qu'à suivre les étapes suivantes :",
+      '',
+      '• 👋 Dire bonjour dans le salon <#1538533261314236527>',
+      '• 🎭 Prendre un rôle dans le salon <#1538537709633802270>',
+      '',
+      "Ensuite, n'hésite pas à discuter et à rejoindre les salons vocaux !",
+      'À bientôt 👋',
+      '',
+      '⚠️ Si tu ne publies rien et ne te connectes pas, tu seras automatiquement expulsé sous 24 heures.',
+    ].join('\n'),
     color: '2ECC71',
     enabled: true,
   };
