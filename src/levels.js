@@ -1,4 +1,8 @@
-const db = require('./database');
+const fs   = require('fs');
+const path = require('path');
+const db   = require('./database');
+
+const STATE_PATH = path.join(__dirname, '..', 'data', 'levels.json');
 
 // ── Barème (tout est modifiable ici) ─────────────────────────────────────────
 const XP = {
@@ -10,7 +14,8 @@ const XP = {
   INVITE:         250,   // inviter un membre qui rejoint
   INVITE_KEEP:    150,   // bonus si l'invité reste 7 jours
 };
-const LEVELUP_CHANNEL = '1538533319430373516';
+const LEVELUP_CHANNEL     = '1538533319430373516'; // annonces de montée de niveau
+const LEADERBOARD_CHANNEL = '1538533319430373516'; // message de classement permanent
 
 // ── Courbe de niveaux ────────────────────────────────────────────────────────
 function xpToNext(level)      { return 5 * level * level + 50 * level + 100; }
@@ -19,10 +24,22 @@ function levelFromXp(xp)      { let l = 0; while (xp >= totalXpForLevel(l + 1)) 
 
 // ── État ─────────────────────────────────────────────────────────────────────
 let _client = null;
+let _leaderboardMsgId = null;
+let _refreshTimer = null;
 const cooldowns = new Map();   // userId -> { msg, img }
 const voiceSince = new Map();  // userId -> timestamp de la dernière minute créditée
 const pending   = new Map();   // userId -> { dxp, dvoiceMs, dinvites, user }
 const inviteCache = new Map(); // code -> uses
+
+function loadState() {
+  try { _leaderboardMsgId = JSON.parse(fs.readFileSync(STATE_PATH, 'utf-8')).leaderboardMsgId || null; } catch {}
+}
+function saveState() {
+  try {
+    if (!fs.existsSync(path.dirname(STATE_PATH))) fs.mkdirSync(path.dirname(STATE_PATH), { recursive: true });
+    fs.writeFileSync(STATE_PATH, JSON.stringify({ leaderboardMsgId: _leaderboardMsgId }, null, 2), 'utf-8');
+  } catch {}
+}
 
 function queue(userId, user, { xp = 0, voiceMs = 0, invites = 0 }) {
   const p = pending.get(userId) || { dxp: 0, dvoiceMs: 0, dinvites: 0, user: null };
@@ -51,7 +68,7 @@ async function flush() {
         invites: (m.invites || 0) + p.dinvites,
       });
 
-      if (newLevel > oldLevel) announceLevelUp(uid, newLevel);
+      if (newLevel > oldLevel) await announceLevelUp(uid, newLevel);
     } catch (e) { console.error('⚠️ levels flush :', e.message); }
   }
 }
@@ -67,6 +84,59 @@ async function announceLevelUp(userId, level) {
       color: 0xF1C40F,
     }],
   }).catch(() => {});
+  // Remonter le classement en bas du salon
+  await refreshLeaderboard();
+}
+
+// ── Bloc « comment gagner des points » ──────────────────────────────────────
+function baremeTexte() {
+  return [
+    '💬 **Message** — +' + XP.MESSAGE + ' XP *(1×/min)*',
+    '📸 **Message avec image / screenshot** — +' + XP.IMAGE + ' XP *(1×/5 min)*',
+    '🎙️ **Vocal** — +' + XP.VOICE_PER_MIN + ' XP / minute *(à 2+ personnes, micro non coupé)*',
+    '📥 **Inviter un membre qui rejoint** — +' + XP.INVITE + ' XP',
+    '🌱 **Ton invité reste 7 jours** — +' + XP.INVITE_KEEP + ' XP bonus',
+  ].join('\n');
+}
+
+const MEDAILLE = ['🥇', '🥈', '🥉'];
+
+async function classementEmbed() {
+  const top = await getClassement(15);
+  const lignes = top.length
+    ? top.map(e => (MEDAILLE[e.rang - 1] || '`#' + e.rang + '`') + ' <@' + e.id + '> — **Nv ' + e.level + '** · ' + e.xp.toLocaleString('fr-FR') + ' XP').join('\n')
+    : '*Personne n\'a encore d\'XP — sois le premier !*';
+
+  return {
+    title: '🏆  CLASSEMENT XP',
+    description: lignes,
+    color: 0xF1C40F,
+    fields: [
+      { name: '💡 Comment gagner des points ?', value: baremeTexte(), inline: false },
+      { name: '🎚️ Niveaux', value: 'Ton XP total te fait monter de niveau. Tape **/niveau** pour ta progression, ton rang, ton temps vocal et tes invitations.', inline: false },
+    ],
+    footer: { text: 'EURO-AGRI — Mis à jour' },
+    timestamp: new Date().toISOString(),
+  };
+}
+
+// ── Message de classement permanent (toujours en bas du salon) ──────────────
+let _refreshing = false;
+async function refreshLeaderboard() {
+  if (!_client || !LEADERBOARD_CHANNEL || _refreshing) return;
+  _refreshing = true;
+  try {
+    const ch = _client.channels.cache.get(LEADERBOARD_CHANNEL)
+      || await _client.channels.fetch(LEADERBOARD_CHANNEL).catch(() => null);
+    if (!ch) return;
+
+    if (_leaderboardMsgId) await ch.messages.delete(_leaderboardMsgId).catch(() => {});
+    const msg = await ch.send({ embeds: [await classementEmbed()] }).catch(() => null);
+    _leaderboardMsgId = msg ? msg.id : null;
+    saveState();
+  } finally {
+    _refreshing = false;
+  }
 }
 
 // ── Messages ─────────────────────────────────────────────────────────────────
@@ -215,17 +285,23 @@ async function adminReset() {
 // ── Démarrage ────────────────────────────────────────────────────────────────
 async function startLevels(client) {
   _client = client;
+  loadState();
   const guild = client.guilds.cache.first();
   if (guild) await cacheInvites(guild);
 
   setInterval(() => sweepVoice(), 60_000);
   setInterval(() => flush().catch(() => {}), 30_000);
+
+  await refreshLeaderboard();
+  _refreshTimer = setInterval(() => refreshLeaderboard().catch(() => {}), 60 * 60_000); // toutes les heures
+
   console.log('🎚️ Système de niveaux — prêt');
 }
 
 module.exports = {
-  XP, LEVELUP_CHANNEL,
+  XP, LEVELUP_CHANNEL, LEADERBOARD_CHANNEL,
   startLevels, onMessage, onVoice, onMemberAdd, cacheInvites, checkRetention, flush,
   levelFromXp, totalXpForLevel,
   getClassement, getRang, adminAjuster, adminReset,
+  classementEmbed, refreshLeaderboard,
 };

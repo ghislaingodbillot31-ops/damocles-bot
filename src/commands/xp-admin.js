@@ -24,12 +24,14 @@ module.exports = {
         embeds: [{ description: (montant >= 0 ? '➕ ' : '➖ ') + Math.abs(montant) + ' XP → <@' + membre.id + '>\nNouveau total : **' + r.xp.toLocaleString('fr-FR') + ' XP** (niveau ' + r.level + ')', color: 0x2ECC71 }],
         flags: 64,
       });
+      await levels.refreshLeaderboard();
       return;
     }
 
     if (sub === 'reset') {
       await interaction.deferReply({ flags: 64 });
       const n = await levels.adminReset();
+      await levels.refreshLeaderboard();
       await interaction.editReply({ content: '♻️ XP remis à zéro pour **' + n + '** membre(s).' });
     }
   },

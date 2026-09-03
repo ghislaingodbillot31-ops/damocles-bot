@@ -8,3 +8,4 @@ graphify-out/
 data/config.json
 data/translation.json
 data/tempvoice.json
+data/levels.json
