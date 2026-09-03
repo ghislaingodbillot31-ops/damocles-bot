@@ -30,78 +30,48 @@ async function updateStatusMessage(client, animated = false) {
 
   await clearStatusChannel(channel, client.user.id);
 
-  // Titre
   await postLine(channel, '> 🖥️ **DAMOCLES SECURITY SYSTEM v2.0**\n> Démarrage du système...', 0x2F3136);
-  await sleep(700);
+  await sleep(600);
 
-  // Connexion Discord
-  await postLine(channel, '`▶` ⚙️ Connexion Discord .............. ✅ **En ligne**', 0x2ECC71);
-  await sleep(500);
+  await postLine(channel, '`▶` ⚙️ Connexion Discord ............. ✅ **En ligne**', 0x2ECC71);
+  await sleep(400);
 
-  // Membres total (vrais membres Discord)
   const memberCount = guild ? guild.memberCount : stats.total;
-  await postLine(channel, '`▶` 👥 Membres total .................. ✅ **' + memberCount + ' membres**', 0x2ECC71);
-  await sleep(500);
+  await postLine(channel, '`▶` 👥 Membres du serveur ........... ✅ **' + memberCount + '**', 0x2ECC71);
+  await sleep(400);
 
-  // Comptes bannis
-  await postLine(channel, '`▶` 🔨 Comptes bannis ................. ✅ **' + stats.banned + '**', 0x2ECC71);
-  await sleep(500);
+  await postLine(channel, '`▶` 📇 Fiches en base ............... ✅ **' + stats.total + '** (' + stats.present + ' présents)', 0x2ECC71);
+  await sleep(400);
 
-  // Comptes avertis
-  await postLine(channel, '`▶` ⚠️ Comptes avertis ................ ✅ **' + stats.warned + '**', 0x2ECC71);
-  await sleep(500);
+  await postLine(channel, '`▶` 🔨 Comptes bannis ............... ✅ **' + stats.banned + '**', 0x2ECC71);
+  await sleep(400);
 
-  // Comptes refusés
-  const allMembersForRefused = await db.getAllMembers();
-  const refused = allMembersForRefused.filter(m => m.history?.some(h => h.event === 'kick' && h.moderator === 'Administration')).length;
-  await postLine(channel, '`▶` ❌ Comptes refusés ................ ✅ **' + refused + '**', 0x2ECC71);
-  await sleep(500);
+  await postLine(channel, '`▶` ⚠️ Comptes avertis .............. ✅ **' + stats.warned + '**', 0x2ECC71);
+  await sleep(400);
 
-  // Analyse des salons
-  if (guild) {
-    const channels = guild.channels.cache.filter(c => c.isTextBased && c.isTextBased() && c.viewable);
-    const total    = channels.size;
-    let   loaded   = 0;
+  // Comptes refusés par l'administration (kick avec raison « refusé »)
+  const allMembers = await db.getAllMembers();
+  const refused = allMembers.filter(m =>
+    Array.isArray(m.history) && m.history.some(h => h.event === 'kick' && /refus/i.test(h.detail || ''))
+  ).length;
+  await postLine(channel, '`▶` ❌ Comptes refusés .............. ✅ **' + refused + '**', 0x2ECC71);
+  await sleep(400);
 
-    const scanMsg = await postLine(channel, '`▶` 📂 Analyse des salons ............. ⏳ **0 / ' + total + '**', 0xF39C12);
+  // Exploitations EURO-AGRI
+  let nbExpl = 0;
+  try { nbExpl = require('./exploitation').getAll().filter(e => e.nom).length; } catch {}
+  await postLine(channel, '`▶` 🌾 Exploitations EURO-AGRI ...... ✅ **' + nbExpl + '**', 0x2ECC71);
+  await sleep(400);
 
-    for (const [, ch] of channels) {
-      loaded++;
-      if (scanMsg) {
-        await scanMsg.edit({
-          embeds: [{
-            description: '`▶` 📂 Analyse des salons ............. ⏳ **' + loaded + ' / ' + total + '** — `#' + ch.name + '`',
-            color: 0xF39C12,
-          }]
-        }).catch(() => {});
-      }
-      await sleep(80);
-    }
+  await postLine(channel, '`▶` 🛡️ Système de vérification ...... ✅ **Actif**', 0x2ECC71);
+  await sleep(400);
 
-    if (scanMsg) {
-      await scanMsg.edit({
-        embeds: [{
-          description: '`▶` 📂 Analyse des salons ............. ✅ **' + total + ' / ' + total + '** — Terminée',
-          color: 0x2ECC71,
-        }]
-      }).catch(() => {});
-    }
-    await sleep(500);
-  }
+  await postLine(channel, '`▶` 📋 Commandes .................... ✅ **10 slash + 2 menus**', 0x2ECC71);
+  await sleep(400);
 
-  // Système de vérification
-  await postLine(channel, '`▶` 🛡️ Système de vérification ........ ✅ **Actif**', 0x2ECC71);
-  await sleep(500);
+  await postLine(channel, '`▶` 🔄 Actualisation quotidienne .... ✅ **Planifiée — 04h00**', 0x2ECC71);
+  await sleep(400);
 
-  // Commandes
-  await postLine(channel, '`▶` 📋 Commandes disponibles .......... ✅ **6 commandes chargées**', 0x2ECC71);
-  await sleep(500);
-
-  // Scan hebdomadaire
-  await postLine(channel, '`▶` 🔄 Scan hebdomadaire .............. ✅ **Planifié — Lundi 08h00**', 0x2ECC71);
-  await sleep(500);
-
-  // Système opérationnel
   await postLine(channel, '> ✅ **Système opérationnel** — ' + now, 0x5865F2);
 }
 

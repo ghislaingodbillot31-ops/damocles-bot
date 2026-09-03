@@ -213,6 +213,28 @@ async function recordActivity(userId, type) {
   await updateMember(userId, null, { history: { event: type, date: new Date().toISOString() } });
 }
 
+// ── Nettoyage ─────────────────────────────────────────────────────────────────
+async function removeMember(userId) {
+  if (_col) { await _col.deleteOne({ id: userId }); return; }
+  const db = loadDB();
+  if (db[userId]) { delete db[userId]; saveDB(db); }
+}
+
+// Supprime les fiches obsolètes : membres partis sans historique de modération.
+// On garde : membres présents, bannis, et toute fiche avec au moins un avertissement.
+async function cleanDatabase() {
+  const all = await getAllMembers();
+  let removed = 0;
+  for (const m of all) {
+    const keep = m.present
+      || m.status === STATUS.BANNED
+      || m.status === STATUS.KICKED
+      || (Array.isArray(m.warnings) && m.warnings.length > 0);
+    if (!keep) { await removeMember(m.id); removed++; }
+  }
+  return { before: all.length, removed, after: all.length - removed };
+}
+
 async function getAnniversairesDuMois(mois) {
   const all = await getAllMembers();
   return all.filter(m => m.anniversaire && parseInt(m.anniversaire.split('/')[1]) === mois)
@@ -252,4 +274,5 @@ module.exports = {
   reglementAccepted, setAnniversaire, getAnniversairesDuMois,
   getAnniversairesAujourdhui, getMember, getAllMembers, getPresentMembers,
   getAbsentMembers, recordActivity, getStats, STATUS,
+  removeMember, cleanDatabase,
 };

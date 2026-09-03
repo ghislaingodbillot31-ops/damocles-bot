@@ -22,6 +22,8 @@ const { startBirthdayTasks }                           = require('./birthday');
 const hub                                              = require('./hub');
 const { startFS25Monitor }                             = require('./fs25-monitor');
 const contrat                                          = require('./commands/contrat');
+const { startDailyTasks }                              = require('./dailytasks');
+const { updateStatusMessage }                          = require('./statusbot');
 const cron                                             = require('node-cron');
 
 const VERIFICATION_ROLE_ID = process.env.VERIFICATION_ROLE_ID;
@@ -57,6 +59,7 @@ client.once(Events.ClientReady, async () => {
   startKeepAlive();
   startBirthdayTasks(client, cron);
   startFS25Monitor(client);
+  startDailyTasks(client, cron);
 
   // Publier le HUB des exploitants
   try {
@@ -81,6 +84,13 @@ client.once(Events.ClientReady, async () => {
     if (exploitations.length) console.log('🌾 ' + exploitations.length + ' exploitation(s)');
   } catch (err) {
     console.error('⚠️ Erreur rôles exploitants :', err.message);
+  }
+
+  // Message « Démarrage du système » dans le salon de statut
+  try {
+    await updateStatusMessage(client, true);
+  } catch (err) {
+    console.error('⚠️ Erreur message de statut :', err.message);
   }
 });
 
@@ -146,6 +156,7 @@ client.on(Events.InteractionCreate, async interaction => {
       'verifier':     './commands/verifier',
       'sync-db':      './commands/sync-db',
       'contrat':      './commands/contrat',
+      'maintenance':  './commands/maintenance',
       'expulsion':    './commands/expulsion',
       'banid':        './commands/banid',
       'sanction':     './commands/sanction',
