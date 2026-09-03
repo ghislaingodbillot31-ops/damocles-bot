@@ -22,10 +22,10 @@ const commands = [
 const rest = new REST().setToken(process.env.DISCORD_TOKEN);
 
 (async () => {
-  console.log('📡 Enregistrement des commandes...');
+  console.log('📡 Enregistrement de ' + commands.length + ' commandes...');
   await rest.put(
     Routes.applicationGuildCommands(process.env.CLIENT_ID, process.env.GUILD_ID),
     { body: commands }
   );
-  console.log('✅ Commandes enregistrées : /expulsion /banid /sanction /bouton /analyse /anniversaire /verifier /sync-db /contrat /maintenance + menus règlement & ticket');
+  console.log('✅ Commandes enregistrées : ' + commands.map(c => '/' + c.name).join(' '));
 })();
