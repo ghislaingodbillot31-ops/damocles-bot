@@ -6,7 +6,8 @@ const { ActionRowBuilder, ButtonBuilder, ButtonStyle } = require('discord.js');
 //   [ embed d'explication ]  +  [ boutons de rôle ]
 // Les boutons sont ajoutés/retirés via /bouton et le message se re-rend.
 const ROLES_CHANNEL = '1538537709633802270';
-const STORE_PATH    = path.join(__dirname, '..', 'data', 'roles-panel.json');
+const { dataPath } = require('./paths');
+const STORE_PATH   = dataPath('roles-panel.json');
 const MAX_BOUTONS   = 25; // 5 rangées de 5
 
 const STYLES = {

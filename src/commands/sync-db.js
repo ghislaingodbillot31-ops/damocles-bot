@@ -24,7 +24,7 @@ async function syncDatabase(interaction) {
   const guild = interaction.guild;
   const now   = new Date().toISOString();
 
-  const DB_PATH = path.join(__dirname, '..', '..', 'data', 'members.json');
+  const DB_PATH = require('../paths').dataPath('members.json');
   let dbRaw = {};
   if (fs.existsSync(DB_PATH)) {
     dbRaw = JSON.parse(fs.readFileSync(DB_PATH, 'utf-8'));

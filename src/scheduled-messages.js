@@ -2,7 +2,8 @@ const fs   = require('fs');
 const path = require('path');
 const crypto = require('crypto');
 
-const DATA_PATH = path.join(__dirname, '..', 'data', 'scheduled-messages.json');
+const { dataPath } = require('./paths');
+const DATA_PATH = dataPath('scheduled-messages.json');
 
 function newId() {
   return crypto.randomBytes(8).toString('hex');

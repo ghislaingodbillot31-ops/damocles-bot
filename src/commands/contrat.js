@@ -7,8 +7,9 @@ const {
 const exp = require('../exploitation');
 const { agrilog } = require('../agrilog');
 
+const { dataPath }    = require('../paths');
 const CONTRAT_CHANNEL = '1544735442589450270';
-const SESSION_PATH    = path.join(__dirname, '..', '..', 'data', 'contrat-sessions.json');
+const SESSION_PATH    = dataPath('contrat-sessions.json');
 
 function autoClean(interaction, delay = 4000) {
   setTimeout(() => { interaction.deleteReply().catch(() => {}); }, delay);

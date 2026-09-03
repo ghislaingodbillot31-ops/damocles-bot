@@ -2,7 +2,8 @@ const fs     = require('fs');
 const path   = require('path');
 const crypto = require('crypto');
 
-const DATA_PATH = path.join(__dirname, '..', 'data', 'role-panels.json');
+const { dataPath } = require('./paths');
+const DATA_PATH = dataPath('role-panels.json');
 
 function load() {
   if (!fs.existsSync(DATA_PATH)) return [];

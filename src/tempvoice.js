@@ -8,7 +8,8 @@ const {
 // ── Config ────────────────────────────────────────────────────────────────────
 const PANEL_CHANNEL   = '1544898451706482728'; // salon texte où se trouve le bouton
 const VOICE_CATEGORY  = '1345486205810118806'; // catégorie des salons vocaux temporaires
-const STORE_PATH      = path.join(__dirname, '..', 'data', 'tempvoice.json');
+const { dataPath }    = require('./paths');
+const STORE_PATH      = dataPath('tempvoice.json');
 const SWEEP_MS        = 60_000; // vérification des salons vides
 const GRACE_MS        = 90_000; // délai avant de supprimer un salon jamais rejoint
 

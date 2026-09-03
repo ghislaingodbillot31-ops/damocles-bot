@@ -2,7 +2,8 @@ const fs   = require('fs');
 const path = require('path');
 require('dotenv').config();
 
-const CONFIG_PATH        = path.join(__dirname, '..', 'data', 'welcome-config.json');
+const { dataPath }       = require('./paths');
+const CONFIG_PATH        = dataPath('welcome-config.json');
 const WELCOME_CHANNEL_ID = process.env.WELCOME_CHANNEL_ID;
 const LOG_CHANNEL_ID     = process.env.LOG_CHANNEL_ID;
 

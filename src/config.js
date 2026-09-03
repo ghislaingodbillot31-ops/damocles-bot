@@ -1,7 +1,8 @@
 const fs   = require('fs');
 const path = require('path');
 
-const CONFIG_PATH = path.join(__dirname, '..', 'data', 'config.json');
+const { dataPath } = require('./paths');
+const CONFIG_PATH = dataPath('config.json');
 
 // Config par défaut
 const DEFAULT_CONFIG = {

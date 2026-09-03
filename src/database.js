@@ -1,7 +1,8 @@
 const fs   = require('fs');
 const path = require('path');
 
-const DB_PATH = path.join(__dirname, '..', 'data', 'members.json');
+const { dataPath } = require('./paths');
+const DB_PATH = dataPath('members.json');
 const USE_MONGO = !!process.env.MONGODB_URI && process.env.NODE_ENV !== 'local';
 
 let _col = null;

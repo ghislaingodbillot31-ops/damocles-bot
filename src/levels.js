@@ -2,9 +2,10 @@ const fs   = require('fs');
 const path = require('path');
 const db   = require('./database');
 
-const STATE_PATH = path.join(__dirname, '..', 'data', 'levels.json'); // ids des messages du salon
-const XP_PATH    = path.join(__dirname, '..', 'data', 'xp.json');      // LES POINTS (source de vérité)
-const MEMBERS_PATH = path.join(__dirname, '..', 'data', 'members.json');
+const { dataPath } = require('./paths');
+const STATE_PATH   = dataPath('levels.json'); // ids des messages du salon
+const XP_PATH      = dataPath('xp.json');     // LES POINTS (source de vérité)
+const MEMBERS_PATH = dataPath('members.json');
 
 // ── Barème (tout est modifiable ici) ─────────────────────────────────────────
 const XP = {
