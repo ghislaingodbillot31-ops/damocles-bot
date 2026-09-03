@@ -56,5 +56,12 @@ module.exports = {
       }],
       flags: 64,
     });
+
+    // Rafraîchir la liste des anniversaires
+    try {
+      await require('../birthday').updateBirthdayChannel(interaction.client);
+    } catch (err) {
+      console.error('⚠️ Rafraîchissement liste anniversaires :', err.message);
+    }
   },
 };
