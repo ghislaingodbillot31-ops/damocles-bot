@@ -210,10 +210,11 @@ client.on(Events.InteractionCreate, async interaction => {
     return;
   }
 
-  // Select menu utilisateur (@) → ajout ouvrier
+  // Select menu utilisateur (@) → ajout ouvrier / co-exploitant
   if (interaction.isUserSelectMenu()) {
     try {
       if (interaction.customId.startsWith('hub_expl_ouvadd_')) { await hub.handleHubExplOuvAdd(interaction); return; }
+      if (interaction.customId.startsWith('hub_expl_coadd_'))  { await hub.handleHubExplCoAdd(interaction);  return; }
     } catch (err) { console.error('Erreur user select :', err.message); }
     return;
   }
@@ -225,6 +226,8 @@ client.on(Events.InteractionCreate, async interaction => {
       if (cid.startsWith('hub_expl_manage_'))  { await hub.handleHubExplManage(interaction);  return; }
       if (cid.startsWith('hub_expl_setact_'))  { await hub.handleHubExplSetAct(interaction);  return; }
       if (cid.startsWith('hub_expl_ouvdel_'))  { await hub.handleHubExplOuvDel(interaction);  return; }
+      if (cid.startsWith('hub_expl_codel_'))   { await hub.handleHubExplCoDel(interaction);   return; }
+      if (cid.startsWith('hub_expl_couleur_')) { await hub.handleHubExplCouleur(interaction); return; }
       if (cid.startsWith('hub_expl_recrute_')) { await hub.handleHubExplRecrute(interaction); return; }
       if (cid.startsWith('hub_expl_proddel_')) { await hub.handleHubExplProdDel(interaction); return; }
     } catch (err) { console.error('Erreur select menu :', err.message); }
@@ -258,6 +261,7 @@ client.on(Events.InteractionCreate, async interaction => {
     if (id === 'hub_annuaire_off')            { await hub.handleHubAnnuaireOff(interaction); return; }
     if (id.startsWith('hub_expl_prodadd_'))   { await hub.handleHubExplProdAdd(interaction); return; }
     if (id.startsWith('hub_expl_done_'))      { await hub.handleHubExplDone(interaction);    return; }
+    if (id.startsWith('hub_expl_switch_'))    { await hub.handleHubExplSwitch(interaction);  return; }
     if (id.startsWith('contrat_accepter_'))     { await contrat.handleContratAccepter(interaction);    return; }
     if (id.startsWith('contrat_deal_ok_'))      { await contrat.handleContratDealOk(interaction);      return; }
     if (id.startsWith('contrat_deal_refuse_'))  { await contrat.handleContratDealRefuse(interaction);  return; }

@@ -29,6 +29,34 @@ const ACTIVITES = [
   { label: '⚡ Biogaz',                       value: 'Biogaz' },
 ];
 
+// Couleurs d'embed proposées à l'exploitant (menu déroulant, pas de saisie libre).
+const PRESET_COLORS = [
+  { label: '🔵 Bleu',        value: 0x5865F2 },
+  { label: '🟢 Vert',        value: 0x2ECC71 },
+  { label: '🌲 Vert sombre', value: 0x1F8B4C },
+  { label: '🩵 Turquoise',   value: 0x1ABC9C },
+  { label: '💧 Cyan',        value: 0x3498DB },
+  { label: '🟣 Violet',      value: 0x9B59B6 },
+  { label: '🌸 Rose',        value: 0xE91E63 },
+  { label: '🔴 Rouge',       value: 0xE74C3C },
+  { label: '🟠 Orange',      value: 0xE67E22 },
+  { label: '🟡 Or',          value: 0xF1C40F },
+  { label: '🟤 Terre',       value: 0xA84300 },
+  { label: '⚪ Gris',        value: 0x95A5A6 },
+];
+const DEFAULT_COLOR = 0x2ECC71;
+
+// Toutes les exploitations qu'un joueur gère (créateur ou co-exploitant),
+// exploitation possédée en premier. Sert au menu « Mon exploitation ».
+function managedExploitations(uid) {
+  const all = exp.getAll();
+  const seen = new Set();
+  return [
+    ...all.filter(e => e.ownerId === uid),
+    ...all.filter(e => (e.coExploitants || []).includes(uid)),
+  ].filter(e => !seen.has(e.id) && seen.add(e.id));
+}
+
 // ── Utilitaire : supprimer un message éphémère une fois l'action terminée ─────
 function autoClean(interaction, delay = 4000) {
   setTimeout(() => { interaction.deleteReply().catch(() => {}); }, delay);
@@ -83,9 +111,10 @@ async function postHub(channel) {
 
 // ═══ BOUTON « Mon exploitation » ════════════════════════════════════════════
 async function handleHubExpl(interaction) {
-  const exploit = exp.getByOwner(interaction.user.id);
+  const uid  = interaction.user.id;
+  const list = managedExploitations(uid);
 
-  if (!exploit) {
+  if (!list.length) {
     await interaction.reply({
       embeds: [{ title: '🌾 Créer mon exploitation', description: 'Tu n\'as pas encore d\'exploitation. Clique ci-dessous pour en créer une !', color: 0x5865F2 }],
       components: [new ActionRowBuilder().addComponents(
@@ -97,13 +126,18 @@ async function handleHubExpl(interaction) {
     return;
   }
 
-  await interaction.reply({ ...manageMenu(exploit), flags: 64 });
+  await interaction.reply({ ...manageMenu(list[0], uid, list.slice(1)), flags: 64 });
   autoClean(interaction, 120000);
 }
 
 // Menu de gestion (réutilisé par le hub et par la carte). Renvoie un payload sans `flags`.
-function manageMenu(exploit) {
+// viewerId : qui consulte (pour n'afficher la gestion du co-exploitant qu'au créateur).
+// others   : autres exploitations gérées par le viewer → boutons de bascule.
+function manageMenu(exploit, viewerId, others = []) {
   const hasOuvriers = exploit.ouvriers?.length > 0;
+  const hasCo       = (exploit.coExploitants?.length || 0) > 0;
+  const isOwner     = viewerId === exploit.ownerId;
+
   const options = [
     { label: '📝 Renommer l\'exploitation', value: 'nom' },
     { label: '🥇 Activité principale',       value: 'principale' },
@@ -112,15 +146,28 @@ function manageMenu(exploit) {
       ? { label: '🥉 Activité supplémentaire', value: 'supplementaire' }
       : { label: '🥉 Activité supplémentaire', value: 'supplementaire', description: '🔒 Nécessite un ouvrier' },
     { label: '🧑‍🌾 Recrutement (oui / non)', value: 'recrute' },
+    { label: '🎨 Couleur de l\'exploitation', value: 'couleur' },
     { label: '🛒 Vos produits',             value: 'produits' },
     { label: '➕ Ajouter un ouvrier',        value: 'ouvrier_add' },
   ];
   if (hasOuvriers) options.push({ label: '➖ Retirer un ouvrier', value: 'ouvrier_del' });
+  if (isOwner && !hasCo) options.push({ label: '🤝 Ajouter un co-exploitant', value: 'coexpl_add' });
+  if (isOwner && hasCo)  options.push({ label: '➖ Retirer le co-exploitant', value: 'coexpl_del' });
 
   const menu = new StringSelectMenuBuilder()
     .setCustomId('hub_expl_manage_' + exploit.ownerId)
     .setPlaceholder('Que veux-tu faire ?')
     .addOptions(options);
+
+  const components = [new ActionRowBuilder().addComponents(menu)];
+  if (others.length) {
+    components.push(new ActionRowBuilder().addComponents(
+      ...others.slice(0, 4).map(o => new ButtonBuilder()
+        .setCustomId('hub_expl_switch_' + o.id)
+        .setLabel(('🔁 ' + o.nom).slice(0, 80))
+        .setStyle(ButtonStyle.Secondary)),
+    ));
+  }
 
   return {
     embeds: [{
@@ -130,12 +177,13 @@ function manageMenu(exploit) {
         { name: '🥈 Secondaire',     value: exploit.activiteSecondaire    || '*Non définie*', inline: true },
         { name: '🥉 Supplémentaire', value: hasOuvriers ? (exploit.activiteSupplementaire || '*Non définie*') : '🔒 *Nécessite ouvrier*', inline: true },
         { name: '🧑‍🌾 Recrutement',  value: exploit.recrute ? '✅ Ouvert' : '❌ Fermé', inline: true },
+        { name: '🤝 Co-exploitant',  value: hasCo ? exploit.coExploitants.map(id => '<@' + id + '>').join(', ') : '*Aucun*', inline: true },
         { name: '👷 Ouvriers',       value: hasOuvriers ? exploit.ouvriers.map(id => '<@' + id + '>').join(', ') : '*Aucun*', inline: true },
         { name: '🛒 Produits',       value: exploit.produits?.length ? exploit.produits.map(p => '• ' + p).join('\n') : '*Aucun*', inline: false },
       ],
-      color: 0x2ECC71,
+      color: exploit.couleur ?? DEFAULT_COLOR,
     }],
-    components: [new ActionRowBuilder().addComponents(menu)],
+    components,
   };
 }
 
@@ -163,7 +211,7 @@ function produitsView(exploit) {
     embeds: [{
       title: '🛒 Vos produits — ' + exploit.nom,
       description: list + '\n\nAjoute un produit, valide, puis recommence. Clique **✅ Terminé** quand tu as fini.',
-      color: 0x2ECC71,
+      color: exploit.couleur ?? DEFAULT_COLOR,
     }],
     components: rows,
   };
@@ -217,13 +265,20 @@ async function handleHubExplManage(interaction) {
   const exploit = exp.getByOwner(ownerId);
   if (!exploit) { await interaction.update({ embeds: [{ description: '❌ Exploitation introuvable.', color: 0xE74C3C }], components: [] }); return; }
 
-  if (!canManage(interaction, ownerId)) {
-    await interaction.reply({ content: '❌ Seul le propriétaire (ou un admin) peut gérer cette exploitation.', flags: 64 });
+  if (!canManage(interaction, exploit)) {
+    await interaction.reply({ content: '❌ Seul un exploitant (ou un admin) peut gérer cette exploitation.', flags: 64 });
     autoClean(interaction);
     return;
   }
 
   const choice = interaction.values[0];
+
+  // Gestion du co-exploitant : réservée au créateur (pas aux co-exploitants).
+  if ((choice === 'coexpl_add' || choice === 'coexpl_del') && interaction.user.id !== exploit.ownerId) {
+    await interaction.reply({ content: '❌ Seul le créateur de l\'exploitation peut gérer le co-exploitant.', flags: 64 });
+    autoClean(interaction);
+    return;
+  }
 
   if (choice === 'supplementaire' && !(exploit.ouvriers?.length > 0)) {
     await interaction.reply({ content: '❌ Il faut au moins un ouvrier pour débloquer l\'activité supplémentaire.', flags: 64 });
@@ -257,6 +312,43 @@ async function handleHubExplManage(interaction) {
 
   if (choice === 'produits') {
     await interaction.update(produitsView(exploit));
+    return;
+  }
+
+  if (choice === 'couleur') {
+    const menu = new StringSelectMenuBuilder()
+      .setCustomId('hub_expl_couleur_' + exploit.id)
+      .setPlaceholder('Choisis une couleur...')
+      .addOptions(PRESET_COLORS.map(c => ({ label: c.label, value: String(c.value) })));
+    await interaction.update({
+      embeds: [{ title: '🎨 Couleur — ' + exploit.nom, description: 'Choisis la couleur des embeds de ton exploitation (fiche, annuaire, annonces).', color: exploit.couleur ?? DEFAULT_COLOR }],
+      components: [new ActionRowBuilder().addComponents(menu)],
+    });
+    return;
+  }
+
+  if (choice === 'coexpl_add') {
+    const menu = new UserSelectMenuBuilder()
+      .setCustomId('hub_expl_coadd_' + exploit.id)
+      .setPlaceholder('Choisis le 2ᵉ exploitant...')
+      .setMaxValues(1);
+    await interaction.update({
+      embeds: [{ title: '🤝 Ajouter un co-exploitant — ' + exploit.nom,
+        description: 'Le co-exploitant aura **les mêmes droits que toi** : contrats, besoins, fiche, ouvriers, couleur.\nIl **ne pourra pas** te retirer, supprimer l\'exploitation, ni ajouter/retirer un autre co-exploitant.', color: 0x2ECC71 }],
+      components: [new ActionRowBuilder().addComponents(menu)],
+    });
+    return;
+  }
+
+  if (choice === 'coexpl_del') {
+    const menu = new StringSelectMenuBuilder()
+      .setCustomId('hub_expl_codel_' + exploit.id)
+      .setPlaceholder('Retirer le co-exploitant...')
+      .addOptions(exploit.coExploitants.map((id, i) => ({ label: exploit.coExploitantTags[i] || id, value: id })));
+    await interaction.update({
+      embeds: [{ title: '➖ Retirer le co-exploitant — ' + exploit.nom, color: 0xE74C3C }],
+      components: [new ActionRowBuilder().addComponents(menu)],
+    });
     return;
   }
 
@@ -462,24 +554,101 @@ async function handleHubExplDone(interaction) {
   const ownerId = interaction.customId.replace('hub_expl_done_', '');
   const exploit = exp.getByOwner(ownerId);
   if (!exploit) { await interaction.update({ embeds: [{ description: '✅ Terminé.', color: 0x2ECC71 }], components: [] }); autoClean(interaction); return; }
-  await interaction.update(manageMenu(exploit));
+  const uid = interaction.user.id;
+  await interaction.update(manageMenu(exploit, uid, managedExploitations(uid).filter(x => x.id !== exploit.id)));
+}
+
+// ── Bouton de bascule entre exploitations gérées ──────────────────────────
+async function handleHubExplSwitch(interaction) {
+  const exploitId = interaction.customId.replace('hub_expl_switch_', '');
+  const uid = interaction.user.id;
+  const e   = exp.getById(exploitId);
+  if (!e || !exp.isManager(e, uid)) {
+    await interaction.reply({ content: '❌ Tu ne gères pas cette exploitation.', flags: 64 });
+    autoClean(interaction);
+    return;
+  }
+  await interaction.update(manageMenu(e, uid, managedExploitations(uid).filter(x => x.id !== e.id)));
 }
 
 // ── Select retrait ouvrier ──────────────────────────────────────────────────
 async function handleHubExplOuvDel(interaction) {
   const exploitId = interaction.customId.replace('hub_expl_ouvdel_', '');
-  const exploit   = Object.values(exp.load()).find(e => e.id === exploitId);
+  const exploit   = exp.getById(exploitId);
   if (!exploit) { await interaction.update({ embeds: [{ description: '❌ Exploitation introuvable.', color: 0xE74C3C }], components: [] }); return; }
 
-  const ouvrierId = interaction.values[0];
-  const idx = exploit.ouvriers.indexOf(ouvrierId);
-  if (idx !== -1) {
-    exploit.ouvriers.splice(idx, 1);
-    exploit.ouvrierTags.splice(idx, 1);
-    exp.updateExploitation(exploit.id, { ouvriers: exploit.ouvriers, ouvrierTags: exploit.ouvrierTags });
-  }
+  exp.removeOuvrier(exploit.id, interaction.values[0]);
   await interaction.update({ embeds: [{ description: '✅ Ouvrier retiré de **' + exploit.nom + '**.', color: 0x2ECC71 }], components: [] });
   autoClean(interaction);
+}
+
+// ── Select couleur ────────────────────────────────────────────────────────
+async function handleHubExplCouleur(interaction) {
+  const exploitId = interaction.customId.replace('hub_expl_couleur_', '');
+  const exploit   = exp.getById(exploitId);
+  if (!exploit) { await interaction.update({ embeds: [{ description: '❌ Exploitation introuvable.', color: 0xE74C3C }], components: [] }); return; }
+  if (!canManage(interaction, exploit)) {
+    await interaction.reply({ content: '❌ Réservé aux exploitants.', flags: 64 });
+    autoClean(interaction);
+    return;
+  }
+  const couleur = parseInt(interaction.values[0], 10);
+  exp.updateExploitation(exploitId, { couleur });
+  await interaction.update({ embeds: [{ description: '✅ Couleur de l\'exploitation mise à jour.', color: couleur }], components: [] });
+  autoClean(interaction);
+}
+
+// ── Select utilisateur → ajout co-exploitant (créateur uniquement) ────────
+async function handleHubExplCoAdd(interaction) {
+  const exploitId = interaction.customId.replace('hub_expl_coadd_', '');
+  const exploit   = exp.getById(exploitId);
+  if (!exploit) { await interaction.update({ embeds: [{ description: '❌ Exploitation introuvable.', color: 0xE74C3C }], components: [] }); return; }
+  if (interaction.user.id !== exploit.ownerId) {
+    await interaction.reply({ content: '❌ Seul le créateur peut ajouter un co-exploitant.', flags: 64 });
+    autoClean(interaction);
+    return;
+  }
+  if ((exploit.coExploitants?.length || 0) >= 1) {
+    await interaction.update({ embeds: [{ description: '❌ Il y a déjà un co-exploitant. Retire-le d\'abord.', color: 0xE74C3C }], components: [] });
+    autoClean(interaction);
+    return;
+  }
+
+  const id = interaction.values[0];
+  const member = interaction.guild.members.cache.get(id) || await interaction.guild.members.fetch(id).catch(() => null);
+  if (!member)               { await interaction.update({ embeds: [{ description: '❌ Joueur introuvable sur le serveur.', color: 0xE74C3C }], components: [] }); autoClean(interaction); return; }
+  if (member.user.bot)       { await interaction.update({ embeds: [{ description: '❌ Impossible d\'ajouter un bot.', color: 0xE74C3C }], components: [] }); autoClean(interaction); return; }
+  if (id === exploit.ownerId){ await interaction.update({ embeds: [{ description: '❌ Tu es déjà le créateur.', color: 0xE74C3C }], components: [] }); autoClean(interaction); return; }
+
+  const wasOuvrier = (exploit.ouvriers || []).includes(id);
+  exp.addCoExploitant(exploit.id, id, member.user.tag);
+  await member.roles.add(EXPLOITANT_ROLE_ID).catch(() => {});
+
+  await interaction.update({ embeds: [{
+    description: '✅ **' + member.user.username + '** est maintenant **co-exploitant** de **' + exploit.nom + '**'
+      + (wasOuvrier ? ' *(retiré de la liste des ouvriers)*' : '') + '.\nMêmes droits que toi.',
+    color: 0x2ECC71 }], components: [] });
+  autoClean(interaction);
+
+  await agrilog(interaction.guild, '🤝 **' + exploit.nom + '** : <@' + id + '> ajouté comme co-exploitant par <@' + interaction.user.id + '>');
+}
+
+// ── Select retrait co-exploitant (créateur uniquement) ────────────────────
+async function handleHubExplCoDel(interaction) {
+  const exploitId = interaction.customId.replace('hub_expl_codel_', '');
+  const exploit   = exp.getById(exploitId);
+  if (!exploit) { await interaction.update({ embeds: [{ description: '❌ Exploitation introuvable.', color: 0xE74C3C }], components: [] }); return; }
+  if (interaction.user.id !== exploit.ownerId) {
+    await interaction.reply({ content: '❌ Seul le créateur peut retirer le co-exploitant.', flags: 64 });
+    autoClean(interaction);
+    return;
+  }
+  const coId = interaction.values[0];
+  exp.removeCoExploitant(exploit.id, coId);
+  await interaction.update({ embeds: [{ description: '✅ Co-exploitant retiré de **' + exploit.nom + '**. *(Le rôle Discord Exploitant est conservé.)*', color: 0x2ECC71 }], components: [] });
+  autoClean(interaction);
+
+  await agrilog(interaction.guild, '➖ **' + exploit.nom + '** : <@' + coId + '> retiré des co-exploitants par <@' + interaction.user.id + '>');
 }
 
 // ═══ BOUTON « Annuaire » (ON = affiche la liste globale, OFF = l'efface) ═══
@@ -515,12 +684,15 @@ async function handleHubAnnuaire(interaction) {
     const prodBloc = e.produits?.length
       ? e.produits.map(p => '• ' + p).join('\n')
       : '*Aucun produit ni prestation pour le moment.*';
+    const exploitants = [e.ownerId, ...(e.coExploitants || [])];
+    const explLabel   = exploitants.length > 1 ? 'Exploitants' : 'Exploitant';
 
     return {
-      title: '🌾  ' + e.nom,
+      title: e.recrute ? '🟢 RECRUTE' : '🔴 NE RECRUTE PAS',
       description: [
+        '# 🌾 ' + e.nom,
         '📢 **RECRUTEMENT :** ' + (e.recrute ? '🟢 OUI' : '🔴 NON'),
-        '👤 **Exploitant :** <@' + e.ownerId + '>　│　📅 **Créée le :** ' + dateCrea,
+        '👤 **' + explLabel + ' :** ' + exploitants.map(id => '<@' + id + '>').join(' · ') + '　│　📅 **Créée le :** ' + dateCrea,
         '',
         '🚜 **Activités :** ' + acts,
         '👷 **Ouvriers :** ' + nbOuv + ' — ' + ouv,
@@ -530,7 +702,7 @@ async function handleHubAnnuaire(interaction) {
         '**🛒 Produits & prestations :**',
         prodBloc,
       ].join('\n').slice(0, 4096),
-      color: e.recrute ? 0x2ECC71 : 0x57606A,
+      color: e.couleur ?? DEFAULT_COLOR,
     };
   });
 
@@ -551,8 +723,9 @@ async function handleHubAnnuaireOff(interaction) {
 }
 
 // ── Helpers ─────────────────────────────────────────────────────────────────
-function canManage(interaction, ownerId) {
-  return interaction.user.id === ownerId
+// Peut gérer la fiche = exploitant (créateur ou co-exploitant) ou admin serveur.
+function canManage(interaction, exploit) {
+  return exp.isManager(exploit, interaction.user.id)
     || interaction.member?.permissions?.has(PermissionFlagsBits.ManageGuild);
 }
 
@@ -564,4 +737,5 @@ module.exports = {
   handleHubExplOuvAdd, handleHubExplOuvDel, handleHubAnnuaire, handleHubAnnuaireOff,
   handleHubExplRecrute, handleHubExplProdAdd, handleHubExplProdModal,
   handleHubExplProdDel, handleHubExplDone,
+  handleHubExplSwitch, handleHubExplCouleur, handleHubExplCoAdd, handleHubExplCoDel,
 };
