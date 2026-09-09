@@ -77,7 +77,7 @@ async function createTicket(interaction) {
   await ticketChannel.send(panneau({
     content: supportRoleId ? '<@&' + supportRoleId + '>' : '',
     embeds: [{
-      title: '🎫 Ticket — ' + member.user.username,
+      title: '🎫 Ticket · ' + member.user.username,
       description: '<@' + member.id + '>\n\n' +
         (cfg.TICKET_WELCOME || 'Merci pour ton ticket ! Un responsable s\'occupera de toi.') +
         '\n\n📌 Merci de clore ton ticket une fois ta demande traitée.',

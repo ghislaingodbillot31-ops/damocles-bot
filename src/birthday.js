@@ -92,9 +92,9 @@ async function updateBirthdayChannel(client) {
   // En-tête : le plus proche uniquement
   const prochain = list[0];
   const tete = prochain.isToday
-    ? '## 🎉 Aujourd\'hui !\n> C\'est l\'anniversaire de <@' + prochain.id + '> — **' + prochain.age + ' ans** 🥳'
+    ? '## 🎉 Aujourd\'hui !\n> C\'est l\'anniversaire de <@' + prochain.id + '> : **' + prochain.age + ' ans** 🥳'
     : '## 🎂 Prochain anniversaire\n> **le ' + dateLongue(prochain) + '** de <@' + prochain.id + '>\n'
-      + '> dans **' + prochain.jours + ' jour' + (prochain.jours > 1 ? 's' : '') + '** — il/elle aura **' + prochain.age + ' ans**';
+      + '> dans **' + prochain.jours + ' jour' + (prochain.jours > 1 ? 's' : '') + '**, il/elle aura **' + prochain.age + ' ans**';
 
   // Listing des suivants, dans l'ordre chronologique (du plus proche au plus lointain)
   const lignes = list.slice(1).map(e => {
@@ -115,7 +115,7 @@ async function updateBirthdayChannel(client) {
 
   await channel.send(panneau({
     embeds: [{
-      title: '🎂  ANNIVERSAIRES  —  ' + all.length + ' enregistré' + (all.length > 1 ? 's' : ''),
+      title: '🎂  ANNIVERSAIRES  ·  ' + all.length + ' enregistré' + (all.length > 1 ? 's' : ''),
       description: [
         tete,
         '',
@@ -125,7 +125,7 @@ async function updateBirthdayChannel(client) {
         '-# Enregistre le tien avec `/anniversaire JJ/MM/AAAA`',
       ].join('\n'),
       color: 0xF1C40F,
-      footer: { text: 'Mis à jour le ' + now.toLocaleDateString('fr-FR') + ' — Damoclès Bot' },
+      footer: { text: 'Mis à jour le ' + now.toLocaleDateString('fr-FR') + ' · Damoclès Bot' },
       timestamp: now.toISOString(),
     }]
   })).catch(console.error);

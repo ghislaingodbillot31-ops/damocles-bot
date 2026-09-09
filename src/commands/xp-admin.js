@@ -47,7 +47,7 @@ module.exports = {
 
       await interaction.reply({
         embeds: [{
-          description: '⏳ **Recalcul du classement en cours…**\nScan de l\'historique des ' + jours + ' derniers jours.\nÇa peut prendre plusieurs minutes — je mets à jour ce message au fur et à mesure.',
+          description: '⏳ **Recalcul du classement en cours…**\nScan de l\'historique des ' + jours + ' derniers jours.\nÇa peut prendre plusieurs minutes, je mets à jour ce message au fur et à mesure.',
           color: 0xF39C12,
         }],
         flags: 64,

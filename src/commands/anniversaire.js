@@ -20,7 +20,7 @@ module.exports = {
 
     if (!match) {
       await interaction.reply({
-        content: '❌ Format invalide. Utilise `JJ/MM/AAAA` — exemple : `20/11/1988`',
+        content: '❌ Format invalide. Utilise `JJ/MM/AAAA` (exemple : `20/11/1988`)',
         flags: 64,
       });
       return;

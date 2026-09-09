@@ -28,7 +28,7 @@ async function checkRaid(client, member) {
     console.log(`🚨 RAID DÉTECTÉ — ${recentJoins.length} joins en ${RAID_WINDOW_MS/1000}s`);
 
     // Kick le membre
-    await member.kick('Anti-raid — trop de joins simultanés').catch(() => {});
+    await member.kick('Anti-raid : trop de joins simultanés').catch(() => {});
 
     // Log
     await log(client, 'raid_detected', {

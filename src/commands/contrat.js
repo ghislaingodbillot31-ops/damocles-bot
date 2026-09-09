@@ -119,7 +119,7 @@ async function handleContratModal(interaction) {
   data.messageId = msg.id;
   setSession('msg_' + msg.id, data);
 
-  await agrilog(interaction.guild, '🆕 **' + exploit.nom + '** a publié un contrat — ' + travail);
+  await agrilog(interaction.guild, '🆕 **' + exploit.nom + '** a publié un contrat : ' + travail);
 
   await interaction.reply({
     embeds: [{ description: '✅ Contrat publié dans <#' + CONTRAT_CHANNEL + '> !', color: 0x2ECC71 }],
@@ -132,7 +132,7 @@ const isBesoin = data => data.kind === 'besoin';
 const LABEL    = data => (isBesoin(data) ? 'BESOIN' : 'CONTRAT');
 
 // ── Corps texte d'une annonce (besoin ou contrat) ───────────────────────────
-// Gabarit fixe : mêmes lignes, dans le même ordre, « — » pour le vide.
+// Gabarit fixe : mêmes lignes, dans le même ordre, « Non précisé » pour le vide.
 //   opts.tiers : label de la 2ᵉ exploitation à insérer ('En négociation avec' /
 //                'Prestataire'), ou rien pour l'annonce disponible.
 function corpsAnnonce(data, opts = {}) {
@@ -149,17 +149,17 @@ function corpsAnnonce(data, opts = {}) {
     ? [
         ...qui,
         SEP,
-        '**Ressource :** ' + (data.type || '—'),
-        '**Quantité :** ' + (data.quantite || '—'),
+        '**Ressource :** ' + (data.type || 'Non précisé'),
+        '**Quantité :** ' + (data.quantite || 'Non précisé'),
       ]
     : [
         SEP,
         ...qui,
-        '**Travail :** ' + (data.travail || '—'),
-        '**Champ :** ' + (data.champ ? 'N° ' + data.champ : '—'),
-        '**Surface :** ' + (data.surface || '—'),
+        '**Travail :** ' + (data.travail || 'Non précisé'),
+        '**Champ :** ' + (data.champ ? 'N° ' + data.champ : 'Non précisé'),
+        '**Surface :** ' + (data.surface || 'Non précisé'),
         '**Informations complémentaires**',
-        data.details || '—',
+        data.details || 'Non précisé',
       ];
 
   return wrap(lignes.join('\n'));
@@ -264,7 +264,7 @@ async function handleContratAccepter(interaction) {
   setSession('msg_' + data.messageId, data);
 
   await agrilog(interaction.guild, (isBesoin(data) ? '📦' : '📋') + ' **' + accepteurExploit.nom + '** prend le '
-    + (isBesoin(data) ? 'besoin' : 'contrat') + ' de **' + data.exploit.nom + '** — ' + objetShort(data));
+    + (isBesoin(data) ? 'besoin' : 'contrat') + ' de **' + data.exploit.nom + '** : ' + objetShort(data));
 
   const mId  = data.messageId;
   const verb = isBesoin(data) ? 'a répondu au besoin de' : 'a accepté le contrat de';
@@ -276,19 +276,19 @@ async function handleContratAccepter(interaction) {
   await negoChannel.send({
     content: pings,
     embeds: [{
-      title: '🤝 ' + LABEL(data) + ' ACCEPTÉ — négociation',
+      title: '🤝 ' + LABEL(data) + ' ACCEPTÉ · négociation',
       description: corpsAnnonce(data, { tiers: 'Prestataire' }) + '\n' + SEP + '\n'
         + [
             'Tous les membres des deux exploitations ont accès à ce salon.',
             'Discutez ici du prix, du matériel et des délais.',
             '',
             'Une fois d\'accord, un **exploitant** (créateur ou co-exploitant) de l\'une des deux fermes choisit :',
-            '> ✅ **Accepté** — l\'accord est confirmé, le salon reste ouvert',
-            '> ❌ **Refusé** — ce salon est supprimé et l\'annonce redevient disponible',
-            '> 🏁 **Terminé** — l\'annonce et ce salon sont supprimés',
+            '> ✅ **Accepté** · l\'accord est confirmé, le salon reste ouvert',
+            '> ❌ **Refusé** · ce salon est supprimé et l\'annonce redevient disponible',
+            '> 🏁 **Terminé** · l\'annonce et ce salon sont supprimés',
           ].join('\n'),
       color: 0xF39C12,
-      footer: { text: 'EUROAGRI — Salon de négociation' },
+      footer: { text: 'EUROAGRI · Salon de négociation' },
       timestamp: new Date().toISOString(),
     }],
     components: [dealRow(mId, false)],
@@ -296,7 +296,7 @@ async function handleContratAccepter(interaction) {
 
   // DM best-effort à chaque membre — un DM fermé ne bloque pas les autres.
   const dmEmbed = {
-    title: '🤝 ' + LABEL(data) + ' — négociation ouverte',
+    title: '🤝 ' + LABEL(data) + ' · négociation ouverte',
     description: [
       '**' + accepteurExploit.nom + '** ' + verb + ' **' + (demandeurExploit?.nom || data.exploit.nom) + '**.',
       objetShort(data),
@@ -314,7 +314,7 @@ async function handleContratAccepter(interaction) {
   }
   if (echecsDM.length) {
     await negoChannel.send({
-      content: '⚠️ Injoignable(s) en MP (DM fermés) : ' + echecsDM.map(id => '<@' + id + '>').join(', ') + ' — pensez à les prévenir ici.',
+      content: '⚠️ Injoignable(s) en MP (DM fermés) : ' + echecsDM.map(id => '<@' + id + '>').join(', ') + '. Pensez à les prévenir ici.',
       allowedMentions: { parse: [] },
     }).catch(() => {});
   }
@@ -347,7 +347,7 @@ async function handleContratDealOk(interaction) {
       ...embed.data,
       title: '✅ ACCORD CONFIRMÉ',
       color: 0x2ECC71,
-      footer: { text: 'Accord confirmé le ' + now + ' — EUROAGRI' },
+      footer: { text: 'Accord confirmé le ' + now + ' · EUROAGRI' },
     }],
     components: [dealRow(mId, true)],
   });
@@ -355,7 +355,7 @@ async function handleContratDealOk(interaction) {
   data.status = 'confirme';
   setSession('msg_' + mId, data);
 
-  await agrilog(interaction.guild, '🤝 Accord confirmé : **' + data.exploit.nom + '** × **' + data.accepteurExploit.nom + '** — ' + objetShort(data));
+  await agrilog(interaction.guild, '🤝 Accord confirmé : **' + data.exploit.nom + '** × **' + data.accepteurExploit.nom + '** : ' + objetShort(data));
 }
 
 // Ferme le salon de négociation même si la session est perdue (bot redémarré)
@@ -396,7 +396,7 @@ async function handleContratDealRefuse(interaction) {
   delete data.negoChannelId;
   setSession('msg_' + mId, data);
 
-  await agrilog(interaction.guild, '❌ ' + (isBesoin(data) ? 'Besoin' : 'Contrat') + ' refusé : **' + data.exploit.nom + '** × **' + accepteurNom + '** — annonce remise en disponible');
+  await agrilog(interaction.guild, '❌ ' + (isBesoin(data) ? 'Besoin' : 'Contrat') + ' refusé : **' + data.exploit.nom + '** × **' + accepteurNom + '**, annonce remise en disponible');
 }
 
 // ── « Contrat terminé » → contrat public + salon privé supprimés ────────────
@@ -424,7 +424,7 @@ async function handleContratDealDone(interaction) {
   delSession('msg_' + mId);
 
   await agrilog(interaction.guild, '🏁 ' + (isBesoin(data) ? 'Besoin effectué' : 'Contrat terminé')
-    + ' : **' + data.exploit.nom + '** (client) × **' + (data.accepteurExploit?.nom || '?') + '** (prestataire) — ' + objetShort(data));
+    + ' : **' + data.exploit.nom + '** (client) × **' + (data.accepteurExploit?.nom || '?') + '** (prestataire) : ' + objetShort(data));
 }
 
 // ── Handler supprimer contrat (par un exploitant de la ferme) ───────────────
@@ -453,7 +453,7 @@ async function handleContratSupprimer(interaction) {
   autoClean(interaction);
 
   if (data) {
-    await agrilog(interaction.guild, '🗑️ **' + data.exploit.nom + '** a retiré son ' + (isBesoin(data) ? 'besoin' : 'contrat') + ' — ' + objetShort(data));
+    await agrilog(interaction.guild, '🗑️ **' + data.exploit.nom + '** a retiré son ' + (isBesoin(data) ? 'besoin' : 'contrat') + ' : ' + objetShort(data));
   }
 }
 

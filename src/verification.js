@@ -75,7 +75,7 @@ async function verifyMember(member) {
   lignes.push(SEP);
 
   if (failed.length === 0) {
-    lignes.push('✅ **Vérification complète — Accès accordé**');
+    lignes.push('✅ **Vérification complète · Accès accordé**');
     lignes.push('Bienvenue <@' + member.id + '> ! Rends-toi dans le salon **#règlement** pour accéder au serveur.');
     await render(0x2ECC71);
 
@@ -96,7 +96,7 @@ async function verifyMember(member) {
     lignes.push('⛔ **Vérification échouée**');
     lignes.push('<@' + member.id + '>, un administrateur va traiter ton intégration.');
     lignes.push('**Raisons :**');
-    lignes.push(failed.map(c => '• ' + c.label + (c.detail ? ' — ' + c.detail : '')).join('\n'));
+    lignes.push(failed.map(c => '• ' + c.label + (c.detail ? ' : ' + c.detail : '')).join('\n'));
     await render(0xE74C3C, [row]);
 
     // Enregistrer l'échec en DB
@@ -136,7 +136,7 @@ async function runChecks(member) {
   checks.push({
     label: '📅 Âge du compte', type: 'classic',
     passed: ageDays >= MIN_ACCOUNT_AGE_DAYS,
-    detail: 'Créé il y a ' + ageDays + ' jour(s) — minimum ' + MIN_ACCOUNT_AGE_DAYS + 'j',
+    detail: 'Créé il y a ' + ageDays + ' jour(s) (minimum ' + MIN_ACCOUNT_AGE_DAYS + ' jours)',
   });
 
   // 3. Ancien membre — a-t-il déjà été sur le serveur ?
@@ -162,7 +162,7 @@ async function runChecks(member) {
     label: '👢 Expulsions', type: 'oui_non',
     value: wasKicked, passed: !wasKicked,
     detail: wasKicked
-      ? 'Expulsé le ' + fmtDate(kickEvt?.date || record?.kickedAt) + ' — ' + (kickEvt?.detail || 'Aucune raison')
+      ? 'Expulsé le ' + fmtDate(kickEvt?.date || record?.kickedAt) + ' · ' + (kickEvt?.detail || 'Aucune raison')
       : null,
   });
 
@@ -182,7 +182,7 @@ async function runChecks(member) {
     label: '🔨 Banni', type: 'danger',
     value: isBanned, passed: !isBanned,
     detail: isBanned
-      ? 'Banni le ' + fmtDate(record?.bannedAt || banEvt?.date) + ' — ' + (record?.banReason || banEvt?.detail || '?')
+      ? 'Banni le ' + fmtDate(record?.bannedAt || banEvt?.date) + ' · ' + (record?.banReason || banEvt?.detail || '?')
       : null,
   });
 

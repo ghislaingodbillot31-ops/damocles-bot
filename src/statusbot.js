@@ -5,7 +5,7 @@ const { SEP } = require('./embed-format');
 let _cfgStatus = '';
 try { _cfgStatus = require('./config').get().STATUS_CHANNEL_ID || ''; } catch {}
 
-// Salon « bot-status » — priorité au .env, puis à la config dashboard, sinon valeur fixe
+// Salon « bot-status » · priorité au .env, puis à la config dashboard, sinon valeur fixe
 const STATUS_CHANNEL_ID = process.env.STATUS_CHANNEL_ID || _cfgStatus || '1538533342150918246';
 const sleep = ms => new Promise(r => setTimeout(r, ms));
 
@@ -70,10 +70,10 @@ async function updateStatusMessage(client, animated = false) {
   await step('`▶` 🛡️ Système de vérification ...... ✅ **Actif**');
   await step('`▶` 🎚️ Système de niveaux ........... ✅ **Actif**');
   await step('`▶` 📋 Commandes .................... ✅ **13 slash + 2 menus**');
-  await step('`▶` 🔄 Actualisation quotidienne .... ✅ **Planifiée — 04h00**');
+  await step('`▶` 🔄 Actualisation quotidienne .... ✅ **Planifiée · 04h00**');
 
   lignes.push(SEP);
-  lignes.push('✅ **Système opérationnel** — ' + now);
+  lignes.push('✅ **Système opérationnel** · ' + now);
   await render(0x2ECC71);
 }
 

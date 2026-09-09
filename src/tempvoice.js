@@ -49,7 +49,7 @@ async function postVoicePanel(channel) {
         '> • Il est **supprimé automatiquement** dès qu\'il est vide.',
       ].join('\n'),
       color: 0x5865F2,
-      footer: { text: 'EUROAGRI — Damoclès Bot' },
+      footer: { text: 'EUROAGRI · Damoclès Bot' },
     }],
     components: [new ActionRowBuilder().addComponents(
       new ButtonBuilder().setCustomId('voice_create').setLabel('➕ Créer mon salon vocal').setStyle(ButtonStyle.Success),
@@ -83,7 +83,7 @@ async function handleVoiceCreate(interaction) {
           PermissionFlagsBits.ManageChannels, PermissionFlagsBits.MoveMembers, PermissionFlagsBits.MuteMembers,
         ] },
       ],
-      reason: 'Salon vocal temporaire — ' + member.user.tag,
+      reason: 'Salon vocal temporaire · ' + member.user.tag,
     });
   } catch (err) {
     await interaction.reply({ content: '⚠️ Impossible de créer le salon (permission `Gérer les salons` manquante ?). ' + err.message, flags: 64 });
@@ -177,7 +177,7 @@ async function handleVoiceControl(interaction) {
     salons.set(cid, info);
     save();
     await interaction.update({
-      ...panneau({ embeds: [{ title: '🔊 Ton salon', description: '<#' + cid + '>\n> ' + (lock ? '🔒 **Verrouillé** — personne ne peut plus rejoindre.' : '🔓 **Déverrouillé**.'), color: lock ? 0xE67E22 : 0x2ECC71 }] }),
+      ...panneau({ embeds: [{ title: '🔊 Ton salon', description: '<#' + cid + '>\n> ' + (lock ? '🔒 **Verrouillé** · personne ne peut plus rejoindre.' : '🔓 **Déverrouillé**.'), color: lock ? 0xE67E22 : 0x2ECC71 }] }),
       components: [controlRow(cid, lock)],
     });
     return;

@@ -160,11 +160,11 @@ async function announceLevelUp(userId, level) {
 // ── Bloc « comment gagner des points » ──────────────────────────────────────
 function baremeTexte() {
   return [
-    '💬 **Message** — +' + XP.MESSAGE + ' XP *(1×/min)*',
-    '📸 **Message avec image / screenshot** — +' + XP.IMAGE + ' XP *(1×/5 min)*',
-    '🎙️ **Vocal** — +' + XP.VOICE_PER_MIN + ' XP / minute *(à 2+ personnes, micro non coupé)*',
-    '📥 **Inviter un membre qui rejoint** — +' + XP.INVITE + ' XP',
-    '🌱 **Ton invité reste 7 jours** — +' + XP.INVITE_KEEP + ' XP bonus',
+    '💬 **Message** · +' + XP.MESSAGE + ' XP *(1×/min)*',
+    '📸 **Message avec image / screenshot** · +' + XP.IMAGE + ' XP *(1×/5 min)*',
+    '🎙️ **Vocal** · +' + XP.VOICE_PER_MIN + ' XP / minute *(à 2+ personnes, micro non coupé)*',
+    '📥 **Inviter un membre qui rejoint** · +' + XP.INVITE + ' XP',
+    '🌱 **Ton invité reste 7 jours** · +' + XP.INVITE_KEEP + ' XP bonus',
   ].join('\n');
 }
 
@@ -177,7 +177,7 @@ function baremeEmbed() {
     description: [
       baremeTexte(),
       '',
-      '🎚️ **Niveaux** — ton XP total te fait monter de niveau.',
+      '🎚️ **Niveaux** : ton XP total te fait monter de niveau.',
       'Tape **/niveau** pour voir ta progression, ton rang, ton temps vocal et tes invitations.',
       'Tape **/classement** pour le classement complet.',
     ].join('\n'),
@@ -189,14 +189,14 @@ function baremeEmbed() {
 function classementEmbed() {
   const top = getClassement(15);
   const lignes = top.length
-    ? top.map(e => (MEDAILLE[e.rang - 1] || '`#' + e.rang + '`') + ' <@' + e.id + '> — **Nv ' + e.level + '** · ' + e.xp.toLocaleString('fr-FR') + ' XP').join('\n')
-    : '*Personne n\'a encore d\'XP — sois le premier !*';
+    ? top.map(e => (MEDAILLE[e.rang - 1] || '`#' + e.rang + '`') + ' <@' + e.id + '> · **Nv ' + e.level + '** · ' + e.xp.toLocaleString('fr-FR') + ' XP').join('\n')
+    : '*Personne n\'a encore d\'XP, sois le premier !*';
 
   return panneauEmbed({
     title: '🏆  CLASSEMENT XP',
     description: lignes,
     color: 0xF1C40F,
-    footer: { text: 'EUROAGRI — Mis à jour' },
+    footer: { text: 'EUROAGRI · Mis à jour' },
     timestamp: new Date().toISOString(),
   });
 }

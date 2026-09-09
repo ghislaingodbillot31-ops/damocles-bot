@@ -58,7 +58,7 @@ async function sendWelcomeAfterReglement(member) {
       description: text,
       color: parseInt(cfg.color || '2ECC71', 16),
       thumbnail: { url: member.user.displayAvatarURL() },
-      footer: { text: member.guild.name + ' — Damoclès Bot' },
+      footer: { text: member.guild.name + ' · Damoclès Bot' },
       timestamp: new Date().toISOString(),
     }]
   }).catch(console.error);

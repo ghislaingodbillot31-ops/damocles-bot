@@ -38,14 +38,14 @@ module.exports = {
         thumbnail: { url: user.displayAvatarURL() },
         fields: [
           { name: 'Niveau',  value: '**' + r.level + '**', inline: true },
-          { name: 'Rang',    value: r.rang ? '**#' + r.rang + '**/' + r.total : '—', inline: true },
+          { name: 'Rang',    value: r.rang ? '**#' + r.rang + '**/' + r.total : 'Non classé', inline: true },
           { name: 'XP total', value: '**' + r.xp.toLocaleString('fr-FR') + '**', inline: true },
           { name: 'Progression', value: '`' + barre(dansNiveau, pourNiveau) + '`\n' + dansNiveau.toLocaleString('fr-FR') + ' / ' + pourNiveau.toLocaleString('fr-FR') + ' XP', inline: false },
           { name: '🎙️ Temps vocal', value: heuresVocal + 'h ' + minVocal + 'min', inline: true },
           { name: '📥 Invitations', value: String(r.invites), inline: true },
         ],
         color: 0xF1C40F,
-        footer: { text: 'EUROAGRI — Damoclès Bot' },
+        footer: { text: 'EUROAGRI · Damoclès Bot' },
       }],
     }));
   },

@@ -155,7 +155,7 @@ async function sendNext(guild, channel) {
 
   await channel.send(panneau({
     embeds: [{
-      title: '⚠️ Liste d\'expulsion — ' + current + ' / ' + total,
+      title: '⚠️ Liste d\'expulsion · ' + current + ' / ' + total,
       color: 0xE74C3C,
       thumbnail: { url: member.user.displayAvatarURL() },
       fields: [
@@ -164,7 +164,7 @@ async function sendNext(guild, channel) {
         { name: 'Dernière activité',  value: lastStr, inline: true },
         { name: 'Inactif depuis',     value: '**' + daysInactive + ' jours**', inline: true },
       ],
-      footer: { text: 'Damoclès Security Bot — Choisissez une action pour continuer' },
+      footer: { text: 'Damoclès Security Bot · Choisissez une action pour continuer' },
     }],
     components: [row],
   }));

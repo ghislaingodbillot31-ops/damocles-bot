@@ -82,7 +82,7 @@ module.exports = {
       if (logChannel) {
         await logChannel.send(panneau({
           embeds: [{
-            title: '🚨 3 avertissements — Joueur sous contrôle',
+            title: '🚨 3 avertissements · Joueur sous contrôle',
             color: 0xE74C3C,
             thumbnail: { url: target.user.displayAvatarURL() },
             description: `**${target.user.tag}** a atteint ${MAX_WARNINGS} avertissements.\nIl a été **muté** et **déconnecté**. En attente de jugement.`,
@@ -93,7 +93,7 @@ module.exports = {
               { name: 'Actions effectuées', value: '🔇 Muté\n🔌 Déconnecté du vocal\n📋 Ajouté à la liste d\'expulsion' },
               { name: 'Date',              value: new Date().toLocaleString('fr-FR', { timeZone: 'Europe/Paris' }) },
             ],
-            footer: { text: 'Damoclès Security Bot — Action requise' },
+            footer: { text: 'Damoclès Security Bot · Action requise' },
             timestamp: new Date().toISOString(),
           }]
         }));

@@ -74,9 +74,9 @@ async function postHub(channel) {
 
   await channel.send(panneau({
     embeds: [{
-      title: '🌾  EUROAGRI  —  HUB DES EXPLOITANTS',
+      title: '🌾  EUROAGRI  ·  HUB DES EXPLOITANTS',
       description: [
-        'Bienvenue sur le **HUB des exploitants EUROAGRI**. Tout se gère depuis les boutons ci-dessous — ',
+        'Bienvenue sur le **HUB des exploitants EUROAGRI**. Tout se gère depuis les boutons ci-dessous :',
         'crée ton exploitation, publie tes contrats, signale tes besoins et consulte l\'annuaire du serveur.',
         '​',
         '**🌾  Mon exploitation**',
@@ -94,7 +94,7 @@ async function postHub(channel) {
         '​',
         '**📖  Annuaire**',
         '> Affiche la **liste complète des exploitations** du serveur (activités, ouvriers, produits, recrutement).',
-        '> Visible par toi seul — un clic sur **ON** pour l\'afficher, un clic sur **OFF** pour la masquer.',
+        '> Visible par toi seul : un clic sur **ON** pour l\'afficher, un clic sur **OFF** pour la masquer.',
       ].join('\n'),
       color: 0x2ECC71,
       footer: { text: 'EUROAGRI · Damoclès Bot' },
@@ -210,7 +210,7 @@ function produitsView(exploit) {
 
   return panneau({
     embeds: [{
-      title: '🛒 Vos produits — ' + exploit.nom,
+      title: '🛒 Vos produits · ' + exploit.nom,
       description: list + '\n\nAjoute un produit, valide, puis recommence. Clique **✅ Terminé** quand tu as fini.',
       color: exploit.couleur ?? DEFAULT_COLOR,
     }],
@@ -305,7 +305,7 @@ async function handleHubExplManage(interaction) {
         { label: '❌ Non', value: 'non' },
       ]);
     await interaction.update({
-      embeds: [{ title: '🧑‍🌾 Recrutement — ' + exploit.nom, description: 'Est-ce que ton exploitation recrute ?', color: 0x5865F2 }],
+      embeds: [{ title: '🧑‍🌾 Recrutement · ' + exploit.nom, description: 'Est-ce que ton exploitation recrute ?', color: 0x5865F2 }],
       components: [new ActionRowBuilder().addComponents(menu)],
     });
     return;
@@ -322,7 +322,7 @@ async function handleHubExplManage(interaction) {
       .setPlaceholder('Choisis une couleur...')
       .addOptions(PRESET_COLORS.map(c => ({ label: c.label, value: String(c.value) })));
     await interaction.update({
-      embeds: [{ title: '🎨 Couleur — ' + exploit.nom, description: 'Choisis la couleur des embeds de ton exploitation (fiche, annuaire, annonces).', color: exploit.couleur ?? DEFAULT_COLOR }],
+      embeds: [{ title: '🎨 Couleur · ' + exploit.nom, description: 'Choisis la couleur des embeds de ton exploitation (fiche, annuaire, annonces).', color: exploit.couleur ?? DEFAULT_COLOR }],
       components: [new ActionRowBuilder().addComponents(menu)],
     });
     return;
@@ -334,7 +334,7 @@ async function handleHubExplManage(interaction) {
       .setPlaceholder('Choisis le 2ᵉ exploitant...')
       .setMaxValues(1);
     await interaction.update({
-      embeds: [{ title: '🤝 Ajouter un co-exploitant — ' + exploit.nom,
+      embeds: [{ title: '🤝 Ajouter un co-exploitant · ' + exploit.nom,
         description: 'Le co-exploitant aura **les mêmes droits que toi** : contrats, besoins, fiche, ouvriers, couleur.\nIl **ne pourra pas** te retirer, supprimer l\'exploitation, ni ajouter/retirer un autre co-exploitant.', color: 0x2ECC71 }],
       components: [new ActionRowBuilder().addComponents(menu)],
     });
@@ -347,7 +347,7 @@ async function handleHubExplManage(interaction) {
       .setPlaceholder('Retirer le co-exploitant...')
       .addOptions(exploit.coExploitants.map((id, i) => ({ label: exploit.coExploitantTags[i] || id, value: id })));
     await interaction.update({
-      embeds: [{ title: '➖ Retirer le co-exploitant — ' + exploit.nom, color: 0xE74C3C }],
+      embeds: [{ title: '➖ Retirer le co-exploitant · ' + exploit.nom, color: 0xE74C3C }],
       components: [new ActionRowBuilder().addComponents(menu)],
     });
     return;
@@ -359,7 +359,7 @@ async function handleHubExplManage(interaction) {
       .setPlaceholder('Tague le joueur à ajouter comme ouvrier...')
       .setMaxValues(1);
     await interaction.update({
-      embeds: [{ title: '➕ Ajouter un ouvrier — ' + exploit.nom, description: 'Sélectionne le joueur (tu peux le chercher avec @).', color: 0x2ECC71 }],
+      embeds: [{ title: '➕ Ajouter un ouvrier · ' + exploit.nom, description: 'Sélectionne le joueur (tu peux le chercher avec @).', color: 0x2ECC71 }],
       components: [new ActionRowBuilder().addComponents(menu)],
     });
     return;
@@ -371,7 +371,7 @@ async function handleHubExplManage(interaction) {
       .setPlaceholder('Choisis l\'ouvrier à retirer...')
       .addOptions(exploit.ouvriers.map((id, i) => ({ label: exploit.ouvrierTags[i] || id, value: id })));
     await interaction.update({
-      embeds: [{ title: '➖ Retirer un ouvrier — ' + exploit.nom, color: 0xE74C3C }],
+      embeds: [{ title: '➖ Retirer un ouvrier · ' + exploit.nom, color: 0xE74C3C }],
       components: [new ActionRowBuilder().addComponents(menu)],
     });
     return;
@@ -669,7 +669,7 @@ async function handleHubAnnuaire(interaction) {
   const reste = all.length - shown.length;
 
   const header = {
-    title: '📖  ANNUAIRE DES EXPLOITATIONS — EUROAGRI',
+    title: '📖  ANNUAIRE DES EXPLOITATIONS · EUROAGRI',
     description: '**' + all.length + '** exploitation(s) sur le serveur  ·  **' + recr + '** en recrutement.'
       + (reste > 0 ? '\n\n⚠️ *' + reste + ' exploitation(s) non affichée(s) (trop pour un seul message).*' : ''),
     color: 0x1F8B4C,
@@ -696,7 +696,7 @@ async function handleHubAnnuaire(interaction) {
         '👤 **' + explLabel + ' :** ' + exploitants.map(id => '<@' + id + '>').join(' · ') + '　│　📅 **Créée le :** ' + dateCrea,
         '',
         '🚜 **Activités :** ' + acts,
-        '👷 **Ouvriers :** ' + nbOuv + ' — ' + ouv,
+        '👷 **Ouvriers :** ' + nbOuv + ' · ' + ouv,
         '',
         DIV,
         '',

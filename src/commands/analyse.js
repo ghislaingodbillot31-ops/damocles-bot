@@ -66,11 +66,11 @@ async function runAnalysis(guild) {
         newInactive++;
       }
       await db.upsertMember(member.user, { status: 'inactive' });
-      inactiveList.push('<@' + member.id + '> — ' + days + 'j');
+      inactiveList.push('<@' + member.id + '> · ' + days + 'j');
 
       if (status === 'expel') {
         toExpel++;
-        expelList.push('<@' + member.id + '> — ' + days + 'j');
+        expelList.push('<@' + member.id + '> · ' + days + 'j');
       }
     }
 
@@ -111,7 +111,7 @@ module.exports = {
 
           await logCh.send(panneau({
             embeds: [{
-              title: '📊 Rapport /analyse — ' + new Date().toLocaleString('fr-FR', { timeZone: 'Europe/Paris' }),
+              title: '📊 Rapport /analyse · ' + new Date().toLocaleString('fr-FR', { timeZone: 'Europe/Paris' }),
               color: 0x5865F2,
               fields: [
                 { name: '🟡 Nouveaux inactifs (+' + INACTIVE_DAYS + 'j)', value: '' + newInactive, inline: true },

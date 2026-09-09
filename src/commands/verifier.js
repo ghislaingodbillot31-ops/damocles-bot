@@ -41,7 +41,7 @@ module.exports = {
     verifyMember(member).catch(console.error);
 
     await interaction.editReply({
-      content: '✅ Vérification lancée pour **' + user.tag + '** — Résultat dans <#' + process.env.VERIFICATION_CHANNEL_ID + '>',
+      content: '✅ Vérification lancée pour **' + user.tag + '**. Résultat dans <#' + process.env.VERIFICATION_CHANNEL_ID + '>',
     });
   },
 };

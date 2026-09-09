@@ -111,7 +111,7 @@ async function poll(client) {
       const playerList = currentPlayers.size === 0
         ? 'Aucun joueur connecté'
         : [...currentPlayers.entries()]
-            .map(([name, d]) => '🟢 ' + name + (d.isAdmin ? ' 👑' : '') + ' — ' + formatUptime(d.uptime))
+            .map(([name, d]) => '🟢 ' + name + (d.isAdmin ? ' 👑' : '') + ' · ' + formatUptime(d.uptime))
             .join('\n');
 
       await sendNotification(client, {
@@ -123,7 +123,7 @@ async function poll(client) {
           playerList,
         ].join('\n'),
         color: 0x2ECC71,
-        footer: { text: 'FS25 Monitor — Damoclès Bot' },
+        footer: { text: 'FS25 Monitor · Damoclès Bot' },
         timestamp: new Date().toISOString(),
       });
       return;
