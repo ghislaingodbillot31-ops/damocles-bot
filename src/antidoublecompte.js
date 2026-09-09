@@ -140,7 +140,7 @@ async function sendSuspicionAlert(guild, member, score, signals, accountAgeDays)
         { name: 'Signaux détectés', value: signalText || '_Aucun_' },
         { name: 'Actions rapides', value: `\`/kick ${member.user.tag}\` • \`/ban ${member.user.tag}\`` },
       ],
-      footer: { text: 'Atlas Security Bot — Vérifiez manuellement avant toute action' },
+      footer: { text: 'DAMOCLES — Vérifiez manuellement avant toute action' },
       timestamp: new Date().toISOString(),
     }]
   }).catch(console.error);

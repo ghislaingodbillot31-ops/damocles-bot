@@ -1,5 +1,5 @@
 {
-  "name": "atlas-security-bot",
+  "name": "damocles-bot",
   "version": "2.0.0",
   "description": "Bot Discord Damoclès — Gestion des membres",
   "main": "src/index.js",

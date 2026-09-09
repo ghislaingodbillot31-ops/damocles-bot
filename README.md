@@ -1,4 +1,4 @@
-# 🛡️ Atlas Security Bot — Gestion des inactifs
+# 🛡️ DAMOCLES — Gestion des inactifs
 
 Bot Discord qui détecte automatiquement les membres n'ayant jamais envoyé de message et leur attribue un rôle **Inactif** chaque semaine.
 
@@ -86,13 +86,13 @@ npm start
 
 ---
 
-## ☁️ Hébergement gratuit (Railway)
+## ☁️ Hébergement gratuit (Render)
 
-1. Va sur https://railway.app et connecte ton compte GitHub
+1. Va sur https://render.com et connecte ton compte GitHub
 2. Push ce projet sur un repo GitHub privé
-3. Dans Railway : **New Project > Deploy from GitHub**
-4. Ajoute les variables d'environnement dans l'onglet **Variables**
-5. Le bot tourne 24h/24 gratuitement (500h/mois offerts)
+3. Dans Render : **New > Web Service > Build and deploy from a Git repository**
+4. Ajoute les variables d'environnement dans l'onglet **Environment**
+5. Le bot tourne 24h/24 ; `startKeepAlive()` (`src/keepalive.js`) ping le service toutes les 10 min pour éviter la mise en veille du plan gratuit
 
 ---
 
