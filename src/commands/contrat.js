@@ -6,7 +6,7 @@ const {
 } = require('discord.js');
 const exp = require('../exploitation');
 const { agrilog } = require('../agrilog');
-const { panneau } = require('../embed-format');
+const { SEP, wrap } = require('../embed-format');
 
 const { dataPath }    = require('../paths');
 const CONTRAT_CHANNEL = '1544735442589450270';
@@ -131,50 +131,65 @@ async function handleContratModal(interaction) {
 const isBesoin = data => data.kind === 'besoin';
 const LABEL    = data => (isBesoin(data) ? 'BESOIN' : 'CONTRAT');
 
-// Champs décrivant l'objet (contrat = travail + champ/surface optionnels, besoin = matière/quantité)
-function objetFields(data) {
-  if (isBesoin(data)) {
-    return [
-      { name: '📦 Matière',  value: data.type,                        inline: true },
-      { name: '⚖️ Quantité', value: data.quantite || '*Non précisée*', inline: true },
-    ];
+// ── Corps texte d'une annonce (besoin ou contrat) ───────────────────────────
+// Gabarit fixe : mêmes lignes, dans le même ordre, « — » pour le vide.
+//   opts.tiers : label de la 2ᵉ exploitation à insérer ('En négociation avec' /
+//                'Prestataire'), ou rien pour l'annonce disponible.
+function corpsAnnonce(data, opts = {}) {
+  const ex = (data.exploitId && exp.getById(data.exploitId)) || data.exploit;
+  const qui = [
+    '**L\'exploitation :** ' + (ex?.nom || data.exploit.nom),
+    '**Demandeur :** <@' + data.ownerId + '>',
+  ];
+  if (opts.tiers && data.accepteurExploit) {
+    qui.push('**' + opts.tiers + ' :** ' + data.accepteurExploit.nom + ' · <@' + data.accepteurId + '>');
   }
-  const fields = [{ name: '🛠️ Travail', value: data.travail, inline: true }];
-  if (data.champ)   fields.push({ name: '🔢 Champ',   value: 'N° ' + data.champ, inline: true });
-  if (data.surface) fields.push({ name: '📐 Surface', value: data.surface,       inline: true });
-  return fields;
+
+  const lignes = isBesoin(data)
+    ? [
+        ...qui,
+        SEP,
+        '**Ressource :** ' + (data.type || '—'),
+        '**Quantité :** ' + (data.quantite || '—'),
+      ]
+    : [
+        SEP,
+        ...qui,
+        '**Travail :** ' + (data.travail || '—'),
+        '**Champ :** ' + (data.champ ? 'N° ' + data.champ : '—'),
+        '**Surface :** ' + (data.surface || '—'),
+        '**Informations complémentaires**',
+        data.details || '—',
+      ];
+
+  return wrap(lignes.join('\n'));
 }
+
+const boutonsDispo = data => [new ActionRowBuilder().addComponents(
+  new ButtonBuilder().setCustomId('contrat_accepter_' + data.ownerId)
+    .setLabel(isBesoin(data) ? '✅ Répondre au besoin' : '✅ Accepter le contrat').setStyle(ButtonStyle.Success),
+  new ButtonBuilder().setCustomId('contrat_supprimer_' + data.ownerId).setLabel('🗑️ Supprimer').setStyle(ButtonStyle.Danger),
+)];
 
 // ── Rendu du message « DISPONIBLE » (aussi réutilisé après un refus) ─────────
 function disponibleMessage(data) {
-  const fields = objetFields(data);
-  if (!isBesoin(data)) fields.push({ name: '📝 Informations', value: data.details || '*Aucune précision*', inline: false });
-
   const ex = (data.exploitId && exp.getById(data.exploitId)) || data.exploit;
-
-  return panneau({
+  return {
     embeds: [{
       title: isBesoin(data) ? '📦 BESOIN' : '📋 CONTRAT DISPONIBLE',
-      description: '🌾 **' + data.exploit.nom + '** · <@' + data.ownerId + '>',
-      fields,
+      description: corpsAnnonce(data),
       color: ex?.couleur ?? 0x2ECC71,
     }],
-    components: [new ActionRowBuilder().addComponents(
-      new ButtonBuilder().setCustomId('contrat_accepter_' + data.ownerId)
-        .setLabel(isBesoin(data) ? '✅ Répondre au besoin' : '✅ Accepter le contrat').setStyle(ButtonStyle.Success),
-      new ButtonBuilder().setCustomId('contrat_supprimer_' + data.ownerId).setLabel('🗑️ Supprimer').setStyle(ButtonStyle.Danger),
-    )],
-  });
+    components: boutonsDispo(data),
+  };
 }
 
 // ── Rendu du message « RÉSERVÉ » (grisé, bouton désactivé) ──────────────────
 function reserveMessage(data) {
-  return panneau({
+  return {
     embeds: [{
       title: isBesoin(data) ? '🔒 BESOIN RÉSERVÉ' : '🔒 CONTRAT RÉSERVÉ',
-      description: '🌾 **' + data.exploit.nom + '** · <@' + data.ownerId + '>\n'
-        + 'En négociation avec **' + data.accepteurExploit.nom + '** · <@' + data.accepteurId + '>',
-      fields: objetFields(data),
+      description: corpsAnnonce(data, { tiers: 'En négociation avec' }),
       color: 0x95A5A6,
     }],
     components: [new ActionRowBuilder().addComponents(
@@ -182,7 +197,7 @@ function reserveMessage(data) {
         .setLabel(isBesoin(data) ? '🔒 Besoin réservé' : '🔒 Contrat réservé').setStyle(ButtonStyle.Secondary).setDisabled(true),
       new ButtonBuilder().setCustomId('contrat_supprimer_' + data.ownerId).setLabel('🗑️ Supprimer').setStyle(ButtonStyle.Danger),
     )],
-  });
+  };
 }
 
 // Décider de l'accord (Accepté / Refusé / Terminé) = exploitant (créateur ou
@@ -253,35 +268,31 @@ async function handleContratAccepter(interaction) {
 
   const mId  = data.messageId;
   const verb = isBesoin(data) ? 'a répondu au besoin de' : 'a accepté le contrat de';
-  const negoFields = objetFields(data);
-  if (!isBesoin(data)) negoFields.push({ name: '📝 Informations', value: data.details || '*Aucune précision*', inline: false });
 
   // Ping de tous les invités (content limité à 2000 car. — au-delà, on tronque :
   // l'accès au salon + le DM restent la source de vérité).
   const pings = invites.map(id => '<@' + id + '>').join(' ').slice(0, 1900);
 
-  await negoChannel.send(panneau({
+  await negoChannel.send({
     content: pings,
     embeds: [{
       title: '🤝 ' + LABEL(data) + ' ACCEPTÉ — négociation',
-      description: [
-        '**<@' + data.accepteurId + '>** (*' + accepteurExploit.nom + '*) ' + verb + ' **' + (demandeurExploit?.nom || data.exploit.nom) + '**.',
-        '',
-        'Tous les membres des deux exploitations ont accès à ce salon.',
-        'Discutez ici du prix, du matériel et des délais.',
-        '',
-        'Une fois d\'accord, un **exploitant** (créateur ou co-exploitant) de l\'une des deux fermes choisit :',
-        '> ✅ **Accepté** — l\'accord est confirmé, le salon reste ouvert',
-        '> ❌ **Refusé** — ce salon est supprimé et l\'annonce redevient disponible',
-        '> 🏁 **Terminé** — l\'annonce et ce salon sont supprimés',
-      ].join('\n'),
-      fields: negoFields,
+      description: corpsAnnonce(data, { tiers: 'Prestataire' }) + '\n' + SEP + '\n'
+        + [
+            'Tous les membres des deux exploitations ont accès à ce salon.',
+            'Discutez ici du prix, du matériel et des délais.',
+            '',
+            'Une fois d\'accord, un **exploitant** (créateur ou co-exploitant) de l\'une des deux fermes choisit :',
+            '> ✅ **Accepté** — l\'accord est confirmé, le salon reste ouvert',
+            '> ❌ **Refusé** — ce salon est supprimé et l\'annonce redevient disponible',
+            '> 🏁 **Terminé** — l\'annonce et ce salon sont supprimés',
+          ].join('\n'),
       color: 0xF39C12,
       footer: { text: 'EUROAGRI — Salon de négociation' },
       timestamp: new Date().toISOString(),
     }],
     components: [dealRow(mId, false)],
-  }));
+  });
 
   // DM best-effort à chaque membre — un DM fermé ne bloque pas les autres.
   const dmEmbed = {
