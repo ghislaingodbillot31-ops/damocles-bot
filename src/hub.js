@@ -5,6 +5,7 @@ const {
 } = require('discord.js');
 const exp = require('./exploitation');
 const { agrilog } = require('./agrilog');
+const { panneau } = require('./embed-format');
 
 // ── Config ────────────────────────────────────────────────────────────────────
 const HUB_CHANNEL        = '1544303765602173020'; // salon du hub
@@ -71,7 +72,7 @@ async function postHub(channel) {
     }
   } catch {}
 
-  await channel.send({
+  await channel.send(panneau({
     embeds: [{
       title: '🌾  EUROAGRI  —  HUB DES EXPLOITANTS',
       description: [
@@ -106,7 +107,7 @@ async function postHub(channel) {
         new ButtonBuilder().setCustomId('hub_annuaire').setLabel('📖 Annuaire · ON').setStyle(ButtonStyle.Secondary),
       ),
     ],
-  });
+  }));
 }
 
 // ═══ BOUTON « Mon exploitation » ════════════════════════════════════════════
@@ -169,7 +170,7 @@ function manageMenu(exploit, viewerId, others = []) {
     ));
   }
 
-  return {
+  return panneau({
     embeds: [{
       title: '🌾 ' + exploit.nom,
       fields: [
@@ -184,7 +185,7 @@ function manageMenu(exploit, viewerId, others = []) {
       color: exploit.couleur ?? DEFAULT_COLOR,
     }],
     components,
-  };
+  });
 }
 
 // Vue de gestion des produits (ajout en boucle). Renvoie un payload sans `flags`.
@@ -207,14 +208,14 @@ function produitsView(exploit) {
     new ButtonBuilder().setCustomId('hub_expl_done_' + exploit.ownerId).setLabel('✅ Terminé').setStyle(ButtonStyle.Secondary),
   ));
 
-  return {
+  return panneau({
     embeds: [{
       title: '🛒 Vos produits — ' + exploit.nom,
       description: list + '\n\nAjoute un produit, valide, puis recommence. Clique **✅ Terminé** quand tu as fini.',
       color: exploit.couleur ?? DEFAULT_COLOR,
     }],
     components: rows,
-  };
+  });
 }
 
 // ── Bouton « Créer mon exploitation » → modale ──────────────────────────────
@@ -707,7 +708,7 @@ async function handleHubAnnuaire(interaction) {
   });
 
   await interaction.reply({
-    embeds: [header, ...cartes],
+    ...panneau({ embeds: [header, ...cartes] }),
     components: [new ActionRowBuilder().addComponents(
       new ButtonBuilder().setCustomId('hub_annuaire_off').setLabel('📖 Annuaire · OFF').setStyle(ButtonStyle.Danger),
     )],

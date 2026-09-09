@@ -6,6 +6,7 @@ const {
 } = require('discord.js');
 const exp = require('../exploitation');
 const { agrilog } = require('../agrilog');
+const { panneau } = require('../embed-format');
 
 const { dataPath }    = require('../paths');
 const CONTRAT_CHANNEL = '1544735442589450270';
@@ -151,7 +152,7 @@ function disponibleMessage(data) {
 
   const ex = (data.exploitId && exp.getById(data.exploitId)) || data.exploit;
 
-  return {
+  return panneau({
     embeds: [{
       title: isBesoin(data) ? '📦 BESOIN' : '📋 CONTRAT DISPONIBLE',
       description: '🌾 **' + data.exploit.nom + '** · <@' + data.ownerId + '>',
@@ -163,12 +164,12 @@ function disponibleMessage(data) {
         .setLabel(isBesoin(data) ? '✅ Répondre au besoin' : '✅ Accepter le contrat').setStyle(ButtonStyle.Success),
       new ButtonBuilder().setCustomId('contrat_supprimer_' + data.ownerId).setLabel('🗑️ Supprimer').setStyle(ButtonStyle.Danger),
     )],
-  };
+  });
 }
 
 // ── Rendu du message « RÉSERVÉ » (grisé, bouton désactivé) ──────────────────
 function reserveMessage(data) {
-  return {
+  return panneau({
     embeds: [{
       title: isBesoin(data) ? '🔒 BESOIN RÉSERVÉ' : '🔒 CONTRAT RÉSERVÉ',
       description: '🌾 **' + data.exploit.nom + '** · <@' + data.ownerId + '>\n'
@@ -181,7 +182,7 @@ function reserveMessage(data) {
         .setLabel(isBesoin(data) ? '🔒 Besoin réservé' : '🔒 Contrat réservé').setStyle(ButtonStyle.Secondary).setDisabled(true),
       new ButtonBuilder().setCustomId('contrat_supprimer_' + data.ownerId).setLabel('🗑️ Supprimer').setStyle(ButtonStyle.Danger),
     )],
-  };
+  });
 }
 
 // Décider de l'accord (Accepté / Refusé / Terminé) = exploitant (créateur ou
@@ -259,7 +260,7 @@ async function handleContratAccepter(interaction) {
   // l'accès au salon + le DM restent la source de vérité).
   const pings = invites.map(id => '<@' + id + '>').join(' ').slice(0, 1900);
 
-  await negoChannel.send({
+  await negoChannel.send(panneau({
     content: pings,
     embeds: [{
       title: '🤝 ' + LABEL(data) + ' ACCEPTÉ — négociation',
@@ -280,7 +281,7 @@ async function handleContratAccepter(interaction) {
       timestamp: new Date().toISOString(),
     }],
     components: [dealRow(mId, false)],
-  });
+  }));
 
   // DM best-effort à chaque membre — un DM fermé ne bloque pas les autres.
   const dmEmbed = {
