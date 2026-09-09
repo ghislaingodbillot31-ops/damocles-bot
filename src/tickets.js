@@ -1,5 +1,6 @@
 const { ActionRowBuilder, ButtonBuilder, ButtonStyle, PermissionFlagsBits, ChannelType } = require('discord.js');
 const { log } = require('./logger');
+const { panneau } = require('./embed-format');
 require('dotenv').config();
 
 const config = require('./config');
@@ -73,7 +74,7 @@ async function createTicket(interaction) {
     new ButtonBuilder().setCustomId('ticket_close_' + member.id).setLabel('🔒 Clôturer').setStyle(ButtonStyle.Danger),
   );
 
-  await ticketChannel.send({
+  await ticketChannel.send(panneau({
     content: supportRoleId ? '<@&' + supportRoleId + '>' : '',
     embeds: [{
       title: '🎫 Ticket — ' + member.user.username,
@@ -85,7 +86,7 @@ async function createTicket(interaction) {
       timestamp: new Date().toISOString(),
     }],
     components: [row],
-  });
+  }));
 
   await interaction.reply({ content: '✅ Ton ticket a été créé : <#' + ticketChannel.id + '>', ephemeral: true });
   await log(interaction.client, 'ticket_created', { userId: member.id, channelId: ticketChannel.id, channelName });
@@ -100,13 +101,13 @@ async function takeTicket(interaction, memberId) {
   }
 
   await interaction.update({
-    embeds: [{
+    ...panneau({ embeds: [{
       title: '🎫 Ticket pris en charge',
       description: '<@' + memberId + '>, ton ticket a été pris en charge par <@' + interaction.user.id + '> !\n\n> Un responsable s\'occupe de ta demande.\n\n📌 Merci de clore ton ticket une fois ta demande traitée.',
       color: 0x2ECC71,
       footer: { text: 'Damoclès Security Bot' },
       timestamp: new Date().toISOString(),
-    }],
+    }] }),
     components: [new ActionRowBuilder().addComponents(
       new ButtonBuilder().setCustomId('ticket_take_' + memberId).setLabel('✋ Pris en charge').setStyle(ButtonStyle.Success).setDisabled(true),
       new ButtonBuilder().setCustomId('ticket_close_' + memberId).setLabel('🔒 Clôturer').setStyle(ButtonStyle.Danger),

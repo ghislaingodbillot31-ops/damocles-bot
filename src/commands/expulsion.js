@@ -1,4 +1,5 @@
 const { SlashCommandBuilder, PermissionFlagsBits, ActionRowBuilder, ButtonBuilder, ButtonStyle } = require('discord.js');
+const { panneau } = require('../embed-format');
 const activity = require('../activity');
 const { getMemberStatus, getDaysInactive, getLastActivity, EXPEL_DAYS } = activity;
 const db = require('../database');
@@ -152,7 +153,7 @@ async function sendNext(guild, channel) {
       .setStyle(ButtonStyle.Success),
   );
 
-  await channel.send({
+  await channel.send(panneau({
     embeds: [{
       title: '⚠️ Liste d\'expulsion — ' + current + ' / ' + total,
       color: 0xE74C3C,
@@ -166,5 +167,5 @@ async function sendNext(guild, channel) {
       footer: { text: 'Damoclès Security Bot — Choisissez une action pour continuer' },
     }],
     components: [row],
-  });
+  }));
 }

@@ -1,4 +1,5 @@
 const { SlashCommandBuilder, PermissionFlagsBits } = require('discord.js');
+const { panneau } = require('../embed-format');
 const db = require('../database');
 
 module.exports = {
@@ -35,7 +36,7 @@ module.exports = {
       if (LOG_CHANNEL_ID) {
         const logChannel = guild.channels.cache.get(LOG_CHANNEL_ID);
         if (logChannel) {
-          await logChannel.send({
+          await logChannel.send(panneau({
             embeds: [{
               title: '🔨 Bannissement',
               color: 0xE74C3C,
@@ -48,7 +49,7 @@ module.exports = {
               footer: { text: 'Damoclès Security Bot' },
               timestamp: new Date().toISOString(),
             }]
-          });
+          }));
         }
       }
 

@@ -4,6 +4,7 @@ const {
   ChannelType, PermissionFlagsBits, ActionRowBuilder, ButtonBuilder, ButtonStyle,
   ModalBuilder, TextInputBuilder, TextInputStyle,
 } = require('discord.js');
+const { panneau } = require('./embed-format');
 
 // ── Config ────────────────────────────────────────────────────────────────────
 const PANEL_CHANNEL   = '1544898451706482728'; // salon texte où se trouve le bouton
@@ -37,7 +38,7 @@ async function postVoicePanel(channel) {
     for (const [, m] of msgs) if (m.author.id === channel.client.user.id) await m.delete().catch(() => {});
   } catch {}
 
-  await channel.send({
+  await channel.send(panneau({
     embeds: [{
       title: '🔊  SALONS VOCAUX TEMPORAIRES',
       description: [
@@ -53,7 +54,7 @@ async function postVoicePanel(channel) {
     components: [new ActionRowBuilder().addComponents(
       new ButtonBuilder().setCustomId('voice_create').setLabel('➕ Créer mon salon vocal').setStyle(ButtonStyle.Success),
     )],
-  }).catch(console.error);
+  })).catch(console.error);
 }
 
 // ── Bouton « Créer mon salon vocal » ──────────────────────────────────────────
@@ -100,11 +101,11 @@ async function handleVoiceCreate(interaction) {
   }
 
   await interaction.reply({
-    embeds: [{
+    ...panneau({ embeds: [{
       title: '🔊 Ton salon est prêt',
       description: '<#' + voice.id + '>' + (deplace ? '\n> Tu y as été déplacé.' : '\n> Rejoins-le quand tu veux !'),
       color: 0x2ECC71,
-    }],
+    }] }),
     components: [controlRow(voice.id, false)],
     flags: 64,
   });
@@ -176,7 +177,7 @@ async function handleVoiceControl(interaction) {
     salons.set(cid, info);
     save();
     await interaction.update({
-      embeds: [{ title: '🔊 Ton salon', description: '<#' + cid + '>\n> ' + (lock ? '🔒 **Verrouillé** — personne ne peut plus rejoindre.' : '🔓 **Déverrouillé**.'), color: lock ? 0xE67E22 : 0x2ECC71 }],
+      ...panneau({ embeds: [{ title: '🔊 Ton salon', description: '<#' + cid + '>\n> ' + (lock ? '🔒 **Verrouillé** — personne ne peut plus rejoindre.' : '🔓 **Déverrouillé**.'), color: lock ? 0xE67E22 : 0x2ECC71 }] }),
       components: [controlRow(cid, lock)],
     });
     return;

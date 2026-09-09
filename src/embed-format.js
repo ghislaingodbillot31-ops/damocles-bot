@@ -37,17 +37,16 @@ function wrap(txt, max = LINE_MAX) {
   }).join('\n');
 }
 
-// Applique la largeur fixe à chaque embed d'un payload de message :
-// ligne SEP en tête de description + texte coupé à LINE_MAX.
-function panneau(payload) {
-  if (!payload || !Array.isArray(payload.embeds)) return payload;
-  return {
-    ...payload,
-    embeds: payload.embeds.map(e => ({
-      ...e,
-      description: e.description ? SEP + '\n' + wrap(e.description) : SEP,
-    })),
-  };
+// Encadre UN embed (objet brut) : ligne SEP en tête de description + texte
+// coupé à LINE_MAX.
+function panneauEmbed(e) {
+  return { ...e, description: e && e.description ? SEP + '\n' + wrap(e.description) : SEP };
 }
 
-module.exports = { SEP, LINE_MAX, wrap, panneau };
+// Applique la largeur fixe à chaque embed d'un payload de message.
+function panneau(payload) {
+  if (!payload || !Array.isArray(payload.embeds)) return payload;
+  return { ...payload, embeds: payload.embeds.map(panneauEmbed) };
+}
+
+module.exports = { SEP, LINE_MAX, wrap, panneau, panneauEmbed };

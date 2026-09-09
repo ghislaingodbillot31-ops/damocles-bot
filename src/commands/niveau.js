@@ -1,4 +1,5 @@
 const { SlashCommandBuilder } = require('discord.js');
+const { panneau } = require('../embed-format');
 const levels = require('../levels');
 
 function barre(courant, total, taille = 18) {
@@ -31,7 +32,7 @@ module.exports = {
     const heuresVocal = Math.floor(r.voiceMs / 3_600_000);
     const minVocal    = Math.floor((r.voiceMs % 3_600_000) / 60_000);
 
-    await interaction.reply({
+    await interaction.reply(panneau({
       embeds: [{
         title: '🎚️ Niveau de ' + user.username,
         thumbnail: { url: user.displayAvatarURL() },
@@ -46,6 +47,6 @@ module.exports = {
         color: 0xF1C40F,
         footer: { text: 'EUROAGRI — Damoclès Bot' },
       }],
-    });
+    }));
   },
 };

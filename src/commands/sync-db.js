@@ -1,4 +1,5 @@
 const { SlashCommandBuilder, PermissionFlagsBits } = require('discord.js');
+const { panneau } = require('../embed-format');
 const db = require('../database');
 
 module.exports = {
@@ -85,7 +86,7 @@ async function syncDatabase(interaction) {
 
   const stats = await db.getStats();
 
-  await interaction.editReply({
+  await interaction.editReply(panneau({
     embeds: [{
       title: '✅ Synchronisation terminée',
       description: [
@@ -101,7 +102,7 @@ async function syncDatabase(interaction) {
       footer: { text: 'DAMOCLES' },
       timestamp: new Date().toISOString(),
     }],
-  });
+  }));
 
   console.log('🔄 Sync DB — ' + ajoutes + ' ajoutés, ' + presences + ' réactivés, ' + absences + ' absents');
 }

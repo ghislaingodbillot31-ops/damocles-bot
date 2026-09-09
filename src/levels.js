@@ -1,6 +1,7 @@
 const fs   = require('fs');
 const path = require('path');
 const db   = require('./database');
+const { panneauEmbed } = require('./embed-format');
 
 const { dataPath } = require('./paths');
 const STATE_PATH   = dataPath('levels.json'); // ids des messages du salon
@@ -171,18 +172,17 @@ const MEDAILLE = ['🥇', '🥈', '🥉'];
 
 // Bloc 1 : explication (statique)
 function baremeEmbed() {
-  return {
+  return panneauEmbed({
     title: '📖  COMMENT GAGNER DES POINTS',
     description: [
       baremeTexte(),
       '',
-      '━━━━━━━━━━━━━━━━━━━━',
       '🎚️ **Niveaux** — ton XP total te fait monter de niveau.',
       'Tape **/niveau** pour voir ta progression, ton rang, ton temps vocal et tes invitations.',
       'Tape **/classement** pour le classement complet.',
     ].join('\n'),
     color: 0x5865F2,
-  };
+  });
 }
 
 // Bloc 2 : le classement (mis à jour en continu)
@@ -192,13 +192,13 @@ function classementEmbed() {
     ? top.map(e => (MEDAILLE[e.rang - 1] || '`#' + e.rang + '`') + ' <@' + e.id + '> — **Nv ' + e.level + '** · ' + e.xp.toLocaleString('fr-FR') + ' XP').join('\n')
     : '*Personne n\'a encore d\'XP — sois le premier !*';
 
-  return {
+  return panneauEmbed({
     title: '🏆  CLASSEMENT XP',
     description: lignes,
     color: 0xF1C40F,
     footer: { text: 'EUROAGRI — Mis à jour' },
     timestamp: new Date().toISOString(),
-  };
+  });
 }
 
 // ── Message de classement permanent (toujours en bas du salon) ──────────────

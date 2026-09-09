@@ -1,4 +1,5 @@
 const { SlashCommandBuilder, PermissionFlagsBits } = require('discord.js');
+const { panneau } = require('../embed-format');
 const db = require('../database');
 require('dotenv').config();
 
@@ -41,7 +42,7 @@ module.exports = {
     } catch {}
 
     if (logChannel) {
-        await logChannel.send({
+        await logChannel.send(panneau({
           embeds: [{
             title: `⚠️ Avertissement ${warningCount}/${MAX_WARNINGS}`,
             color: 0xF39C12,
@@ -55,7 +56,7 @@ module.exports = {
             footer: { text: 'Damoclès Security Bot' },
             timestamp: new Date().toISOString(),
           }]
-        });
+        }));
       }
 
       await interaction.editReply({
@@ -79,7 +80,7 @@ module.exports = {
       }
 
       if (logChannel) {
-        await logChannel.send({
+        await logChannel.send(panneau({
           embeds: [{
             title: '🚨 3 avertissements — Joueur sous contrôle',
             color: 0xE74C3C,
@@ -95,7 +96,7 @@ module.exports = {
             footer: { text: 'Damoclès Security Bot — Action requise' },
             timestamp: new Date().toISOString(),
           }]
-        });
+        }));
       }
 
       await interaction.editReply({

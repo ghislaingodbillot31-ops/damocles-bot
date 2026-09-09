@@ -1,4 +1,5 @@
 const { SlashCommandBuilder, PermissionFlagsBits } = require('discord.js');
+const { panneau } = require('../embed-format');
 const levels = require('../levels');
 
 module.exports = {
@@ -70,7 +71,7 @@ module.exports = {
 
       try {
         const res = await levels.backfillFromHistory(interaction.guild, { jours, maxParSalon, onProgress });
-        await interaction.editReply({
+        await interaction.editReply(panneau({
           embeds: [{
             title: '✅ Classement recalculé',
             description: [
@@ -82,7 +83,7 @@ module.exports = {
             ].join('\n'),
             color: 0x2ECC71,
           }],
-        }).catch(() => {});
+        })).catch(() => {});
       } catch (err) {
         console.error('❌ backfill :', err);
         await interaction.editReply({ content: '❌ Erreur pendant le recalcul : ' + err.message }).catch(() => {});

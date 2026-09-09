@@ -1,4 +1,5 @@
 require('dotenv').config();
+const { panneau } = require('./embed-format');
 
 const LOG_CHANNEL_ID = process.env.LOG_CHANNEL_ID;
 
@@ -126,7 +127,7 @@ async function sendSuspicionAlert(guild, member, score, signals, accountAgeDays)
   const signalText = signals.map(s => `${s.label} **(+${s.points})**`).join('\n');
   const createdAt = new Date(member.user.createdTimestamp).toLocaleDateString('fr-FR');
 
-  await logChannel.send({
+  await logChannel.send(panneau({
     embeds: [{
       title: '⚠️ Compte suspect détecté',
       color,
@@ -143,7 +144,7 @@ async function sendSuspicionAlert(guild, member, score, signals, accountAgeDays)
       footer: { text: 'DAMOCLES — Vérifiez manuellement avant toute action' },
       timestamp: new Date().toISOString(),
     }]
-  }).catch(console.error);
+  })).catch(console.error);
 }
 
 module.exports = { checkNewMember };

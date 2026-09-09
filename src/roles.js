@@ -1,6 +1,7 @@
 const fs   = require('fs');
 const path = require('path');
 const { ActionRowBuilder, ButtonBuilder, ButtonStyle } = require('discord.js');
+const { panneauEmbed } = require('./embed-format');
 
 // Salon des rôles. Le bot y maintient UN SEUL message :
 //   [ embed d'explication ]  +  [ boutons de rôle ]
@@ -36,7 +37,7 @@ function saveStore(store) {
 }
 
 function headerEmbed() {
-  return {
+  return panneauEmbed({
     color: 0x5865F2,
     description: [
       '## 🎭 Choisis tes rôles',
@@ -51,7 +52,7 @@ function headerEmbed() {
       '',
       '*Les rôles te donnent accès à des salons, des notifications ou juste un badge sur ton profil.*',
     ].join('\n'),
-  };
+  });
 }
 
 function buildComponents(buttons) {

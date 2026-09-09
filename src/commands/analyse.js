@@ -1,4 +1,5 @@
 const { SlashCommandBuilder, PermissionFlagsBits } = require('discord.js');
+const { panneau } = require('../embed-format');
 const activity = require('../activity');
 const { getMemberStatus, getDaysInactive, INACTIVE_DAYS, EXPEL_DAYS } = activity;
 const db = require('../database');
@@ -108,7 +109,7 @@ module.exports = {
           const inactiveExtra   = inactiveList.length > 15 ? '\n_...et ' + (inactiveList.length - 15) + ' autres_' : '';
           const expelExtra      = expelList.length > 10  ? '\n_...et ' + (expelList.length - 10)  + ' autres_' : '';
 
-          await logCh.send({
+          await logCh.send(panneau({
             embeds: [{
               title: '📊 Rapport /analyse — ' + new Date().toLocaleString('fr-FR', { timeZone: 'Europe/Paris' }),
               color: 0x5865F2,
@@ -122,7 +123,7 @@ module.exports = {
               footer: { text: 'Damoclès Security Bot' },
               timestamp: new Date().toISOString(),
             }]
-          }).catch(() => {});
+          })).catch(() => {});
         }
       }
 

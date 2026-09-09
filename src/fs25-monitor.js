@@ -1,5 +1,6 @@
 const http = require('http');
 require('dotenv').config();
+const { panneauEmbed } = require('./embed-format');
 
 const FS25_IP       = '195.179.229.190';
 const FS25_PORT     = 9220;
@@ -80,7 +81,7 @@ function formatUptime(ms) {
 async function sendNotification(client, embed) {
   const channel = client.channels.cache.get(NOTIF_CHANNEL);
   if (!channel) return;
-  await channel.send({ embeds: [embed] }).catch(console.error);
+  await channel.send({ embeds: [panneauEmbed(embed)] }).catch(console.error);
 }
 
 // Log serveur en une seule ligne (connexion / déconnexion), sans ping

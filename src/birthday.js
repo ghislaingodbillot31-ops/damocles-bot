@@ -1,4 +1,5 @@
 const db = require('./database');
+const { panneau } = require('./embed-format');
 require('dotenv').config();
 
 const BIRTHDAY_CHANNEL_ID = '1538533316410474547';
@@ -23,7 +24,7 @@ async function sendBirthdayMessages(client) {
     const parts = m.anniversaire.split('/');
     const age   = today.getFullYear() - parseInt(parts[2]);
 
-    await channel.send({
+    await channel.send(panneau({
       embeds: [{
         description: [
           '🎂 **Joyeux anniversaire <@' + m.id + '> !**',
@@ -37,7 +38,7 @@ async function sendBirthdayMessages(client) {
         footer: { text: 'Damoclès Security Bot' },
         timestamp: new Date().toISOString(),
       }]
-    }).catch(console.error);
+    })).catch(console.error);
   }
 }
 
@@ -64,13 +65,13 @@ async function updateBirthdayChannel(client) {
   } catch {}
 
   if (!all.length) {
-    await channel.send({
+    await channel.send(panneau({
       embeds: [{
         title: '🎂  ANNIVERSAIRES',
         description: '*Aucun anniversaire enregistré pour le moment.*\n\nEnregistre le tien avec `/anniversaire JJ/MM/AAAA` (ex : `/anniversaire 20/11/1988`).',
         color: 0xF1C40F,
       }]
-    }).catch(console.error);
+    })).catch(console.error);
     return;
   }
 
@@ -112,7 +113,7 @@ async function updateBirthdayChannel(client) {
   }
   if (affiches < lignes.length) corps += '\n*… et ' + (lignes.length - affiches) + ' autre(s)*';
 
-  await channel.send({
+  await channel.send(panneau({
     embeds: [{
       title: '🎂  ANNIVERSAIRES  —  ' + all.length + ' enregistré' + (all.length > 1 ? 's' : ''),
       description: [
@@ -127,7 +128,7 @@ async function updateBirthdayChannel(client) {
       footer: { text: 'Mis à jour le ' + now.toLocaleDateString('fr-FR') + ' — Damoclès Bot' },
       timestamp: now.toISOString(),
     }]
-  }).catch(console.error);
+  })).catch(console.error);
 
   console.log('🎂 Salon anniversaires mis à jour — ' + all.length + ' anniversaire(s)');
 }
