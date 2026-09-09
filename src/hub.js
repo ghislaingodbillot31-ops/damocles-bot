@@ -26,6 +26,7 @@ const ACTIVITES = [
   { label: '🐃 Élevage Bubalin',            value: 'Élevage Bubalin' },
   { label: '🚜 Travaux agricoles',           value: 'Travaux agricoles' },
   { label: '🤝 Sous-traitance',              value: 'Sous-traitance' },
+  { label: '⚡ Biogaz',                       value: 'Biogaz' },
 ];
 
 // ── Utilitaire : supprimer un message éphémère une fois l'action terminée ─────
