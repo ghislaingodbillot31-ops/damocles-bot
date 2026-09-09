@@ -1,5 +1,6 @@
 const { ActionRowBuilder, ButtonBuilder, ButtonStyle, PermissionFlagsBits } = require('discord.js');
 const db = require('./database');
+const { SEP } = require('./embed-format');
 require('dotenv').config();
 
 const VERIFICATION_CHANNEL_ID = process.env.VERIFICATION_CHANNEL_ID; // 1538533245938040853
@@ -27,61 +28,56 @@ async function verifyMember(member) {
 
   if (!verifChannel) return;
 
-  // Message d'intro
-  await verifChannel.send({
-    embeds: [{
-      description: [
-        '> 🖥️ **DAMOCLES SECURITY SYSTEM v2.0**',
-        '> Initialisation de la vérification...',
-        '> Cible : `' + member.user.tag + '` (`' + member.user.id + '`)',
-      ].join('\n'),
-      color: 0x2F3136,
-    }]
-  });
+  // Un seul embed à largeur fixe, édité check par check (effet « console »).
+  const lignes = [];
+  let msg = null;
+  const render = async (color = 0x2F3136, components) => {
+    const payload = {
+      embeds: [{
+        title: '🖥️ DAMOCLES SECURITY SYSTEM v2.0',
+        description: [SEP, ...lignes].join('\n'),
+        color,
+      }],
+    };
+    if (components) payload.components = components;
+    try { if (msg) await msg.edit(payload); else msg = await verifChannel.send(payload); } catch {}
+  };
+
+  lignes.push('**Cible :** `' + member.user.tag + '` (`' + member.user.id + '`)');
+  await render();
   await sleep(800);
 
   // Afficher chaque check
   for (const check of checks) {
     const label = check.label;
     const dots  = '.'.repeat(Math.max(2, 32 - label.length));
-    let text, color;
+    let line;
 
     if (check.type === 'oui_non') {
-      text  = '`▶` ' + label + ' ' + dots + ' ' + (check.value ? '🟠 **Oui**' : '🟢 **Non**');
-      if (check.value && check.detail) text += '\n> ' + check.detail;
-      color = check.value ? 0xE67E22 : 0x2ECC71;
+      line = '`▶` ' + label + ' ' + dots + ' ' + (check.value ? '🟠 **Oui**' : '🟢 **Non**');
+      if (check.value && check.detail) line += '\n> ' + check.detail;
     } else if (check.type === 'danger') {
-      text  = '`▶` ' + label + ' ' + dots + ' ' + (check.value ? '🔴 **Oui**' : '🟢 **Non**');
-      if (check.value && check.detail) text += '\n> ' + check.detail;
-      color = check.value ? 0xE74C3C : 0x2ECC71;
+      line = '`▶` ' + label + ' ' + dots + ' ' + (check.value ? '🔴 **Oui**' : '🟢 **Non**');
+      if (check.value && check.detail) line += '\n> ' + check.detail;
     } else {
       const icon   = check.passed ? '✅' : '❌';
       const status = check.passed ? 'OK' : 'ÉCHEC';
-      text  = '`▶` ' + label + ' ' + dots + ' ' + icon + ' **' + status + '**';
-      if (!check.passed && check.detail) text += '\n> ⚠️ ' + check.detail;
-      color = check.passed ? 0x2ECC71 : 0xE74C3C;
+      line = '`▶` ' + label + ' ' + dots + ' ' + icon + ' **' + status + '**';
+      if (!check.passed && check.detail) line += '\n> ⚠️ ' + check.detail;
     }
 
-    await verifChannel.send({ embeds: [{ description: text, color }] });
+    lignes.push(line);
+    await render();
     await sleep(600);
   }
 
   await sleep(500);
+  lignes.push(SEP);
 
   if (failed.length === 0) {
-    // ✅ OK → rôle Attente règlement
-    await verifChannel.send({
-      embeds: [{
-        description: [
-          '✅ **Vérification complète — Accès accordé**',
-          '> Bienvenue <@' + member.id + '> !',
-          '> Rends-toi dans le salon **#règlement** pour accéder au serveur.',
-        ].join('\n'),
-        color: 0x2ECC71,
-        footer: { text: 'Damoclès Security Bot' },
-        timestamp: new Date().toISOString(),
-      }]
-    });
+    lignes.push('✅ **Vérification complète — Accès accordé**');
+    lignes.push('Bienvenue <@' + member.id + '> ! Rends-toi dans le salon **#règlement** pour accéder au serveur.');
+    await render(0x2ECC71);
 
     // Retirer rôle Vérification → donner En attente (accès au règlement)
     if (VERIFICATION_ROLE_ID) await member.roles.remove(VERIFICATION_ROLE_ID).catch(() => {});
@@ -89,39 +85,19 @@ async function verifyMember(member) {
     console.log('✅ Vérification OK : ' + member.user.tag);
 
   } else {
-    // ❌ ÉCHEC → rôle Attente admin + boutons dans #vérification
+    // ❌ ÉCHEC → rôle Attente admin + boutons
     if (ATTENTE_ROLE_ID) await member.roles.add(ATTENTE_ROLE_ID).catch(() => {});
 
     const row = new ActionRowBuilder().addComponents(
-      new ButtonBuilder()
-        .setCustomId('verify_accept_' + member.id)
-        .setLabel('✅ Accepter')
-        .setStyle(ButtonStyle.Success),
-      new ButtonBuilder()
-        .setCustomId('verify_refuse_' + member.id)
-        .setLabel('❌ Refuser')
-        .setStyle(ButtonStyle.Danger),
+      new ButtonBuilder().setCustomId('verify_accept_' + member.id).setLabel('✅ Accepter').setStyle(ButtonStyle.Success),
+      new ButtonBuilder().setCustomId('verify_refuse_' + member.id).setLabel('❌ Refuser').setStyle(ButtonStyle.Danger),
     );
 
-    const reasons = failed.map(c => '• ' + c.label + (c.detail ? ' — ' + c.detail : '')).join('\n');
-
-    await verifChannel.send({
-      embeds: [{
-        title: '⛔ Vérification échouée',
-        description: [
-          '<@' + member.id + '>, ta vérification a échoué.',
-          'Merci de patienter, un administrateur va traiter ton intégration.',
-          '',
-          '**Raisons :**',
-          reasons,
-        ].join('\n'),
-        color: 0xE74C3C,
-        thumbnail: { url: member.user.displayAvatarURL() },
-        footer: { text: 'Damoclès Security Bot — Action admin requise' },
-        timestamp: new Date().toISOString(),
-      }],
-      components: [row],
-    });
+    lignes.push('⛔ **Vérification échouée**');
+    lignes.push('<@' + member.id + '>, un administrateur va traiter ton intégration.');
+    lignes.push('**Raisons :**');
+    lignes.push(failed.map(c => '• ' + c.label + (c.detail ? ' — ' + c.detail : '')).join('\n'));
+    await render(0xE74C3C, [row]);
 
     // Enregistrer l'échec en DB
     await db.upsertMember(member.user, { status: 'pending_admin' });

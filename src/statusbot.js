@@ -1,5 +1,6 @@
 require('dotenv').config();
 const db = require('./database');
+const { SEP } = require('./embed-format');
 
 let _cfgStatus = '';
 try { _cfgStatus = require('./config').get().STATUS_CHANNEL_ID || ''; } catch {}
@@ -18,10 +19,6 @@ async function clearStatusChannel(channel, clientId) {
   await sleep(500);
 }
 
-async function postLine(channel, text, color = 0x2F3136) {
-  return await channel.send({ embeds: [{ description: text, color }] }).catch(() => null);
-}
-
 async function updateStatusMessage(client, animated = false) {
   if (!STATUS_CHANNEL_ID) return;
   const channel = client.channels.cache.get(STATUS_CHANNEL_ID);
@@ -34,52 +31,50 @@ async function updateStatusMessage(client, animated = false) {
 
   await clearStatusChannel(channel, client.user.id);
 
-  await postLine(channel, '> 🖥️ **DAMOCLES SECURITY SYSTEM v2.0**\n> Démarrage du système...', 0x2F3136);
+  // Un seul embed, à largeur fixe, qu'on édite ligne par ligne (effet « console »).
+  const lignes = [];
+  let msg = null;
+  const render = async (color = 0x5865F2) => {
+    const payload = { embeds: [{
+      title: '🖥️ DAMOCLES SECURITY SYSTEM v2.0',
+      description: [SEP, ...lignes].join('\n'),
+      color,
+    }] };
+    try { if (msg) await msg.edit(payload); else msg = await channel.send(payload); } catch {}
+  };
+  const step = async (ligne) => { lignes.push(ligne); await render(); await sleep(400); };
+
+  await render();
   await sleep(600);
 
-  await postLine(channel, '`▶` ⚙️ Connexion Discord ............. ✅ **En ligne**', 0x2ECC71);
-  await sleep(400);
+  await step('`▶` ⚙️ Connexion Discord ............. ✅ **En ligne**');
 
   const memberCount = guild ? guild.memberCount : stats.total;
-  await postLine(channel, '`▶` 👥 Membres du serveur ........... ✅ **' + memberCount + '**', 0x2ECC71);
-  await sleep(400);
-
-  await postLine(channel, '`▶` 📇 Fiches en base ............... ✅ **' + stats.total + '** (' + stats.present + ' présents)', 0x2ECC71);
-  await sleep(400);
-
-  await postLine(channel, '`▶` 🔨 Comptes bannis ............... ✅ **' + stats.banned + '**', 0x2ECC71);
-  await sleep(400);
-
-  await postLine(channel, '`▶` ⚠️ Comptes avertis .............. ✅ **' + stats.warned + '**', 0x2ECC71);
-  await sleep(400);
+  await step('`▶` 👥 Membres du serveur ........... ✅ **' + memberCount + '**');
+  await step('`▶` 📇 Fiches en base ............... ✅ **' + stats.total + '** (' + stats.present + ' présents)');
+  await step('`▶` 🔨 Comptes bannis ............... ✅ **' + stats.banned + '**');
+  await step('`▶` ⚠️ Comptes avertis .............. ✅ **' + stats.warned + '**');
 
   // Comptes refusés par l'administration (kick avec raison « refusé »)
   const allMembers = await db.getAllMembers();
   const refused = allMembers.filter(m =>
     Array.isArray(m.history) && m.history.some(h => h.event === 'kick' && /refus/i.test(h.detail || ''))
   ).length;
-  await postLine(channel, '`▶` ❌ Comptes refusés .............. ✅ **' + refused + '**', 0x2ECC71);
-  await sleep(400);
+  await step('`▶` ❌ Comptes refusés .............. ✅ **' + refused + '**');
 
   // Exploitations EUROAGRI
   let nbExpl = 0;
   try { nbExpl = require('./exploitation').getAll().filter(e => e.nom).length; } catch {}
-  await postLine(channel, '`▶` 🌾 Exploitations EUROAGRI ...... ✅ **' + nbExpl + '**', 0x2ECC71);
-  await sleep(400);
+  await step('`▶` 🌾 Exploitations EUROAGRI ...... ✅ **' + nbExpl + '**');
 
-  await postLine(channel, '`▶` 🛡️ Système de vérification ...... ✅ **Actif**', 0x2ECC71);
-  await sleep(400);
+  await step('`▶` 🛡️ Système de vérification ...... ✅ **Actif**');
+  await step('`▶` 🎚️ Système de niveaux ........... ✅ **Actif**');
+  await step('`▶` 📋 Commandes .................... ✅ **13 slash + 2 menus**');
+  await step('`▶` 🔄 Actualisation quotidienne .... ✅ **Planifiée — 04h00**');
 
-  await postLine(channel, '`▶` 🎚️ Système de niveaux ........... ✅ **Actif**', 0x2ECC71);
-  await sleep(400);
-
-  await postLine(channel, '`▶` 📋 Commandes .................... ✅ **13 slash + 2 menus**', 0x2ECC71);
-  await sleep(400);
-
-  await postLine(channel, '`▶` 🔄 Actualisation quotidienne .... ✅ **Planifiée — 04h00**', 0x2ECC71);
-  await sleep(400);
-
-  await postLine(channel, '> ✅ **Système opérationnel** — ' + now, 0x5865F2);
+  lignes.push(SEP);
+  lignes.push('✅ **Système opérationnel** — ' + now);
+  await render(0x2ECC71);
 }
 
 module.exports = { updateStatusMessage };
