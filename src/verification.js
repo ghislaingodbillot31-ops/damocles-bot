@@ -112,6 +112,18 @@ async function runChecks(member) {
   const record  = await db.getMember(user.id);
   const checks  = [];
 
+  // db.upsertMember() (dans le handler GuildMemberAdd) a déjà remis record.status
+  // à 'active' avant qu'on arrive ici — on ne peut donc PAS s'y fier pour détecter
+  // un passé sur le serveur. On lit à la place des signaux non écrasés par l'upsert :
+  //   - visits (incrémenté à chaque retour)
+  //   - l'historique d'événements
+  //   - kickedAt / bannedAt (jamais remis à zéro par l'upsert)
+  const hist       = Array.isArray(record?.history) ? record.history : [];
+  const hasEvent   = (...names) => hist.some(h => names.includes(h.event));
+  const lastEvent  = (name) => hist.filter(h => h.event === name).pop() || null;
+  const visits     = record?.visits || 1;
+  const fmtDate    = (d) => (d ? new Date(d).toLocaleDateString('fr-FR') : '?');
+
   // 1. Pseudo conforme
   const pseudoOk = /^[a-zA-Z0-9_\-\. \u00C0-\u024F]+$/.test(user.username);
   checks.push({
@@ -127,12 +139,12 @@ async function runChecks(member) {
     detail: 'Créé il y a ' + ageDays + ' jour(s) — minimum ' + MIN_ACCOUNT_AGE_DAYS + 'j',
   });
 
-  // 3. Ancien membre
-  const isFormer = !!(record && ['left', 'kicked', 'active', 'inactive', 'pending_admin'].includes(record.status));
+  // 3. Ancien membre — a-t-il déjà été sur le serveur ?
+  const dejaVenu = !!record && (visits > 1 || hasEvent('leave', 'kick', 'rejoin', 'sync_absent', 'sync_rejoin'));
   checks.push({
     label: '🔁 Ancien membre', type: 'oui_non',
-    value: isFormer, passed: true,
-    detail: isFormer ? 'Déjà vu — statut : ' + record.status : null,
+    value: dejaVenu, passed: true,
+    detail: dejaVenu ? visits + ' passage(s) sur le serveur' : null,
   });
 
   // 4. Sanctions
@@ -143,41 +155,43 @@ async function runChecks(member) {
     detail: hasWarnings ? record.warnings.length + ' avertissement(s)' : null,
   });
 
-  // 5. Expulsions
-  const wasKicked = !!(record && record.status === 'kicked');
-  const kickReason = wasKicked
-    ? (record.history?.filter(h => h.event === 'kick').pop()?.detail || 'Aucune raison')
-    : null;
+  // 5. Expulsions — déjà expulsé du serveur ?
+  const kickEvt   = lastEvent('kick');
+  const wasKicked = !!kickEvt || !!record?.kickedAt || record?.status === 'kicked';
   checks.push({
     label: '👢 Expulsions', type: 'oui_non',
     value: wasKicked, passed: !wasKicked,
-    detail: wasKicked ? 'Expulsé le ' + new Date(record.kickedAt).toLocaleDateString('fr-FR') + ' — ' + kickReason : null,
+    detail: wasKicked
+      ? 'Expulsé le ' + fmtDate(kickEvt?.date || record?.kickedAt) + ' — ' + (kickEvt?.detail || 'Aucune raison')
+      : null,
   });
 
-  // 6. Départ volontaire
-  const leftVol = !!(record && record.status === 'left');
+  // 6. Départ volontaire — déjà parti de lui-même ?
+  const leaveEvt = lastEvent('leave') || lastEvent('sync_absent');
+  const leftVol  = !!leaveEvt || record?.status === 'left';
   checks.push({
     label: '🚪 Départ volontaire', type: 'oui_non',
     value: leftVol, passed: true,
-    detail: leftVol ? 'Quitté le ' + new Date(record.leftAt).toLocaleDateString('fr-FR') : null,
+    detail: leftVol ? 'Déjà parti le ' + fmtDate(leaveEvt?.date || record?.leftAt) : null,
   });
 
-  // 7. Banni
-  const isBanned = !!(record && record.status === 'banned');
+  // 7. Banni — présent dans la liste des bannis ?
+  const banEvt   = lastEvent('ban');
+  const isBanned = !!banEvt || !!record?.bannedAt || record?.status === 'banned';
   checks.push({
     label: '🔨 Banni', type: 'danger',
     value: isBanned, passed: !isBanned,
     detail: isBanned
-      ? 'Banni le ' + new Date(record.bannedAt).toLocaleDateString('fr-FR') + ' — ' + (record.banReason || '?')
+      ? 'Banni le ' + fmtDate(record?.bannedAt || banEvt?.date) + ' — ' + (record?.banReason || banEvt?.detail || '?')
       : null,
   });
 
-  // 8. Compte suspect
-  const isSuspect = !!(record && ['banned', 'kicked'].includes(record.status));
+  // 8. Compte suspect — ID déjà sanctionné (kick ou ban) ?
+  const isSuspect = wasKicked || isBanned;
   checks.push({
     label: '🕵️ Compte suspect', type: 'danger',
     value: isSuspect, passed: !isSuspect,
-    detail: isSuspect ? 'ID connu — statut : ' + record.status : null,
+    detail: isSuspect ? 'ID déjà sanctionné sur le serveur (kick / ban)' : null,
   });
 
   return checks;
@@ -248,4 +262,4 @@ async function handleVerifyButton(interaction) {
   }
 }
 
-module.exports = { verifyMember, handleVerifyButton };
+module.exports = { verifyMember, handleVerifyButton, runChecks };

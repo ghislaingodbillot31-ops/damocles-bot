@@ -17,13 +17,11 @@ const db                                               = require('./database');
 const { log }                                          = require('./logger');
 const { createDashboard, setClient }                   = require('./dashboard');
 const scheduledMessages                                = require('./scheduled-messages');
-const { startKeepAlive }                               = require('./keepalive');
 const { startBirthdayTasks }                           = require('./birthday');
 const hub                                              = require('./hub');
 const { startFS25Monitor }                             = require('./fs25-monitor');
 const contrat                                          = require('./commands/contrat');
 const { startDailyTasks }                              = require('./dailytasks');
-const { updateStatusMessage }                          = require('./statusbot');
 const tempvoice                                        = require('./tempvoice');
 const levels                                           = require('./levels');
 const { postRolesHeader }                              = require('./roles');
@@ -61,7 +59,6 @@ client.once(Events.ClientReady, async () => {
   console.log('💾 DB : ' + members.length + ' membres');
 
   scheduledMessages.startAll(client);
-  startKeepAlive();
   startBirthdayTasks(client, cron);
   startFS25Monitor(client);
   startDailyTasks(client, cron);
@@ -100,12 +97,8 @@ client.once(Events.ClientReady, async () => {
     console.error('⚠️ Erreur rôles exploitants :', err.message);
   }
 
-  // Message « Démarrage du système » dans le salon de statut
-  try {
-    await updateStatusMessage(client, true);
-  } catch (err) {
-    console.error('⚠️ Erreur message de statut :', err.message);
-  }
+  // Le salon de statut est (re)publié par runDaily(), lancé au démarrage par
+  // startDailyTasks() puis chaque jour à 04h00.
 });
 
 // ── Nouveau membre ────────────────────────────────────────────────────────────

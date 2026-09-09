@@ -76,6 +76,11 @@ function startDailyTasks(client, cron) {
   // Tous les jours à 04h00 (heure de Paris)
   cron.schedule('0 4 * * *', () => runDaily(client), { timezone: 'Europe/Paris' });
   console.log('🗓️ Tâche quotidienne planifiée — tous les jours à 04h00');
+
+  // Exécution au démarrage : couvre les redémarrages / déploiements qui peuvent
+  // tomber n'importe quand (node-cron ne rejoue pas les créneaux manqués).
+  // Délai court pour laisser la gateway et les autres tâches de boot se poser.
+  setTimeout(() => runDaily(client), 20000);
 }
 
 module.exports = { startDailyTasks, runDaily, refreshMembers };
