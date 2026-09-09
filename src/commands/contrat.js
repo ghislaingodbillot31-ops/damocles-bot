@@ -22,9 +22,9 @@ const objetShort = data => data.kind === 'besoin'
 
 // ── Lance le flux de création de contrat → modale directe ───────────────────
 async function startContratFlow(interaction) {
-  const exploit = exp.getByOwner(interaction.user.id);
+  const exploit = exp.getByMember(interaction.user.id);
   if (!exploit) {
-    await interaction.reply({ embeds: [{ description: '❌ Tu n\'as pas d\'exploitation. Crée-la depuis le **HUB des exploitants**.', color: 0xE74C3C }], flags: 64 });
+    await interaction.reply({ embeds: [{ description: '❌ Tu n\'es membre d\'aucune exploitation. Crée-la ou fais-toi ajouter depuis le **HUB des exploitants**.', color: 0xE74C3C }], flags: 64 });
     autoClean(interaction);
     return;
   }
@@ -92,7 +92,7 @@ module.exports = {
 // ── Handler modal contrat → publication ──────────────────────────────────────
 async function handleContratModal(interaction) {
   const userId  = interaction.customId.replace('contrat_modal_', '');
-  const exploit = exp.getByOwner(userId);
+  const exploit = exp.getByMember(userId);
   if (!exploit) { await interaction.reply({ content: '❌ Exploitation introuvable.', flags: 64 }); autoClean(interaction); return; }
 
   const travail = interaction.fields.getTextInputValue('travail').trim();
@@ -110,7 +110,7 @@ async function handleContratModal(interaction) {
 
   const data = {
     kind: 'contrat',
-    exploit, travail, champ, surface, details,
+    exploit, exploitId: exploit.id, travail, champ, surface, details,
     ownerId: userId, status: 'disponible',
   };
 
@@ -149,12 +149,14 @@ function disponibleMessage(data) {
   const fields = objetFields(data);
   if (!isBesoin(data)) fields.push({ name: '📝 Informations', value: data.details || '*Aucune précision*', inline: false });
 
+  const ex = (data.exploitId && exp.getById(data.exploitId)) || data.exploit;
+
   return {
     embeds: [{
       title: isBesoin(data) ? '📦 BESOIN' : '📋 CONTRAT DISPONIBLE',
       description: '🌾 **' + data.exploit.nom + '** · <@' + data.ownerId + '>',
       fields,
-      color: 0x2ECC71,
+      color: ex?.couleur ?? 0x2ECC71,
     }],
     components: [new ActionRowBuilder().addComponents(
       new ButtonBuilder().setCustomId('contrat_accepter_' + data.ownerId)
@@ -182,10 +184,15 @@ function reserveMessage(data) {
   };
 }
 
+// Décider de l'accord (Accepté / Refusé / Terminé) = exploitant (créateur ou
+// co-exploitant) de l'une des deux exploitations, ou admin. Les ouvriers non.
+// Relecture fraîche des exploitations (le snapshot de session peut être périmé).
 function canDecide(interaction, data) {
-  return interaction.user.id === data.ownerId
-    || interaction.user.id === data.accepteurId
-    || interaction.member?.permissions?.has(PermissionFlagsBits.ManageGuild);
+  if (interaction.member?.permissions?.has(PermissionFlagsBits.ManageGuild)) return true;
+  const uid = interaction.user.id;
+  const demandeur = (data.exploitId && exp.getById(data.exploitId)) || data.exploit;
+  const repondeur = (data.accepteurExploitId && exp.getById(data.accepteurExploitId)) || data.accepteurExploit;
+  return exp.isManager(demandeur, uid) || exp.isManager(repondeur, uid);
 }
 
 // ── Handler « Accepter le contrat » → salon privé de négociation ─────────────
@@ -193,26 +200,31 @@ async function handleContratAccepter(interaction) {
   const data = contratSession.get('msg_' + interaction.message.id);
   if (!data) { await interaction.reply({ content: '❌ Données du contrat introuvables (le bot a peut-être redémarré).', flags: 64 }); autoClean(interaction); return; }
   if (data.status === 'nego') { await interaction.reply({ content: '❌ Ce contrat est déjà en cours de négociation.', flags: 64 }); autoClean(interaction); return; }
-  if (interaction.user.id === data.ownerId) { await interaction.reply({ content: '❌ Tu ne peux pas accepter ton propre contrat.', flags: 64 }); autoClean(interaction); return; }
 
-  const accepteurExploit = exp.getByOwner(interaction.user.id);
-  if (!accepteurExploit) { await interaction.reply({ content: '❌ Tu dois avoir une exploitation enregistrée pour accepter un contrat.', flags: 64 }); autoClean(interaction); return; }
+  const accepteurExploit = exp.getByMember(interaction.user.id);
+  if (!accepteurExploit) { await interaction.reply({ content: '❌ Tu dois être membre d\'une exploitation pour répondre à une annonce.', flags: 64 }); autoClean(interaction); return; }
+  const demandeurExploit = (data.exploitId && exp.getById(data.exploitId)) || data.exploit;
+  if (demandeurExploit && accepteurExploit.id === demandeurExploit.id) {
+    await interaction.reply({ content: '❌ Tu ne peux pas répondre à une annonce de ta propre exploitation.', flags: 64 }); autoClean(interaction); return;
+  }
 
-  data.status          = 'nego';
-  data.accepteurId     = interaction.user.id;
-  data.accepteurExploit = accepteurExploit;
-  data.contratChannelId = interaction.message.channelId;
-  data.contratMessageId = interaction.message.id;
+  data.status            = 'nego';
+  data.accepteurId       = interaction.user.id;
+  data.accepteurExploit  = accepteurExploit;
+  data.accepteurExploitId = accepteurExploit.id;
+  data.contratChannelId  = interaction.message.channelId;
+  data.contratMessageId  = interaction.message.id;
 
   // 1) Griser le contrat public
   await interaction.update(reserveMessage(data));
 
-  // 2) Créer le salon privé de négociation
+  // 2) Créer le salon privé de négociation — accès à TOUS les membres des 2 exploitations
   const parentId = interaction.message.channel?.parentId || null;
+  const invites = [...new Set([...exp.memberIds(demandeurExploit), ...exp.memberIds(accepteurExploit)])]
+    .filter(id => id && id !== interaction.guild.id && id !== interaction.client.user.id);
   const overwrites = [
     { id: interaction.guild.id, deny: [PermissionFlagsBits.ViewChannel] },
-    { id: data.ownerId,        allow: [PermissionFlagsBits.ViewChannel, PermissionFlagsBits.SendMessages, PermissionFlagsBits.ReadMessageHistory] },
-    { id: data.accepteurId,    allow: [PermissionFlagsBits.ViewChannel, PermissionFlagsBits.SendMessages, PermissionFlagsBits.ReadMessageHistory] },
+    ...invites.map(id => ({ id, allow: [PermissionFlagsBits.ViewChannel, PermissionFlagsBits.SendMessages, PermissionFlagsBits.ReadMessageHistory] })),
   ];
   const adminRole = interaction.guild.roles.cache.find(r => r.permissions.has(PermissionFlagsBits.Administrator) && !r.managed);
   if (adminRole) overwrites.push({ id: adminRole.id, allow: [PermissionFlagsBits.ViewChannel, PermissionFlagsBits.SendMessages, PermissionFlagsBits.ReadMessageHistory] });
@@ -243,16 +255,21 @@ async function handleContratAccepter(interaction) {
   const negoFields = objetFields(data);
   if (!isBesoin(data)) negoFields.push({ name: '📝 Informations', value: data.details || '*Aucune précision*', inline: false });
 
+  // Ping de tous les invités (content limité à 2000 car. — au-delà, on tronque :
+  // l'accès au salon + le DM restent la source de vérité).
+  const pings = invites.map(id => '<@' + id + '>').join(' ').slice(0, 1900);
+
   await negoChannel.send({
-    content: '<@' + data.ownerId + '> <@' + data.accepteurId + '>',
+    content: pings,
     embeds: [{
       title: '🤝 ' + LABEL(data) + ' ACCEPTÉ — négociation',
       description: [
-        '**<@' + data.accepteurId + '>** (*' + accepteurExploit.nom + '*) ' + verb + ' **' + data.exploit.nom + '**.',
+        '**<@' + data.accepteurId + '>** (*' + accepteurExploit.nom + '*) ' + verb + ' **' + (demandeurExploit?.nom || data.exploit.nom) + '**.',
         '',
+        'Tous les membres des deux exploitations ont accès à ce salon.',
         'Discutez ici du prix, du matériel et des délais.',
         '',
-        'Une fois d\'accord, choisissez une option ci-dessous :',
+        'Une fois d\'accord, un **exploitant** (créateur ou co-exploitant) de l\'une des deux fermes choisit :',
         '> ✅ **Accepté** — l\'accord est confirmé, le salon reste ouvert',
         '> ❌ **Refusé** — ce salon est supprimé et l\'annonce redevient disponible',
         '> 🏁 **Terminé** — l\'annonce et ce salon sont supprimés',
@@ -264,6 +281,31 @@ async function handleContratAccepter(interaction) {
     }],
     components: [dealRow(mId, false)],
   });
+
+  // DM best-effort à chaque membre — un DM fermé ne bloque pas les autres.
+  const dmEmbed = {
+    title: '🤝 ' + LABEL(data) + ' — négociation ouverte',
+    description: [
+      '**' + accepteurExploit.nom + '** ' + verb + ' **' + (demandeurExploit?.nom || data.exploit.nom) + '**.',
+      objetShort(data),
+      '',
+      '➡️ Salon : ' + negoChannel.toString(),
+    ].join('\n'),
+    color: 0xF39C12,
+  };
+  const echecsDM = [];
+  for (const id of invites) {
+    try {
+      const u = await interaction.client.users.fetch(id);
+      await u.send({ embeds: [dmEmbed] });
+    } catch { echecsDM.push(id); }
+  }
+  if (echecsDM.length) {
+    await negoChannel.send({
+      content: '⚠️ Injoignable(s) en MP (DM fermés) : ' + echecsDM.map(id => '<@' + id + '>').join(', ') + ' — pensez à les prévenir ici.',
+      allowedMentions: { parse: [] },
+    }).catch(() => {});
+  }
 
   await interaction.followUp({ content: '✅ Salon de négociation créé : <#' + negoChannel.id + '>', flags: 64 });
 }
@@ -373,16 +415,20 @@ async function handleContratDealDone(interaction) {
     + ' : **' + data.exploit.nom + '** (client) × **' + (data.accepteurExploit?.nom || '?') + '** (prestataire) — ' + objetShort(data));
 }
 
-// ── Handler supprimer contrat (par le propriétaire) ─────────────────────────
+// ── Handler supprimer contrat (par un exploitant de la ferme) ───────────────
 async function handleContratSupprimer(interaction) {
   const ownerId = interaction.customId.replace('contrat_supprimer_', '');
-  if (interaction.user.id !== ownerId && !interaction.member?.permissions?.has(PermissionFlagsBits.ManageGuild)) {
-    await interaction.reply({ content: '❌ Seul le créateur du contrat peut le supprimer.', flags: 64 });
+  const data    = contratSession.get('msg_' + interaction.message.id);
+  const exploit = data && ((data.exploitId && exp.getById(data.exploitId)) || data.exploit);
+
+  const autorise = interaction.member?.permissions?.has(PermissionFlagsBits.ManageGuild)
+    || (exploit ? exp.isManager(exploit, interaction.user.id) : interaction.user.id === ownerId);
+  if (!autorise) {
+    await interaction.reply({ content: '❌ Seul un exploitant de la ferme concernée peut retirer cette annonce.', flags: 64 });
     autoClean(interaction);
     return;
   }
 
-  const data = contratSession.get('msg_' + interaction.message.id);
   if (data?.negoChannelId) {
     const negoCh = interaction.guild.channels.cache.get(data.negoChannelId)
       || await interaction.guild.channels.fetch(data.negoChannelId).catch(() => null);
@@ -401,9 +447,9 @@ async function handleContratSupprimer(interaction) {
 
 // ═══ BESOIN : l'exploitant recherche une matière première ═══════════════════
 async function handleBesoinButton(interaction) {
-  const exploit = exp.getByOwner(interaction.user.id);
+  const exploit = exp.getByMember(interaction.user.id);
   if (!exploit) {
-    await interaction.reply({ embeds: [{ description: '❌ Tu n\'as pas d\'exploitation. Crée-la depuis le **HUB des exploitants**.', color: 0xE74C3C }], flags: 64 });
+    await interaction.reply({ embeds: [{ description: '❌ Tu n\'es membre d\'aucune exploitation. Crée-la ou fais-toi ajouter depuis le **HUB des exploitants**.', color: 0xE74C3C }], flags: 64 });
     autoClean(interaction);
     return;
   }
@@ -422,7 +468,7 @@ async function handleBesoinButton(interaction) {
 
 async function handleBesoinModal(interaction) {
   const userId  = interaction.customId.replace('besoin_modal_', '');
-  const exploit = exp.getByOwner(userId);
+  const exploit = exp.getByMember(userId);
   if (!exploit) { await interaction.reply({ content: '❌ Exploitation introuvable.', flags: 64 }); autoClean(interaction); return; }
 
   const type     = interaction.fields.getTextInputValue('type').trim();
@@ -436,7 +482,7 @@ async function handleBesoinModal(interaction) {
     return;
   }
 
-  const data = { kind: 'besoin', exploit, type, quantite, ownerId: userId, status: 'disponible' };
+  const data = { kind: 'besoin', exploit, exploitId: exploit.id, type, quantite, ownerId: userId, status: 'disponible' };
   const msg  = await channel.send(disponibleMessage(data));
   data.messageId = msg.id;
   setSession('msg_' + msg.id, data);
