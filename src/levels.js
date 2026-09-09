@@ -196,7 +196,7 @@ function classementEmbed() {
     title: '🏆  CLASSEMENT XP',
     description: lignes,
     color: 0xF1C40F,
-    footer: { text: 'EURO-AGRI — Mis à jour' },
+    footer: { text: 'EUROAGRI — Mis à jour' },
     timestamp: new Date().toISOString(),
   };
 }

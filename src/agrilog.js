@@ -1,4 +1,4 @@
-// Journal d'activité EURO-AGRI : une ligne par événement (contrats / besoins /
+// Journal d'activité EUROAGRI : une ligne par événement (contrats / besoins /
 // exploitations). Publié dans le salon logs, sans ping.
 const LOG_CHANNEL = '1541422309619802153';
 

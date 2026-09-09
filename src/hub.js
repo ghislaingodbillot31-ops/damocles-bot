@@ -44,9 +44,9 @@ async function postHub(channel) {
 
   await channel.send({
     embeds: [{
-      title: '🌾  EURO-AGRI  —  HUB DES EXPLOITANTS',
+      title: '🌾  EUROAGRI  —  HUB DES EXPLOITANTS',
       description: [
-        'Bienvenue sur le **HUB des exploitants EURO-AGRI**. Tout se gère depuis les boutons ci-dessous — ',
+        'Bienvenue sur le **HUB des exploitants EUROAGRI**. Tout se gère depuis les boutons ci-dessous — ',
         'crée ton exploitation, publie tes contrats, signale tes besoins et consulte l\'annuaire du serveur.',
         '​',
         '**🌾  Mon exploitation**',
@@ -67,7 +67,7 @@ async function postHub(channel) {
         '> Visible par toi seul — un clic sur **ON** pour l\'afficher, un clic sur **OFF** pour la masquer.',
       ].join('\n'),
       color: 0x2ECC71,
-      footer: { text: 'EURO-AGRI · Damoclès Bot' },
+      footer: { text: 'EUROAGRI · Damoclès Bot' },
     }],
     components: [
       new ActionRowBuilder().addComponents(
@@ -498,7 +498,7 @@ async function handleHubAnnuaire(interaction) {
   const reste = all.length - shown.length;
 
   const header = {
-    title: '📖  ANNUAIRE DES EXPLOITATIONS — EURO-AGRI',
+    title: '📖  ANNUAIRE DES EXPLOITATIONS — EUROAGRI',
     description: '**' + all.length + '** exploitation(s) sur le serveur  ·  **' + recr + '** en recrutement.'
       + (reste > 0 ? '\n\n⚠️ *' + reste + ' exploitation(s) non affichée(s) (trop pour un seul message).*' : ''),
     color: 0x1F8B4C,

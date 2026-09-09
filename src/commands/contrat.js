@@ -225,7 +225,7 @@ async function handleContratAccepter(interaction) {
       type: ChannelType.GuildText,
       parent: parentId,
       permissionOverwrites: overwrites,
-      reason: 'Négociation EURO-AGRI',
+      reason: 'Négociation EUROAGRI',
     });
   } catch (err) {
     await interaction.followUp({ content: '⚠️ Impossible de créer le salon privé (permission `Gérer les salons` manquante ?). ' + err.message, flags: 64 });
@@ -259,7 +259,7 @@ async function handleContratAccepter(interaction) {
       ].join('\n'),
       fields: negoFields,
       color: 0xF39C12,
-      footer: { text: 'EURO-AGRI — Salon de négociation' },
+      footer: { text: 'EUROAGRI — Salon de négociation' },
       timestamp: new Date().toISOString(),
     }],
     components: [dealRow(mId, false)],
@@ -293,7 +293,7 @@ async function handleContratDealOk(interaction) {
       ...embed.data,
       title: '✅ ACCORD CONFIRMÉ',
       color: 0x2ECC71,
-      footer: { text: 'Accord confirmé le ' + now + ' — EURO-AGRI' },
+      footer: { text: 'Accord confirmé le ' + now + ' — EUROAGRI' },
     }],
     components: [dealRow(mId, true)],
   });

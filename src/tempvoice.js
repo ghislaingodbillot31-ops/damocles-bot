@@ -48,7 +48,7 @@ async function postVoicePanel(channel) {
         '> • Il est **supprimé automatiquement** dès qu\'il est vide.',
       ].join('\n'),
       color: 0x5865F2,
-      footer: { text: 'EURO-AGRI — Damoclès Bot' },
+      footer: { text: 'EUROAGRI — Damoclès Bot' },
     }],
     components: [new ActionRowBuilder().addComponents(
       new ButtonBuilder().setCustomId('voice_create').setLabel('➕ Créer mon salon vocal').setStyle(ButtonStyle.Success),

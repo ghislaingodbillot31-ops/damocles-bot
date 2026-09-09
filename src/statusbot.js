@@ -61,10 +61,10 @@ async function updateStatusMessage(client, animated = false) {
   await postLine(channel, '`▶` ❌ Comptes refusés .............. ✅ **' + refused + '**', 0x2ECC71);
   await sleep(400);
 
-  // Exploitations EURO-AGRI
+  // Exploitations EUROAGRI
   let nbExpl = 0;
   try { nbExpl = require('./exploitation').getAll().filter(e => e.nom).length; } catch {}
-  await postLine(channel, '`▶` 🌾 Exploitations EURO-AGRI ...... ✅ **' + nbExpl + '**', 0x2ECC71);
+  await postLine(channel, '`▶` 🌾 Exploitations EUROAGRI ...... ✅ **' + nbExpl + '**', 0x2ECC71);
   await sleep(400);
 
   await postLine(channel, '`▶` 🛡️ Système de vérification ...... ✅ **Actif**', 0x2ECC71);

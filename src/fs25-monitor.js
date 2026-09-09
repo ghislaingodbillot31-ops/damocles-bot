@@ -50,9 +50,9 @@ function parseStats(xml) {
   const attrs    = serverM?.[1] || '';
   const mapName  = attrs.match(/mapName="([^"]*)"/)?.[1] || '?';
   // Le nom du serveur est dans l'attribut "name", pas "mapOverviewFilename"
-  let srvName = attrs.match(/(?<![a-zA-Z])name="([^"]*)"/)?.[1] || 'EURO-AGRI';
+  let srvName = attrs.match(/(?<![a-zA-Z])name="([^"]*)"/)?.[1] || 'EUROAGRI';
   // Nettoyer si c'est un chemin de fichier
-  if (srvName.includes('/') || srvName.includes('$moddir$')) srvName = 'EURO-AGRI';
+  if (srvName.includes('/') || srvName.includes('$moddir$')) srvName = 'EUROAGRI';
   const dayTime  = parseInt(attrs.match(/dayTime="([^"]*)"/)?.[1] || '0');
   const version  = attrs.match(/version="([^"]*)"/)?.[1] || '?';
   const numPlayers = attrs.match(/numPlayers="([^"]*)"/)?.[1] || '0';
