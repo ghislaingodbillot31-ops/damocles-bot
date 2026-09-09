@@ -6,30 +6,10 @@ const {
 } = require('discord.js');
 const exp = require('../exploitation');
 const { agrilog } = require('../agrilog');
-const { withBanner } = require('../embed-banner');
 
 const { dataPath }    = require('../paths');
 const CONTRAT_CHANNEL = '1544735442589450270';
 const SESSION_PATH    = dataPath('contrat-sessions.json');
-
-// ── Gabarit d'affichage uniforme (contrats + besoins) ───────────────────────
-const DIV = '━━━━━━━━━━';
-const PRECISION_LINES = 3;
-
-// Force un texte libre à exactement N lignes (— pour combler, … si tronqué).
-function fixedLines(txt, n) {
-  const src = (txt || '').split('\n').map(s => s.trim());
-  const lines = src.filter(Boolean).slice(0, n);
-  if (src.filter(Boolean).length > n) lines[n - 1] += ' …';
-  while (lines.length < n) lines.push('—');
-  return lines.join('\n');
-}
-
-function enteteAnnonce(data) {
-  const icon = data.kind === 'besoin' ? '📦' : '📋';
-  return DIV + '  ' + icon + '  ' + DIV + '\n'
-    + '🌾 **' + data.exploit.nom + '** · <@' + data.ownerId + '>';
-}
 
 function autoClean(interaction, delay = 4000) {
   setTimeout(() => { interaction.deleteReply().catch(() => {}); }, delay);
@@ -64,7 +44,7 @@ async function startContratFlow(interaction) {
       new TextInputBuilder().setCustomId('surface').setLabel('Surface (optionnel)').setStyle(TextInputStyle.Short).setPlaceholder('Ex: 4,5 ha').setRequired(false)
     ),
     new ActionRowBuilder().addComponents(
-      new TextInputBuilder().setCustomId('details').setLabel('Précisions (optionnel)').setStyle(TextInputStyle.Paragraph).setPlaceholder('Ex: Utiliser le matériel dans le hangar nord...').setRequired(false)
+      new TextInputBuilder().setCustomId('details').setLabel('Informations (optionnel)').setStyle(TextInputStyle.Paragraph).setPlaceholder('Ex: Utiliser le matériel dans le hangar nord...').setRequired(false)
     ),
   );
 
@@ -150,36 +130,32 @@ async function handleContratModal(interaction) {
 const isBesoin = data => data.kind === 'besoin';
 const LABEL    = data => (isBesoin(data) ? 'BESOIN' : 'CONTRAT');
 
-// Champs décrivant l'objet — gabarit fixe : toujours 3 champs inline + 1 bloc.
+// Champs décrivant l'objet (contrat = travail + champ/surface optionnels, besoin = matière/quantité)
 function objetFields(data) {
   if (isBesoin(data)) {
     return [
-      { name: '📦 MATIÈRE',  value: data.type || '—',      inline: true },
-      { name: '⚖️ QUANTITÉ', value: data.quantite || '—',  inline: true },
-      { name: '📅 DÉLAI',    value: data.delai || '—',     inline: true },
+      { name: '📦 Matière',  value: data.type,                        inline: true },
+      { name: '⚖️ Quantité', value: data.quantite || '*Non précisée*', inline: true },
     ];
   }
-  return [
-    { name: '🛠️ TRAVAIL', value: data.travail || '—',                     inline: true },
-    { name: '🔢 CHAMP',   value: data.champ ? ('N° ' + data.champ) : '—', inline: true },
-    { name: '📐 SURFACE',  value: data.surface || '—',                     inline: true },
-  ];
-}
-
-// Bloc « Précisions » (contrat = data.details, besoin = data.precisions), 3 lignes fixes.
-function precisionField(data) {
-  return { name: '📝 PRÉCISIONS', value: fixedLines(isBesoin(data) ? data.precisions : data.details, PRECISION_LINES), inline: false };
+  const fields = [{ name: '🛠️ Travail', value: data.travail, inline: true }];
+  if (data.champ)   fields.push({ name: '🔢 Champ',   value: 'N° ' + data.champ, inline: true });
+  if (data.surface) fields.push({ name: '📐 Surface', value: data.surface,       inline: true });
+  return fields;
 }
 
 // ── Rendu du message « DISPONIBLE » (aussi réutilisé après un refus) ─────────
 function disponibleMessage(data) {
+  const fields = objetFields(data);
+  if (!isBesoin(data)) fields.push({ name: '📝 Informations', value: data.details || '*Aucune précision*', inline: false });
+
   const ex = (data.exploitId && exp.getById(data.exploitId)) || data.exploit;
 
-  return withBanner({
+  return {
     embeds: [{
       title: isBesoin(data) ? '📦 BESOIN' : '📋 CONTRAT DISPONIBLE',
-      description: enteteAnnonce(data),
-      fields: [...objetFields(data), precisionField(data)],
+      description: '🌾 **' + data.exploit.nom + '** · <@' + data.ownerId + '>',
+      fields,
       color: ex?.couleur ?? 0x2ECC71,
     }],
     components: [new ActionRowBuilder().addComponents(
@@ -187,17 +163,17 @@ function disponibleMessage(data) {
         .setLabel(isBesoin(data) ? '✅ Répondre au besoin' : '✅ Accepter le contrat').setStyle(ButtonStyle.Success),
       new ButtonBuilder().setCustomId('contrat_supprimer_' + data.ownerId).setLabel('🗑️ Supprimer').setStyle(ButtonStyle.Danger),
     )],
-  });
+  };
 }
 
 // ── Rendu du message « RÉSERVÉ » (grisé, bouton désactivé) ──────────────────
 function reserveMessage(data) {
-  return withBanner({
+  return {
     embeds: [{
       title: isBesoin(data) ? '🔒 BESOIN RÉSERVÉ' : '🔒 CONTRAT RÉSERVÉ',
-      description: enteteAnnonce(data)
-        + '\nEn négociation avec **' + data.accepteurExploit.nom + '** · <@' + data.accepteurId + '>',
-      fields: [...objetFields(data), precisionField(data)],
+      description: '🌾 **' + data.exploit.nom + '** · <@' + data.ownerId + '>\n'
+        + 'En négociation avec **' + data.accepteurExploit.nom + '** · <@' + data.accepteurId + '>',
+      fields: objetFields(data),
       color: 0x95A5A6,
     }],
     components: [new ActionRowBuilder().addComponents(
@@ -205,7 +181,7 @@ function reserveMessage(data) {
         .setLabel(isBesoin(data) ? '🔒 Besoin réservé' : '🔒 Contrat réservé').setStyle(ButtonStyle.Secondary).setDisabled(true),
       new ButtonBuilder().setCustomId('contrat_supprimer_' + data.ownerId).setLabel('🗑️ Supprimer').setStyle(ButtonStyle.Danger),
     )],
-  });
+  };
 }
 
 // Décider de l'accord (Accepté / Refusé / Terminé) = exploitant (créateur ou
@@ -276,17 +252,18 @@ async function handleContratAccepter(interaction) {
 
   const mId  = data.messageId;
   const verb = isBesoin(data) ? 'a répondu au besoin de' : 'a accepté le contrat de';
+  const negoFields = objetFields(data);
+  if (!isBesoin(data)) negoFields.push({ name: '📝 Informations', value: data.details || '*Aucune précision*', inline: false });
 
   // Ping de tous les invités (content limité à 2000 car. — au-delà, on tronque :
   // l'accès au salon + le DM restent la source de vérité).
   const pings = invites.map(id => '<@' + id + '>').join(' ').slice(0, 1900);
 
-  await negoChannel.send(withBanner({
+  await negoChannel.send({
     content: pings,
     embeds: [{
       title: '🤝 ' + LABEL(data) + ' ACCEPTÉ — négociation',
       description: [
-        DIV + '  🤝  ' + DIV,
         '**<@' + data.accepteurId + '>** (*' + accepteurExploit.nom + '*) ' + verb + ' **' + (demandeurExploit?.nom || data.exploit.nom) + '**.',
         '',
         'Tous les membres des deux exploitations ont accès à ce salon.',
@@ -297,13 +274,13 @@ async function handleContratAccepter(interaction) {
         '> ❌ **Refusé** — ce salon est supprimé et l\'annonce redevient disponible',
         '> 🏁 **Terminé** — l\'annonce et ce salon sont supprimés',
       ].join('\n'),
-      fields: [...objetFields(data), precisionField(data)],
+      fields: negoFields,
       color: 0xF39C12,
       footer: { text: 'EUROAGRI — Salon de négociation' },
       timestamp: new Date().toISOString(),
     }],
     components: [dealRow(mId, false)],
-  }));
+  });
 
   // DM best-effort à chaque membre — un DM fermé ne bloque pas les autres.
   const dmEmbed = {
@@ -485,12 +462,6 @@ async function handleBesoinButton(interaction) {
     new ActionRowBuilder().addComponents(
       new TextInputBuilder().setCustomId('quantite').setLabel('Quantité (optionnel)').setStyle(TextInputStyle.Short).setPlaceholder('Ex: 5000 L, 20 t, 30 bottes...').setRequired(false)
     ),
-    new ActionRowBuilder().addComponents(
-      new TextInputBuilder().setCustomId('delai').setLabel('Délai souhaité (optionnel)').setStyle(TextInputStyle.Short).setPlaceholder('Ex: sous 3 jours, avant dimanche...').setRequired(false)
-    ),
-    new ActionRowBuilder().addComponents(
-      new TextInputBuilder().setCustomId('precisions').setLabel('Précisions (optionnel)').setStyle(TextInputStyle.Paragraph).setPlaceholder('Ex: livraison à la ferme, me contacter en soirée...').setRequired(false)
-    ),
   );
   await interaction.showModal(modal);
 }
@@ -500,10 +471,8 @@ async function handleBesoinModal(interaction) {
   const exploit = exp.getByMember(userId);
   if (!exploit) { await interaction.reply({ content: '❌ Exploitation introuvable.', flags: 64 }); autoClean(interaction); return; }
 
-  const type       = interaction.fields.getTextInputValue('type').trim();
-  const quantite   = interaction.fields.getTextInputValue('quantite').trim();
-  const delai      = interaction.fields.getTextInputValue('delai').trim();
-  const precisions = interaction.fields.getTextInputValue('precisions').trim();
+  const type     = interaction.fields.getTextInputValue('type').trim();
+  const quantite = interaction.fields.getTextInputValue('quantite').trim();
 
   const channel = interaction.guild.channels.cache.get(CONTRAT_CHANNEL)
     || await interaction.guild.channels.fetch(CONTRAT_CHANNEL).catch(() => null);
@@ -513,7 +482,7 @@ async function handleBesoinModal(interaction) {
     return;
   }
 
-  const data = { kind: 'besoin', exploit, exploitId: exploit.id, type, quantite, delai, precisions, ownerId: userId, status: 'disponible' };
+  const data = { kind: 'besoin', exploit, exploitId: exploit.id, type, quantite, ownerId: userId, status: 'disponible' };
   const msg  = await channel.send(disponibleMessage(data));
   data.messageId = msg.id;
   setSession('msg_' + msg.id, data);
@@ -532,6 +501,3 @@ module.exports.handleContratDealDone    = handleContratDealDone;
 module.exports.handleContratSupprimer   = handleContratSupprimer;
 module.exports.handleBesoinButton       = handleBesoinButton;
 module.exports.handleBesoinModal        = handleBesoinModal;
-
-// Helpers de rendu exposés pour les tests.
-module.exports._render = { disponibleMessage, reserveMessage, objetFields, precisionField, fixedLines, enteteAnnonce };

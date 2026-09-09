@@ -5,7 +5,6 @@ const {
 } = require('discord.js');
 const exp = require('./exploitation');
 const { agrilog } = require('./agrilog');
-const { withBanner } = require('./embed-banner');
 
 // ── Config ────────────────────────────────────────────────────────────────────
 const HUB_CHANNEL        = '1544303765602173020'; // salon du hub
@@ -46,46 +45,6 @@ const PRESET_COLORS = [
   { label: '⚪ Gris',        value: 0x95A5A6 },
 ];
 const DEFAULT_COLOR = 0x2ECC71;
-
-// ── Gabarit d'affichage uniforme (fiche de gestion + carte d'annuaire) ───────
-const DIV = '━━━━━━━━━━━━';
-const PROD_LINES = 8;
-
-function fmtProduits(produits) {
-  const p = produits || [];
-  if (!p.length) return Array(PROD_LINES).fill('—').join('\n');
-  if (p.length <= PROD_LINES) {
-    return [...p.map(x => '• ' + x), ...Array(PROD_LINES - p.length).fill('—')].join('\n');
-  }
-  const head = p.slice(0, PROD_LINES - 1).map(x => '• ' + x);
-  head.push('*+ ' + (p.length - (PROD_LINES - 1)) + ' autres produits*');
-  return head.join('\n');
-}
-
-function ficheDescription(e) {
-  const hasO = (e.ouvriers?.length || 0) > 0;
-  const exploitants = [e.ownerId, ...(e.coExploitants || [])];
-  const ouvriers = hasO ? e.ouvriers.map(id => '<@' + id + '>').join(', ') : '—';
-  const dateCrea = e.createdAt
-    ? new Date(e.createdAt).toLocaleDateString('fr-FR', { day: '2-digit', month: 'long', year: 'numeric' })
-    : '—';
-  const activites = '🥇 ' + (e.activitePrincipale || '—')
-    + ' · 🥈 ' + (e.activiteSecondaire || '—')
-    + ' · 🥉 ' + (hasO ? (e.activiteSupplementaire || '—') : '— 🔒');
-
-  return [
-    DIV + '  🌾  ' + DIV,
-    '# ' + e.nom,
-    '📢 **RECRUTEMENT** · ' + (e.recrute ? '🟢 Ouvert' : '🔴 Fermé'),
-    '👤 **EXPLOITANTS** · ' + exploitants.map(id => '<@' + id + '>').join(' · ') + (exploitants.length > 1 ? '' : ' · —'),
-    '👷 **OUVRIERS** · ' + ouvriers,
-    '📅 **CRÉÉE LE** · ' + dateCrea,
-    '🚜 **ACTIVITÉS** · ' + activites,
-    '',
-    '🛒 **PRODUITS & PRESTATIONS**',
-    fmtProduits(e.produits),
-  ].join('\n').slice(0, 4096);
-}
 
 // Toutes les exploitations qu'un joueur gère (créateur ou co-exploitant),
 // exploitation possédée en premier. Sert au menu « Mon exploitation ».
@@ -210,14 +169,22 @@ function manageMenu(exploit, viewerId, others = []) {
     ));
   }
 
-  return withBanner({
+  return {
     embeds: [{
-      title: exploit.recrute ? '🟢 RECRUTE' : '🔴 NE RECRUTE PAS',
-      description: ficheDescription(exploit),
+      title: '🌾 ' + exploit.nom,
+      fields: [
+        { name: '🥇 Principale',     value: exploit.activitePrincipale   || '*Non définie*', inline: true },
+        { name: '🥈 Secondaire',     value: exploit.activiteSecondaire    || '*Non définie*', inline: true },
+        { name: '🥉 Supplémentaire', value: hasOuvriers ? (exploit.activiteSupplementaire || '*Non définie*') : '🔒 *Nécessite ouvrier*', inline: true },
+        { name: '🧑‍🌾 Recrutement',  value: exploit.recrute ? '✅ Ouvert' : '❌ Fermé', inline: true },
+        { name: '🤝 Co-exploitant',  value: hasCo ? exploit.coExploitants.map(id => '<@' + id + '>').join(', ') : '*Aucun*', inline: true },
+        { name: '👷 Ouvriers',       value: hasOuvriers ? exploit.ouvriers.map(id => '<@' + id + '>').join(', ') : '*Aucun*', inline: true },
+        { name: '🛒 Produits',       value: exploit.produits?.length ? exploit.produits.map(p => '• ' + p).join('\n') : '*Aucun*', inline: false },
+      ],
       color: exploit.couleur ?? DEFAULT_COLOR,
     }],
     components,
-  });
+  };
 }
 
 // Vue de gestion des produits (ajout en boucle). Renvoie un payload sans `flags`.
@@ -240,14 +207,14 @@ function produitsView(exploit) {
     new ButtonBuilder().setCustomId('hub_expl_done_' + exploit.ownerId).setLabel('✅ Terminé').setStyle(ButtonStyle.Secondary),
   ));
 
-  return withBanner({
+  return {
     embeds: [{
       title: '🛒 Vos produits — ' + exploit.nom,
       description: list + '\n\nAjoute un produit, valide, puis recommence. Clique **✅ Terminé** quand tu as fini.',
       color: exploit.couleur ?? DEFAULT_COLOR,
     }],
     components: rows,
-  });
+  };
 }
 
 // ── Bouton « Créer mon exploitation » → modale ──────────────────────────────
@@ -693,6 +660,8 @@ async function handleHubAnnuaire(interaction) {
     return;
   }
 
+  // Un EMBED distinct par exploitation → chacune a sa propre barre de couleur (bien séparées)
+  const DIV = '━━━━━━━━━━━━━━━━━━━━━━━';
   const MAX = 9; // 9 exploitations + 1 embed d'en-tête = 10 (limite Discord)
   const recr = all.filter(e => e.recrute).length;
   const shown = all.slice(0, MAX);
@@ -705,15 +674,40 @@ async function handleHubAnnuaire(interaction) {
     color: 0x1F8B4C,
   };
 
-  // Chaque carte suit le même gabarit fixe que la fiche de gestion (ficheDescription).
-  const cartes = shown.map(e => ({
-    title: e.recrute ? '🟢 RECRUTE' : '🔴 NE RECRUTE PAS',
-    description: ficheDescription(e),
-    color: e.couleur ?? DEFAULT_COLOR,
-  }));
+  const cartes = shown.map(e => {
+    const hasO = e.ouvriers?.length > 0;
+    const acts = [e.activitePrincipale, e.activiteSecondaire, hasO ? e.activiteSupplementaire : null]
+      .filter(Boolean).join(' · ') || 'aucune activité définie';
+    const nbOuv = e.ouvriers?.length || 0;
+    const ouv = hasO ? e.ouvriers.map(id => '<@' + id + '>').join(', ') : 'Aucun ouvrier actuellement';
+    const dateCrea = new Date(e.createdAt).toLocaleDateString('fr-FR', { day: '2-digit', month: 'long', year: 'numeric' });
+    const prodBloc = e.produits?.length
+      ? e.produits.map(p => '• ' + p).join('\n')
+      : '*Aucun produit ni prestation pour le moment.*';
+    const exploitants = [e.ownerId, ...(e.coExploitants || [])];
+    const explLabel   = exploitants.length > 1 ? 'Exploitants' : 'Exploitant';
+
+    return {
+      title: e.recrute ? '🟢 RECRUTE' : '🔴 NE RECRUTE PAS',
+      description: [
+        '# 🌾 ' + e.nom,
+        '📢 **RECRUTEMENT :** ' + (e.recrute ? '🟢 OUI' : '🔴 NON'),
+        '👤 **' + explLabel + ' :** ' + exploitants.map(id => '<@' + id + '>').join(' · ') + '　│　📅 **Créée le :** ' + dateCrea,
+        '',
+        '🚜 **Activités :** ' + acts,
+        '👷 **Ouvriers :** ' + nbOuv + ' — ' + ouv,
+        '',
+        DIV,
+        '',
+        '**🛒 Produits & prestations :**',
+        prodBloc,
+      ].join('\n').slice(0, 4096),
+      color: e.couleur ?? DEFAULT_COLOR,
+    };
+  });
 
   await interaction.reply({
-    ...withBanner({ embeds: [header, ...cartes] }),
+    embeds: [header, ...cartes],
     components: [new ActionRowBuilder().addComponents(
       new ButtonBuilder().setCustomId('hub_annuaire_off').setLabel('📖 Annuaire · OFF').setStyle(ButtonStyle.Danger),
     )],
@@ -737,7 +731,6 @@ function canManage(interaction, exploit) {
 
 module.exports = {
   HUB_CHANNEL, EXPLOITANT_ROLE_ID, ACTIVITES,
-  _render: { ficheDescription, fmtProduits, managedExploitations },
   postHub,
   handleHubExpl, handleHubExplCreer, handleHubExplCreerModal,
   handleHubExplManage, handleHubExplSetAct, handleHubExplNom,
