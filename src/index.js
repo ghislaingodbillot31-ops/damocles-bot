@@ -8,7 +8,7 @@ process.on('uncaughtException', err => {
 });
 
 const { Client, GatewayIntentBits, Partials, Events } = require('discord.js');
-const { verifyMember, handleVerifyButton }             = require('./verification');
+const { verifyMember, handleVerifyButton, handleVerifRefButton } = require('./verification');
 const { sendWelcomeAfterReglement, sendLeave }         = require('./welcome');
 const { createTicket, takeTicket, closeTicket }        = require('./tickets');
 const { checkSpam, checkLinks }                        = require('./antiraid');
@@ -269,6 +269,10 @@ client.on(Events.InteractionCreate, async interaction => {
   } catch (err) { console.error('Erreur bouton vocal :', err.message); }
 
   // Vérification admin
+  if (id.startsWith('verifref_')) {
+    await handleVerifRefButton(interaction);
+    return;
+  }
   if (id.startsWith('verify_')) {
     await handleVerifyButton(interaction);
     return;

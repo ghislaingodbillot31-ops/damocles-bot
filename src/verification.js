@@ -1,14 +1,18 @@
-const { ActionRowBuilder, ButtonBuilder, ButtonStyle, PermissionFlagsBits } = require('discord.js');
+const { ActionRowBuilder, ButtonBuilder, ButtonStyle, PermissionFlagsBits, ChannelType } = require('discord.js');
 const db = require('./database');
 const { SEP } = require('./embed-format');
 require('dotenv').config();
 
-const VERIFICATION_CHANNEL_ID = process.env.VERIFICATION_CHANNEL_ID; // 1538533245938040853
+// Salon unifié « bot-status + vérification » : par défaut le même que le statut.
+const VERIFICATION_CHANNEL_ID = process.env.VERIFICATION_CHANNEL_ID || '1538533342150918246';
 const VERIFICATION_ROLE_ID    = process.env.VERIFICATION_ROLE_ID;
 const REGLEMENT_ROLE_ID       = process.env.REGLEMENT_ROLE_ID;
 const ATTENTE_ROLE_ID         = process.env.ATTENTE_ROLE_ID;
 const ACTIVE_ROLE_ID          = process.env.ACTIVE_ROLE_ID; // Membres validé
+const SUPPORT_CATEGORY_ID     = process.env.TICKET_CATEGORY_ID || '1538533307690520586'; // 🎫 SUPPORT
 const MIN_ACCOUNT_AGE_DAYS    = 7;
+
+const AUTO_DELETE_OK_MS = 15000; // effacement du message de vérif après un succès
 
 const sleep = ms => new Promise(r => setTimeout(r, ms));
 
@@ -34,7 +38,7 @@ async function verifyMember(member) {
   const render = async (color = 0x2F3136, components) => {
     const payload = {
       embeds: [{
-        title: '🖥️ DAMOCLES SECURITY SYSTEM v2.0',
+        title: '🔍 VÉRIFICATION · ' + member.user.username,
         description: [SEP, ...lignes].join('\n'),
         color,
       }],
@@ -83,6 +87,9 @@ async function verifyMember(member) {
     if (VERIFICATION_ROLE_ID) await member.roles.remove(VERIFICATION_ROLE_ID).catch(() => {});
     if (ATTENTE_ROLE_ID)      await member.roles.add(ATTENTE_ROLE_ID).catch(() => {});
     console.log('✅ Vérification OK : ' + member.user.tag);
+
+    // Le salon est commun au statut du bot : on nettoie le message une fois lu.
+    if (msg) setTimeout(() => { msg.delete().catch(() => {}); }, AUTO_DELETE_OK_MS);
 
   } else {
     // ❌ ÉCHEC → rôle Attente admin + boutons
@@ -139,7 +146,7 @@ async function runChecks(member) {
     detail: 'Créé il y a ' + ageDays + ' jour(s) (minimum ' + MIN_ACCOUNT_AGE_DAYS + ' jours)',
   });
 
-  // 3. Ancien membre — a-t-il déjà été sur le serveur ?
+  // 3. Ancien membre : a-t-il déjà été sur le serveur ?
   const dejaVenu = !!record && (visits > 1 || hasEvent('leave', 'kick', 'rejoin', 'sync_absent', 'sync_rejoin'));
   checks.push({
     label: '🔁 Ancien membre', type: 'oui_non',
@@ -155,7 +162,7 @@ async function runChecks(member) {
     detail: hasWarnings ? record.warnings.length + ' avertissement(s)' : null,
   });
 
-  // 5. Expulsions — déjà expulsé du serveur ?
+  // 5. Expulsions : déjà expulsé du serveur ?
   const kickEvt   = lastEvent('kick');
   const wasKicked = !!kickEvt || !!record?.kickedAt || record?.status === 'kicked';
   checks.push({
@@ -166,7 +173,7 @@ async function runChecks(member) {
       : null,
   });
 
-  // 6. Départ volontaire — déjà parti de lui-même ?
+  // 6. Départ volontaire : déjà parti de lui-même ?
   const leaveEvt = lastEvent('leave') || lastEvent('sync_absent');
   const leftVol  = !!leaveEvt || record?.status === 'left';
   checks.push({
@@ -175,7 +182,7 @@ async function runChecks(member) {
     detail: leftVol ? 'Déjà parti le ' + fmtDate(leaveEvt?.date || record?.leftAt) : null,
   });
 
-  // 7. Banni — présent dans la liste des bannis ?
+  // 7. Banni : présent dans la liste des bannis ?
   const banEvt   = lastEvent('ban');
   const isBanned = !!banEvt || !!record?.bannedAt || record?.status === 'banned';
   checks.push({
@@ -186,7 +193,7 @@ async function runChecks(member) {
       : null,
   });
 
-  // 8. Compte suspect — ID déjà sanctionné (kick ou ban) ?
+  // 8. Compte suspect : ID déjà sanctionné (kick ou ban) ?
   const isSuspect = wasKicked || isBanned;
   checks.push({
     label: '🕵️ Compte suspect', type: 'danger',
@@ -197,7 +204,7 @@ async function runChecks(member) {
   return checks;
 }
 
-// ── Handler boutons Accepter / Refuser ────────────────────────────────────────
+// ── Handler boutons Accepter / Refuser (embed de vérification) ────────────────
 async function handleVerifyButton(interaction) {
   const parts    = interaction.customId.split('_');
   const action   = parts[1];
@@ -233,33 +240,150 @@ async function handleVerifyButton(interaction) {
       components: [],
     });
     console.log('✅ ' + memberId + ' accepté manuellement par ' + interaction.user.tag);
+
+    // Salon commun au statut du bot : on efface le message une fois traité.
+    setTimeout(() => { interaction.message.delete().catch(() => {}); }, 10000);
+    return;
   }
 
   if (action === 'refuse') {
+    await interaction.deferUpdate();
     try {
-      // Kick avec raison
+      const refusChannel = await ouvrirSalonRefus(interaction, member, memberId);
       if (member) {
-        await member.kick('Membre refusé par l\'administration');
-        await db.kickMember(member.user, 'Refusé par l\'administration', interaction.user.tag);
+        await db.upsertMember(member.user, { status: 'pending_admin', refusChannelId: refusChannel?.id || null });
       }
-
-      await interaction.update({
+      await interaction.editReply({
         embeds: [{
           description: [
             '❌ **Refusé par ' + interaction.user.tag + '**',
-            '<@' + memberId + '> a été expulsé du serveur.',
-            '> Raison : Membre refusé par l\'administration',
+            refusChannel ? 'Discussion ouverte : <#' + refusChannel.id + '>' : 'Impossible de créer le salon privé.',
           ].join('\n'),
-          color: 0xE74C3C,
+          color: 0xE67E22,
           timestamp: new Date().toISOString(),
         }],
         components: [],
-      });
-      console.log('❌ ' + memberId + ' refusé et kické par ' + interaction.user.tag);
+      }).catch(() => {});
+      console.log('❌ ' + memberId + ' refusé par ' + interaction.user.tag + ' → salon de discussion');
+
+      // On efface le message de vérif du salon unifié.
+      setTimeout(() => { interaction.message.delete().catch(() => {}); }, 10000);
     } catch (err) {
-      await interaction.reply({ content: '❌ Erreur : ' + err.message, flags: 64 });
+      await interaction.followUp({ content: '❌ Erreur : ' + err.message, flags: 64 }).catch(() => {});
     }
   }
 }
 
-module.exports = { verifyMember, handleVerifyButton, runChecks };
+// ── Salon privé de refus : #refus-{pseudo} dans 🎫 SUPPORT ───────────────────
+async function ouvrirSalonRefus(interaction, member, memberId) {
+  const guild = interaction.guild;
+  const pseudo = member?.user?.username || memberId;
+  const slug = String(pseudo).toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '').slice(0, 20) || 'joueur';
+  const chanName = 'refus-' + slug;
+
+  // Réutiliser un salon de refus déjà ouvert pour ce joueur.
+  let refusChannel = guild.channels.cache.find(c => c.name === chanName && c.parentId === SUPPORT_CATEGORY_ID);
+
+  if (!refusChannel) {
+    const overwrites = [
+      { id: guild.id, deny: [PermissionFlagsBits.ViewChannel] },
+      { id: memberId, allow: [PermissionFlagsBits.ViewChannel, PermissionFlagsBits.SendMessages, PermissionFlagsBits.ReadMessageHistory] },
+    ];
+    const modRole = guild.roles.cache.find(r => /mod[eé]rat/i.test(r.name) && !r.managed);
+    if (modRole) overwrites.push({ id: modRole.id, allow: [PermissionFlagsBits.ViewChannel, PermissionFlagsBits.SendMessages, PermissionFlagsBits.ReadMessageHistory] });
+    const adminRole = guild.roles.cache.find(r => r.permissions.has(PermissionFlagsBits.Administrator) && !r.managed);
+    if (adminRole) overwrites.push({ id: adminRole.id, allow: [PermissionFlagsBits.ViewChannel, PermissionFlagsBits.SendMessages, PermissionFlagsBits.ReadMessageHistory] });
+
+    refusChannel = await guild.channels.create({
+      name: chanName,
+      type: ChannelType.GuildText,
+      parent: SUPPORT_CATEGORY_ID || null,
+      permissionOverwrites: overwrites,
+      reason: 'Vérification refusée : discussion avec ' + pseudo,
+    }).catch(() => null);
+  }
+  if (!refusChannel) return null;
+
+  // Raisons de l'échec (relecture fraîche des checks).
+  let raisons = '• Vérification échouée';
+  if (member) {
+    const failed = (await runChecks(member)).filter(c => !c.passed);
+    if (failed.length) raisons = failed.map(c => '• ' + c.label + (c.detail ? ' : ' + c.detail : '')).join('\n');
+  }
+
+  const modRole = guild.roles.cache.find(r => /mod[eé]rat/i.test(r.name) && !r.managed);
+  const row = new ActionRowBuilder().addComponents(
+    new ButtonBuilder().setCustomId('verifref_accept_' + memberId).setLabel('✅ Accepter finalement').setStyle(ButtonStyle.Success),
+    new ButtonBuilder().setCustomId('verifref_kick_' + memberId).setLabel('👢 Expulser').setStyle(ButtonStyle.Danger),
+    new ButtonBuilder().setCustomId('verifref_close_' + memberId).setLabel('🏁 Clôturer sans suite').setStyle(ButtonStyle.Secondary),
+  );
+
+  await refusChannel.send({
+    content: '<@' + memberId + '>' + (modRole ? ' <@&' + modRole.id + '>' : ''),
+    embeds: [{
+      title: '🚫 Vérification refusée · discussion',
+      description: [
+        SEP,
+        '**Joueur :** <@' + memberId + '> (`' + memberId + '`)',
+        '**Refusé par :** <@' + interaction.user.id + '>',
+        '**Raisons de l\'échec :**',
+        raisons,
+        SEP,
+        'Explique-toi ici avec le staff. Un membre du staff tranchera ensuite :',
+        '> ✅ **Accepter finalement** : accès au règlement, ce salon est supprimé',
+        '> 👢 **Expulser** : le joueur est kické, ce salon est supprimé',
+        '> 🏁 **Clôturer sans suite** : ce salon est supprimé, le joueur reste en attente',
+      ].join('\n'),
+      color: 0xE67E22,
+      timestamp: new Date().toISOString(),
+    }],
+    components: [row],
+    allowedMentions: { users: [memberId], roles: modRole ? [modRole.id] : [] },
+  }).catch(() => {});
+
+  return refusChannel;
+}
+
+// ── Handler des 3 boutons du salon de refus ──────────────────────────────────
+async function handleVerifRefButton(interaction) {
+  const parts    = interaction.customId.split('_'); // verifref_<action>_<memberId>
+  const action   = parts[1];
+  const memberId = parts[2];
+  const guild    = interaction.guild;
+  const channel  = interaction.channel;
+  const member   = await guild.members.fetch(memberId).catch(() => null);
+  const par      = interaction.user.tag;
+
+  const cloture = (texte, color) => {
+    interaction.reply({ embeds: [{ description: texte, color, timestamp: new Date().toISOString() }] }).catch(() => {});
+    setTimeout(() => { channel.delete('Vérification : ' + action).catch(() => {}); }, 6000);
+  };
+
+  if (action === 'accept') {
+    if (member) {
+      if (VERIFICATION_ROLE_ID) await member.roles.remove(VERIFICATION_ROLE_ID).catch(() => {});
+      if (ATTENTE_ROLE_ID)      await member.roles.remove(ATTENTE_ROLE_ID).catch(() => {});
+      if (REGLEMENT_ROLE_ID)    await member.roles.add(REGLEMENT_ROLE_ID).catch(() => {});
+      await db.upsertMember(member.user, { status: 'active', adminAccepted: true, adminAcceptedBy: par, adminAcceptedAt: new Date().toISOString() });
+    }
+    console.log('✅ ' + memberId + ' accepté finalement par ' + par);
+    cloture('✅ **Accepté par ' + par + '**\n<@' + memberId + '> a maintenant accès au règlement. Ce salon va être supprimé.', 0x2ECC71);
+    return;
+  }
+
+  if (action === 'kick') {
+    if (member) {
+      try { await member.kick('Refusé par l\'administration'); } catch {}
+      await db.kickMember(member.user, 'Refusé par l\'administration', par);
+    }
+    console.log('👢 ' + memberId + ' expulsé par ' + par + ' (salon de refus)');
+    cloture('👢 **' + (member ? member.user.tag : memberId) + ' expulsé par ' + par + '**\nCe salon va être supprimé.', 0xE74C3C);
+    return;
+  }
+
+  // close
+  console.log('🏁 Salon de refus de ' + memberId + ' clôturé sans suite par ' + par);
+  cloture('🏁 **Clôturé sans suite par ' + par + '**\n<@' + memberId + '> reste en attente admin. Ce salon va être supprimé.', 0x95A5A6);
+}
+
+module.exports = { verifyMember, handleVerifyButton, handleVerifRefButton, runChecks };

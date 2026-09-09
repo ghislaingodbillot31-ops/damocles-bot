@@ -1,22 +1,50 @@
 require('dotenv').config();
+const fs = require('fs');
 const db = require('./database');
 const { SEP } = require('./embed-format');
+const { dataPath } = require('./paths');
 
 let _cfgStatus = '';
 try { _cfgStatus = require('./config').get().STATUS_CHANNEL_ID || ''; } catch {}
 
-// Salon « bot-status » · priorité au .env, puis à la config dashboard, sinon valeur fixe
-const STATUS_CHANNEL_ID = process.env.STATUS_CHANNEL_ID || _cfgStatus || '1538533342150918246';
+// Salon unifié « bot-status + vérification » : priorité au .env (VERIFICATION_CHANNEL_ID,
+// partagé avec verification.js), puis à l'ancienne clé STATUS_CHANNEL_ID / config dashboard,
+// sinon la valeur fixe.
+const STATUS_CHANNEL_ID = process.env.VERIFICATION_CHANNEL_ID
+  || process.env.STATUS_CHANNEL_ID || _cfgStatus || '1538533342150918246';
 const sleep = ms => new Promise(r => setTimeout(r, ms));
 
-async function clearStatusChannel(channel, clientId) {
+// ── Message de statut persistant ────────────────────────────────────────────
+// On garde UN seul message, édité en place. Son ID est stocké sur le disque
+// persistant pour survivre aux redémarrages. On ne « vide » plus le salon :
+// les embeds de vérification postés en dessous ne doivent jamais être supprimés.
+const MSG_FILE = dataPath('status-msg.json');
+
+function loadStatusMsgId() {
+  try { return JSON.parse(fs.readFileSync(MSG_FILE, 'utf8')).id || null; } catch { return null; }
+}
+function saveStatusMsgId(id) {
+  try { fs.writeFileSync(MSG_FILE, JSON.stringify({ id, updatedAt: new Date().toISOString() }, null, 2)); } catch {}
+}
+
+// Nettoyage one-shot : au 1er passage après un déploiement, on efface les
+// anciens messages de statut streamés par la version précédente (plusieurs
+// embeds « DAMOCLES SECURITY SYSTEM »), sauf le message persistant courant.
+// Les embeds de vérification (titre « 🔍 VÉRIFICATION ») ne sont jamais touchés.
+let _legacyCleaned = false;
+async function cleanupLegacyStatus(channel, clientId, keepId) {
+  if (_legacyCleaned) return;
+  _legacyCleaned = true;
   try {
     const messages = await channel.messages.fetch({ limit: 50 });
     for (const [, m] of messages) {
-      if (m.author.id === clientId) await m.delete().catch(() => {});
+      if (m.author.id !== clientId) continue;
+      if (keepId && m.id === keepId) continue;
+      const titre = m.embeds?.[0]?.title || '';
+      if (titre.includes('DAMOCLES SECURITY SYSTEM')) await m.delete().catch(() => {});
     }
   } catch {}
-  await sleep(500);
+  await sleep(300);
 }
 
 async function updateStatusMessage(client, animated = false) {
@@ -29,18 +57,29 @@ async function updateStatusMessage(client, animated = false) {
   const guild = client.guilds.cache.first();
   const now   = new Date().toLocaleString('fr-FR', { timeZone: 'Europe/Paris' });
 
-  await clearStatusChannel(channel, client.user.id);
+  // Récupérer le message persistant (édité en place), sinon on en créera un.
+  let msg = null;
+  const savedId = loadStatusMsgId();
+  if (savedId) msg = await channel.messages.fetch(savedId).catch(() => null);
+  await cleanupLegacyStatus(channel, client.user.id, msg?.id);
 
   // Un seul embed, à largeur fixe, qu'on édite ligne par ligne (effet « console »).
   const lignes = [];
-  let msg = null;
   const render = async (color = 0x5865F2) => {
     const payload = { embeds: [{
       title: '🖥️ DAMOCLES SECURITY SYSTEM v2.0',
       description: [SEP, ...lignes].join('\n'),
       color,
     }] };
-    try { if (msg) await msg.edit(payload); else msg = await channel.send(payload); } catch {}
+    try {
+      if (msg) {
+        await msg.edit(payload);
+      } else {
+        msg = await channel.send(payload);
+        saveStatusMsgId(msg.id);
+        await msg.pin().catch(() => {});
+      }
+    } catch {}
   };
   const step = async (ligne) => { lignes.push(ligne); await render(); await sleep(400); };
 
