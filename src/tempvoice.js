@@ -100,16 +100,71 @@ async function handleVoiceCreate(interaction) {
     await member.voice.setChannel(voice).then(() => { deplace = true; }).catch(() => {});
   }
 
-  await interaction.reply({
+  // Panneau de contrôle : message permanent dans le chat du salon vocal.
+  // Il vit aussi longtemps que le salon et disparaît automatiquement avec lui.
+  const panel = await sendControlPanel(voice, member.id, false).catch(() => null);
+  if (panel) {
+    const info = salons.get(voice.id);
+    if (info) { info.panelMsgId = panel.id; salons.set(voice.id, info); save(); }
+  }
+
+  const reply = {
     ...panneau({ embeds: [{
       title: '🔊 Ton salon est prêt',
-      description: '<#' + voice.id + '>' + (deplace ? '\n> Tu y as été déplacé.' : '\n> Rejoins-le quand tu veux !'),
+      description: '<#' + voice.id + '>'
+        + (deplace ? '\n> Tu y as été déplacé.' : '\n> Rejoins-le quand tu veux !')
+        + (panel ? '\n> Le panneau pour le gérer est dans le salon.' : ''),
       color: 0x2ECC71,
     }] }),
-    components: [controlRow(voice.id, false)],
     flags: 64,
-  });
-  autoClean(interaction, 120000);
+  };
+  // Repli : si le message n'a pas pu être posté dans le salon, on garde les
+  // boutons dans la réponse éphémère (ancien comportement).
+  if (!panel) reply.components = [controlRow(voice.id, false)];
+
+  await interaction.reply(reply);
+  autoClean(interaction, panel ? 15000 : 120000);
+}
+
+// Payload du panneau de contrôle (message persistant dans le salon vocal).
+function panelPayload(channelId, ownerId, locked) {
+  return {
+    content: '<@' + ownerId + '>',
+    ...panneau({ embeds: [{
+      title: '🔊 TON SALON VOCAL',
+      description: [
+        'Tu peux le **renommer**, définir une **limite** de places ou le **verrouiller**.',
+        'Ce panneau reste disponible tant que le salon existe.',
+      ].join('\n'),
+      color: 0x5865F2,
+    }] }),
+    components: [controlRow(channelId, locked)],
+    allowedMentions: { users: [ownerId] },
+  };
+}
+
+async function sendControlPanel(channel, ownerId, locked) {
+  return channel.send(panelPayload(channel.id, ownerId, locked));
+}
+
+// Au démarrage : garantit que chaque salon suivi a bien son panneau de contrôle
+// (re-poste s'il a été supprimé ou perdu).
+async function ensurePanels(client) {
+  const guild = client.guilds.cache.first();
+  if (!guild) return;
+  for (const [cid, info] of [...salons.entries()]) {
+    const channel = guild.channels.cache.get(cid);
+    if (!channel) continue;
+    let ok = false;
+    if (info.panelMsgId) {
+      const m = await channel.messages.fetch(info.panelMsgId).catch(() => null);
+      ok = !!m;
+    }
+    if (!ok) {
+      const msg = await sendControlPanel(channel, info.ownerId, !!info.locked).catch(() => null);
+      if (msg) { info.panelMsgId = msg.id; salons.set(cid, info); save(); }
+    }
+  }
 }
 
 function controlRow(channelId, locked) {
@@ -186,8 +241,9 @@ async function handleVoiceControl(interaction) {
   if (id.startsWith('voice_delete_')) {
     salons.delete(cid);
     save();
+    // Acquitter le clic avant de supprimer le salon (le panneau vit dedans).
+    await interaction.update({ embeds: [{ description: '🗑️ Salon supprimé.', color: 0x95A5A6 }], components: [] }).catch(() => {});
     await channel.delete('Supprimé par le créateur').catch(() => {});
-    await interaction.update({ embeds: [{ description: '🗑️ Salon supprimé.', color: 0x95A5A6 }], components: [] });
     autoClean(interaction);
     return;
   }
@@ -263,6 +319,7 @@ async function startTempVoice(client) {
   load();
   try {
     await nettoyer(client);
+    await ensurePanels(client);
     const panel = client.channels.cache.get(PANEL_CHANNEL)
       || await client.channels.fetch(PANEL_CHANNEL).catch(() => null);
     if (panel) await postVoicePanel(panel);
