@@ -24,6 +24,7 @@ const contrat                                          = require('./commands/con
 const { startDailyTasks }                              = require('./dailytasks');
 const tempvoice                                        = require('./tempvoice');
 const levels                                           = require('./levels');
+const boutique                                         = require('./boutique');
 const { postRolesHeader }                              = require('./roles');
 const cron                                             = require('node-cron');
 
@@ -64,6 +65,7 @@ client.once(Events.ClientReady, async () => {
   startDailyTasks(client, cron);
   tempvoice.startTempVoice(client);
   levels.startLevels(client);
+  boutique.startBoutique(client);
 
   // En-tête explicatif du salon des rôles
   try {
@@ -237,6 +239,7 @@ client.on(Events.InteractionCreate, async interaction => {
       if (cid.startsWith('contrat_modal_'))     { await contrat.handleContratModal(interaction);  return; }
       if (cid.startsWith('besoin_modal_'))      { await contrat.handleBesoinModal(interaction);   return; }
       if (cid.startsWith('voice_rename_modal_') || cid.startsWith('voice_limit_modal_')) { await tempvoice.handleVoiceModal(interaction); return; }
+      if (cid === 'hub_boutique_modal')          { await boutique.handleModal(interaction);         return; }
     } catch (err) { console.error('Erreur modal :', err.message); }
     return;
   }
@@ -252,6 +255,10 @@ client.on(Events.InteractionCreate, async interaction => {
     if (id === 'hub_besoin')                  { await contrat.handleBesoinButton(interaction); return; }
     if (id === 'hub_annuaire')                { await hub.handleHubAnnuaire(interaction);    return; }
     if (id === 'hub_annuaire_off')            { await hub.handleHubAnnuaireOff(interaction); return; }
+    if (id === 'hub_boutique')                { await boutique.handleBoutique(interaction);  return; }
+    if (id === 'hub_boutique_monnaie')        { await boutique.handleMonnaie(interaction);   return; }
+    if (id === 'hub_boutique_echange')        { await boutique.handleEchange(interaction);   return; }
+    if (id.startsWith('shop_ok_') || id.startsWith('shop_no_')) { await boutique.handleDecision(interaction); return; }
     if (id.startsWith('hub_expl_prodadd_'))   { await hub.handleHubExplProdAdd(interaction); return; }
     if (id.startsWith('hub_expl_done_'))      { await hub.handleHubExplDone(interaction);    return; }
     if (id.startsWith('hub_expl_switch_'))    { await hub.handleHubExplSwitch(interaction);  return; }
