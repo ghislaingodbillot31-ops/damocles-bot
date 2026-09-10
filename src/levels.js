@@ -474,6 +474,23 @@ function adminAjuster(userId, delta) {
   return { xp: r.xp, level: r.level };
 }
 
+// Points de classement disponibles (= XP total) d'un membre.
+function getPoints(userId) {
+  return _xp[userId]?.xp || 0;
+}
+
+// Retire `n` points à un membre (boutique). Échoue si le solde est insuffisant :
+// aucune modification dans ce cas. Renvoie { ok, solde }.
+function retirerPoints(userId, n) {
+  const r = _xp[userId];
+  const solde = r ? (r.xp || 0) : 0;
+  if (n <= 0 || solde < n) return { ok: false, solde };
+  r.xp    = solde - n;
+  r.level = levelFromXp(r.xp);
+  saveXpNow();
+  return { ok: true, solde: r.xp };
+}
+
 function adminReset() {
   const n = Object.keys(_xp).length;
   _xp = {};
@@ -526,7 +543,7 @@ module.exports = {
   XP, LEVELUP_CHANNEL, LEADERBOARD_CHANNEL,
   startLevels, onMessage, onVoice, onMemberAdd, cacheInvites, checkRetention, flush,
   levelFromXp, totalXpForLevel,
-  getClassement, getRang, adminAjuster, adminReset,
+  getClassement, getRang, adminAjuster, adminReset, getPoints, retirerPoints,
   baremeEmbed, classementEmbed, refreshLeaderboard,
   backfillFromHistory,
 };

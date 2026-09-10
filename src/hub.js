@@ -95,6 +95,10 @@ async function postHub(channel) {
         '**📖  Annuaire**',
         '> Affiche la **liste complète des exploitations** du serveur (activités, ouvriers, produits, recrutement).',
         '> Visible par toi seul : un clic sur **ON** pour l\'afficher, un clic sur **OFF** pour la masquer.',
+        '​',
+        '**🛒  Boutique**',
+        '> Échange tes **points de classement** contre de la **monnaie en jeu** (1 point = 5 €).',
+        '> Le staff valide, puis crédite l\'argent dans Farming Simulator.',
       ].join('\n'),
       color: 0x2ECC71,
       footer: { text: 'EUROAGRI · Damoclès Bot' },
@@ -105,6 +109,7 @@ async function postHub(channel) {
         new ButtonBuilder().setCustomId('hub_contrat').setLabel('📋 Créer un contrat').setStyle(ButtonStyle.Primary),
         new ButtonBuilder().setCustomId('hub_besoin').setLabel('📦 Besoin').setStyle(ButtonStyle.Primary),
         new ButtonBuilder().setCustomId('hub_annuaire').setLabel('📖 Annuaire · ON').setStyle(ButtonStyle.Secondary),
+        new ButtonBuilder().setCustomId('hub_boutique').setLabel('🛒 Boutique').setStyle(ButtonStyle.Secondary),
       ),
     ],
   }));
