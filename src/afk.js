@@ -6,6 +6,7 @@ const { dataPath }    = require('./paths');
 
 // ── Config ────────────────────────────────────────────────────────────────────
 const AFK_CHANNEL_NAME = '🌙 AFK';
+const AFK_CATEGORY_ID  = '1345486205810118806';
 const INACTIVITY_MS    = 5 * 60 * 1000; // délai avant déplacement
 const SWEEP_MS         = 30_000;        // fréquence de vérification
 const STORE_PATH       = dataPath('afk.json');
@@ -33,30 +34,37 @@ async function ensureAfkChannel(client) {
   const guild = client.guilds.cache.first();
   if (!guild) return null;
 
-  if (afkChannelId && guild.channels.cache.get(afkChannelId)) return afkChannelId;
+  let channel = afkChannelId ? guild.channels.cache.get(afkChannelId) : null;
 
-  const existant = guild.channels.cache.find(
-    c => c.type === ChannelType.GuildVoice && c.name === AFK_CHANNEL_NAME,
-  );
-  if (existant) {
-    afkChannelId = existant.id;
-    save();
-    return afkChannelId;
+  if (!channel) {
+    channel = guild.channels.cache.find(
+      c => c.type === ChannelType.GuildVoice && c.name === AFK_CHANNEL_NAME,
+    );
   }
 
-  try {
-    const channel = await guild.channels.create({
-      name: AFK_CHANNEL_NAME,
-      type: ChannelType.GuildVoice,
-      reason: 'Salon AFK · joueurs inactifs en vocal',
-    });
-    afkChannelId = channel.id;
-    save();
-    return afkChannelId;
-  } catch (err) {
-    console.error('⚠️ AFK — création du salon impossible :', err.message);
-    return null;
+  if (!channel) {
+    try {
+      channel = await guild.channels.create({
+        name: AFK_CHANNEL_NAME,
+        type: ChannelType.GuildVoice,
+        parent: AFK_CATEGORY_ID,
+        reason: 'Salon AFK · joueurs inactifs en vocal',
+      });
+    } catch (err) {
+      console.error('⚠️ AFK — création du salon impossible :', err.message);
+      return null;
+    }
+  } else if (channel.parentId !== AFK_CATEGORY_ID) {
+    try {
+      await channel.setParent(AFK_CATEGORY_ID, { lockPermissions: false, reason: 'Salon AFK · rattachement à la bonne catégorie' });
+    } catch (err) {
+      console.error('⚠️ AFK — déplacement dans la catégorie impossible :', err.message);
+    }
   }
+
+  afkChannelId = channel.id;
+  save();
+  return afkChannelId;
 }
 
 // ── Initialiser l'activité des membres déjà connectés au démarrage ───────────
