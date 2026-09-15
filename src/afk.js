@@ -77,12 +77,21 @@ function seedActivity(guild) {
   }
 }
 
-// ── VoiceStateUpdate → suivi de l'activité ────────────────────────────────────
+// ── VoiceStateUpdate → suivi de l'activité + micro coupé dans le salon AFK ────
 function handleVoiceState(oldState, newState) {
   const member = newState.member || oldState.member;
   if (member?.user?.bot) return;
 
   const userId = newState.id;
+
+  // Entrée dans le salon AFK → micro coupé côté serveur
+  if (afkChannelId && newState.channelId === afkChannelId && !newState.serverMute) {
+    newState.setMute(true, 'Salon AFK · micro coupé').catch(() => {});
+  }
+  // Sortie du salon AFK → micro réactivé
+  if (afkChannelId && oldState.channelId === afkChannelId && newState.channelId && newState.channelId !== afkChannelId && newState.serverMute) {
+    newState.setMute(false, 'Sortie du salon AFK').catch(() => {});
+  }
 
   // A quitté le vocal complètement
   if (!newState.channelId) {
