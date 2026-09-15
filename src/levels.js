@@ -2,6 +2,7 @@ const fs   = require('fs');
 const path = require('path');
 const db   = require('./database');
 const { panneauEmbed } = require('./embed-format');
+const { getAfkChannelId } = require('./afk');
 
 const { dataPath } = require('./paths');
 const STATE_PATH   = dataPath('levels.json'); // ids des messages du salon
@@ -292,8 +293,10 @@ function sweepVoice() {
   const guild = _client.guilds.cache.first();
   if (!guild) return;
 
+  const afkChannelId = getAfkChannelId();
   const salonsVocaux = guild.channels.cache.filter(c => c.isVoiceBased && c.isVoiceBased());
   for (const [, ch] of salonsVocaux) {
+    if (afkChannelId && ch.id === afkChannelId) continue; // pas de points dans le salon AFK
     const humains = ch.members.filter(m => !m.user.bot);
     if (humains.size < 2) continue; // besoin d'au moins 2 personnes
 

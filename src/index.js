@@ -26,6 +26,7 @@ const tempvoice                                        = require('./tempvoice');
 const levels                                           = require('./levels');
 const boutique                                         = require('./boutique');
 const { postRolesHeader }                              = require('./roles');
+const { startAfk, handleVoiceState: handleAfkVoiceState } = require('./afk');
 const cron                                             = require('node-cron');
 
 const VERIFICATION_ROLE_ID = process.env.VERIFICATION_ROLE_ID;
@@ -66,6 +67,7 @@ client.once(Events.ClientReady, async () => {
   tempvoice.startTempVoice(client);
   levels.startLevels(client);
   boutique.startBoutique(client);
+  await startAfk(client);
 
   // En-tête explicatif du salon des rôles
   try {
@@ -134,6 +136,7 @@ client.on(Events.GuildBanAdd, async ban => {
 client.on(Events.VoiceStateUpdate, (oldState, newState) => {
   tempvoice.handleVoiceState(oldState).catch(() => {});
   try { levels.onVoice(oldState, newState); } catch {}
+  try { handleAfkVoiceState(oldState, newState); } catch {}
 });
 
 // ── Invitations (tracking XP) ───────────────────────────────────────────────
