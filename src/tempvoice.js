@@ -5,7 +5,6 @@ const {
   ModalBuilder, TextInputBuilder, TextInputStyle,
 } = require('discord.js');
 const { panneau } = require('./embed-format');
-const { getAfkChannelId } = require('./afk');
 
 // ── Config ────────────────────────────────────────────────────────────────────
 const PANEL_CHANNEL   = '1544898451706482728'; // salon texte où se trouve le bouton
@@ -294,12 +293,9 @@ async function nettoyer(client) {
   }
 
   // Salons orphelins dans la catégorie (créés par le bot, non suivis, vides)
-  // Le salon AFK partage cette catégorie mais n'est pas un salon temporaire : on l'exclut.
   try {
-    const afkChannelId = getAfkChannelId();
     const enfants = guild.channels.cache.filter(c => c.parentId === VOICE_CATEGORY && c.type === ChannelType.GuildVoice);
     for (const [, c] of enfants) {
-      if (c.id === afkChannelId) continue;
       if (!salons.has(c.id) && c.members.size === 0) await c.delete('Salon vocal temporaire orphelin').catch(() => {});
     }
   } catch {}
