@@ -105,9 +105,13 @@ function handleVoiceState(oldState, newState) {
 
 // ── Déplacement des inactifs ───────────────────────────────────────────────────
 async function sweep(client) {
-  if (!afkChannelId) return;
   const guild = client.guilds.cache.first();
-  if (!guild || !guild.channels.cache.get(afkChannelId)) return;
+  if (!guild) return;
+
+  if (!afkChannelId || !guild.channels.cache.get(afkChannelId)) {
+    await ensureAfkChannel(client);
+    if (!afkChannelId) return;
+  }
 
   const now = Date.now();
   for (const [userId, ts] of [...lastActivity.entries()]) {
