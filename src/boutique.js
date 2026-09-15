@@ -18,7 +18,6 @@ const HUB_CHANNEL  = '1544303765602173020'; // salon #hub → on en déduit la c
 const CHANNEL_NAME = 'boutique';            // salon staff des demandes d'échange
 const TAUX         = 5;                     // 1 point = 5 € en jeu
 const MIN          = 10;                    // points mini par échange
-const MAX          = 200;                   // points maxi par échange
 const COOLDOWN_MS  = 24 * 60 * 60 * 1000;   // délai entre deux demandes
 
 const { dataPath } = require('./paths');
@@ -240,7 +239,7 @@ async function handleMonnaie(interaction) {
   const lignes = [
     'Taux : 1 point = ' + TAUX + ' € en jeu',
     'Ton solde : **' + solde.toLocaleString('fr-FR') + '** points',
-    'Échange : entre ' + MIN + ' et ' + MAX + ' points par demande',
+    'Échange : à partir de ' + MIN + ' points par demande',
     'Délai : 1 demande à la fois · ' + (COOLDOWN_MS / 3600000) + ' h entre deux demandes',
     '',
     'Le staff valide la demande, puis crédite l\'argent manuellement dans Farming Simulator.',
@@ -290,8 +289,8 @@ async function handleEchange(interaction) {
 
   const modal = new ModalBuilder().setCustomId('hub_boutique_modal').setTitle('Échange points vers argent FS25');
   modal.addComponents(new ActionRowBuilder().addComponents(
-    new TextInputBuilder().setCustomId('points').setLabel('Points à échanger (' + MIN + ' à ' + MAX + ')')
-      .setStyle(TextInputStyle.Short).setPlaceholder('Ex : 50').setRequired(true).setMaxLength(4),
+    new TextInputBuilder().setCustomId('points').setLabel('Points à échanger (minimum ' + MIN + ')')
+      .setStyle(TextInputStyle.Short).setPlaceholder('Ex : 50').setRequired(true).setMaxLength(9),
   ));
   await interaction.showModal(modal);
 }
@@ -314,7 +313,6 @@ async function handleModal(interaction) {
   }
   const n = parseInt(raw, 10);
   if (n < MIN) { await interaction.reply({ content: '❌ Minimum ' + MIN + ' points par échange.', flags: 64 }); autoClean(interaction); return; }
-  if (n > MAX) { await interaction.reply({ content: '❌ Maximum ' + MAX + ' points par échange.', flags: 64 }); autoClean(interaction); return; }
 
   await levels.flush().catch(() => {});
   const solde = levels.getPoints(uid);
@@ -456,5 +454,5 @@ async function startBoutique(client) {
 module.exports = {
   startBoutique,
   handleBoutique, handleMonnaie, handleEchange, handleModal, handleDecision,
-  TAUX, MIN, MAX,
+  TAUX, MIN,
 };
