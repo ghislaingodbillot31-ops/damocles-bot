@@ -67,6 +67,14 @@ function cooldownRestant(userId) {
   return Math.max(0, COOLDOWN_MS - (Date.now() - Date.parse(last)));
 }
 
+function resetCooldowns() {
+  const s = load();
+  const n = Object.keys(s.lastRequestAt).length;
+  s.lastRequestAt = {};
+  save(s);
+  return n;
+}
+
 function createRequest({ reqId, userId, exploitId, exploitNom, points, staffMsgId }) {
   const s = load();
   s.requests[reqId] = {
@@ -454,5 +462,6 @@ async function startBoutique(client) {
 module.exports = {
   startBoutique,
   handleBoutique, handleMonnaie, handleEchange, handleModal, handleDecision,
+  resetCooldowns,
   TAUX, MIN,
 };

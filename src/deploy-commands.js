@@ -17,6 +17,7 @@ const commands = [
   require('./commands/niveau').data.toJSON(),
   require('./commands/classement').data.toJSON(),
   require('./commands/xp-admin').data.toJSON(),
+  require('./commands/boutique-admin').data.toJSON(),
 ];
 
 const rest = new REST().setToken(process.env.DISCORD_TOKEN);

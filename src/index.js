@@ -181,6 +181,7 @@ client.on(Events.InteractionCreate, async interaction => {
       'niveau':       './commands/niveau',
       'classement':   './commands/classement',
       'xp-admin':     './commands/xp-admin',
+      'boutique-admin': './commands/boutique-admin',
       'expulsion':    './commands/expulsion',
       'banid':        './commands/banid',
       'sanction':     './commands/sanction',
