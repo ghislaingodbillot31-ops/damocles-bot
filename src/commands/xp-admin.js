@@ -1,6 +1,41 @@
-const { SlashCommandBuilder, PermissionFlagsBits } = require('discord.js');
+const {
+  SlashCommandBuilder, PermissionFlagsBits,
+  ActionRowBuilder, StringSelectMenuBuilder,
+  ModalBuilder, TextInputBuilder, TextInputStyle,
+} = require('discord.js');
 const { panneau } = require('../embed-format');
 const levels = require('../levels');
+
+// Clés du barème pilotables via /xp-admin bareme, avec libellé et unité affichés.
+// `enMs: true` : la commande prend/affiche des secondes, stockées en ms en interne.
+const BAREME_CLES = {
+  MESSAGE:       { label: 'Message (XP par message)',           unite: ' XP' },
+  MESSAGE_CD_MS: { label: 'Cooldown message',                    unite: ' s', enMs: true },
+  IMAGE:         { label: 'Image / screenshot (bonus)',          unite: ' XP' },
+  IMAGE_CD_MS:   { label: 'Cooldown image',                      unite: ' s', enMs: true },
+  VOICE_PER_MIN: { label: 'Vocal (XP par minute)',               unite: ' XP' },
+  INVITE:        { label: 'Invitation (XP)',                     unite: ' XP' },
+  INVITE_KEEP:   { label: 'Invitation retenue 7 jours (XP)',     unite: ' XP' },
+};
+
+function valeurAffichee(cle) {
+  const info   = BAREME_CLES[cle];
+  const actuel = levels.XP[cle];
+  return info.enMs ? Math.round(actuel / 1000) : actuel;
+}
+
+// Menu déroulant : un gain par ligne, avec sa valeur actuelle en description.
+function baremeSelectRow() {
+  const menu = new StringSelectMenuBuilder()
+    .setCustomId('xpadmin_bareme_select')
+    .setPlaceholder('Choisir un gain à modifier…')
+    .addOptions(Object.entries(BAREME_CLES).map(([value, info]) => ({
+      label: info.label,
+      value,
+      description: 'Actuellement : ' + valeurAffichee(value) + info.unite,
+    })));
+  return new ActionRowBuilder().addComponents(menu);
+}
 
 module.exports = {
   data: new SlashCommandBuilder()
@@ -11,6 +46,11 @@ module.exports = {
       .setDescription('Ajouter (ou retirer avec un négatif) de l\'XP à un membre')
       .addUserOption(o => o.setName('membre').setDescription('Le membre').setRequired(true))
       .addIntegerOption(o => o.setName('montant').setDescription('XP à ajouter (négatif pour retirer)').setRequired(true)))
+    .addSubcommand(s => s.setName('bareme')
+      .setDescription('Voir ou modifier les points d\'XP gagnés par action')
+      .addStringOption(o => o.setName('cle').setDescription('Le gain à consulter/modifier').setRequired(false)
+        .addChoices(...Object.entries(BAREME_CLES).map(([value, info]) => ({ name: info.label, value }))))
+      .addIntegerOption(o => o.setName('valeur').setDescription('Nouvelle valeur (laisser vide pour consulter)').setRequired(false)))
     .addSubcommand(s => s.setName('reset')
       .setDescription('Remettre à zéro l\'XP de TOUT le serveur'))
     .addSubcommand(s => s.setName('backfill')
@@ -30,6 +70,43 @@ module.exports = {
         flags: 64,
       });
       await levels.refreshLeaderboard();
+      return;
+    }
+
+    if (sub === 'bareme') {
+      const cle    = interaction.options.getString('cle');
+      const valeur = interaction.options.getInteger('valeur');
+
+      if (!cle) {
+        await interaction.reply({
+          embeds: [{ title: '🎚️ Barème XP actuel', description: levels.baremeTexte(), color: 0x5865F2 }],
+          components: [baremeSelectRow()],
+          flags: 64,
+        });
+        return;
+      }
+
+      const info = BAREME_CLES[cle];
+      if (valeur === null) {
+        const actuel  = levels.XP[cle];
+        const affiche = info.enMs ? Math.round(actuel / 1000) : actuel;
+        await interaction.reply({ content: '🎚️ **' + info.label + '** = **' + affiche + info.unite + '**', flags: 64 });
+        return;
+      }
+
+      try {
+        const valeurFinale = info.enMs ? valeur * 1000 : valeur;
+        levels.setBaremeValeur(cle, valeurFinale);
+        await interaction.reply({
+          embeds: [{ description: '✅ **' + info.label + '** défini à **' + valeur + info.unite + '**', color: 0x2ECC71 }],
+          flags: 64,
+        });
+      } catch (err) {
+        console.error('⚠️ xp-admin bareme :', err.stack || err.message);
+        await interaction.reply({ content: '❌ ' + err.message, flags: 64 }).catch(() => {});
+        return;
+      }
+      levels.refreshLeaderboard().catch(err => console.error('⚠️ refreshLeaderboard :', err.stack || err.message));
       return;
     }
 
@@ -89,5 +166,63 @@ module.exports = {
         await interaction.editReply({ content: '❌ Erreur pendant le recalcul : ' + err.message }).catch(() => {});
       }
     }
+  },
+
+  // Sélection dans le menu déroulant → ouvre un formulaire pour saisir la nouvelle valeur.
+  async handleBaremeSelect(interaction) {
+    const cle  = interaction.values[0];
+    const info = BAREME_CLES[cle];
+    if (!info) {
+      await interaction.reply({ content: '❌ Gain inconnu : ' + cle, flags: 64 }).catch(() => {});
+      return;
+    }
+
+    try {
+      const modal = new ModalBuilder().setCustomId('xpadmin_bareme_modal_' + cle).setTitle(info.label.slice(0, 45));
+      modal.addComponents(new ActionRowBuilder().addComponents(
+        new TextInputBuilder()
+          .setCustomId('valeur')
+          .setLabel('Nouvelle valeur' + (info.enMs ? ' (en secondes)' : ' (en XP)'))
+          .setStyle(TextInputStyle.Short)
+          .setValue(String(valeurAffichee(cle)))
+          .setRequired(true)
+      ));
+      await interaction.showModal(modal);
+    } catch (err) {
+      console.error('⚠️ xp-admin bareme select :', err.stack || err.message);
+      await interaction.reply({ content: '❌ ' + err.message, flags: 64 }).catch(() => {});
+    }
+  },
+
+  // Validation du formulaire → applique la nouvelle valeur du barème.
+  async handleBaremeModal(interaction) {
+    const cle  = interaction.customId.replace('xpadmin_bareme_modal_', '');
+    const info = BAREME_CLES[cle];
+    if (!info) {
+      await interaction.reply({ content: '❌ Gain inconnu : ' + cle, flags: 64 }).catch(() => {});
+      return;
+    }
+
+    const brut   = interaction.fields.getTextInputValue('valeur').trim().replace(',', '.');
+    const valeur = Number(brut);
+    if (!Number.isFinite(valeur) || valeur < 0) {
+      await interaction.reply({ content: '❌ Valeur invalide, entre un nombre positif.', flags: 64 }).catch(() => {});
+      return;
+    }
+
+    try {
+      const valeurFinale = info.enMs ? valeur * 1000 : valeur;
+      levels.setBaremeValeur(cle, valeurFinale);
+      await interaction.reply({
+        embeds: [{ description: '✅ **' + info.label + '** défini à **' + valeur + info.unite + '**', color: 0x2ECC71 }],
+        flags: 64,
+      });
+    } catch (err) {
+      console.error('⚠️ xp-admin bareme modal :', err.stack || err.message);
+      await interaction.reply({ content: '❌ ' + err.message, flags: 64 }).catch(() => {});
+      return;
+    }
+    // Met à jour le panneau « comment gagner des points » sans bloquer/faire échouer la réponse déjà envoyée.
+    levels.refreshLeaderboard().catch(err => console.error('⚠️ refreshLeaderboard :', err.stack || err.message));
   },
 };

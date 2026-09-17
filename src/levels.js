@@ -7,9 +7,10 @@ const { dataPath } = require('./paths');
 const STATE_PATH   = dataPath('levels.json'); // ids des messages du salon
 const XP_PATH      = dataPath('xp.json');     // LES POINTS (source de vérité)
 const MEMBERS_PATH = dataPath('members.json');
+const BAREME_PATH  = dataPath('xp-config.json'); // barème modifiable par /xp-admin bareme
 
-// ── Barème (tout est modifiable ici) ─────────────────────────────────────────
-const XP = {
+// ── Barème (valeurs par défaut, écrasables via /xp-admin bareme) ────────────
+const XP_DEFAULTS = {
   MESSAGE:        5,     // par message texte
   MESSAGE_CD_MS:  60_000,
   IMAGE:          15,    // bonus message avec image / screenshot
@@ -18,6 +19,38 @@ const XP = {
   INVITE:         250,   // inviter un membre qui rejoint
   INVITE_KEEP:    150,   // bonus si l'invité reste 7 jours
 };
+const XP = { ...XP_DEFAULTS };
+
+// Charge les éventuelles valeurs personnalisées enregistrées via /xp-admin bareme
+function loadBareme() {
+  try {
+    const saved = JSON.parse(fs.readFileSync(BAREME_PATH, 'utf-8'));
+    if (saved && typeof saved === 'object') {
+      for (const cle of Object.keys(XP_DEFAULTS)) {
+        if (typeof saved[cle] === 'number' && Number.isFinite(saved[cle])) XP[cle] = saved[cle];
+      }
+    }
+  } catch {}
+}
+
+function saveBareme() {
+  try {
+    fs.mkdirSync(path.dirname(BAREME_PATH), { recursive: true });
+    fs.writeFileSync(BAREME_PATH, JSON.stringify(XP, null, 2), 'utf-8');
+  } catch (err) {
+    console.error('⚠️ xp-config.json — sauvegarde impossible :', err.message);
+  }
+}
+
+// Modifie un gain d'XP du barème et le persiste. Lève une erreur si la clé
+// ou la valeur est invalide.
+function setBaremeValeur(cle, valeur) {
+  if (!(cle in XP_DEFAULTS)) throw new Error('Clé de barème inconnue : ' + cle);
+  if (!Number.isFinite(valeur) || valeur < 0) throw new Error('La valeur doit être un nombre positif ou nul.');
+  XP[cle] = Math.round(valeur);
+  saveBareme();
+  return { ...XP };
+}
 const LEVELUP_CHANNEL     = '1538533319430373516'; // annonces de montée de niveau
 const LEADERBOARD_CHANNEL = '1538533319430373516'; // message de classement permanent
 
@@ -516,6 +549,7 @@ function _shutdown() {
 
 async function startLevels(client) {
   _client = client;
+  loadBareme();
   loadXp();
   loadState();
   const guild = client.guilds.cache.first();
@@ -540,10 +574,10 @@ async function startLevels(client) {
 }
 
 module.exports = {
-  XP, LEVELUP_CHANNEL, LEADERBOARD_CHANNEL,
+  XP, XP_DEFAULTS, LEVELUP_CHANNEL, LEADERBOARD_CHANNEL,
   startLevels, onMessage, onVoice, onMemberAdd, cacheInvites, checkRetention, flush,
   levelFromXp, totalXpForLevel,
   getClassement, getRang, adminAjuster, adminReset, getPoints, retirerPoints,
-  baremeEmbed, classementEmbed, refreshLeaderboard,
-  backfillFromHistory,
+  baremeEmbed, baremeTexte, classementEmbed, refreshLeaderboard,
+  backfillFromHistory, setBaremeValeur,
 };

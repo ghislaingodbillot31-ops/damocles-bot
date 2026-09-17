@@ -226,7 +226,8 @@ client.on(Events.InteractionCreate, async interaction => {
       if (cid.startsWith('hub_expl_couleur_')) { await hub.handleHubExplCouleur(interaction); return; }
       if (cid.startsWith('hub_expl_recrute_')) { await hub.handleHubExplRecrute(interaction); return; }
       if (cid.startsWith('hub_expl_proddel_')) { await hub.handleHubExplProdDel(interaction); return; }
-    } catch (err) { console.error('Erreur select menu :', err.message); }
+      if (cid === 'xpadmin_bareme_select')     { await require('./commands/xp-admin').handleBaremeSelect(interaction); return; }
+    } catch (err) { console.error('Erreur select menu :', err.stack || err.message); }
     return;
   }
 
@@ -241,7 +242,8 @@ client.on(Events.InteractionCreate, async interaction => {
       if (cid.startsWith('besoin_modal_'))      { await contrat.handleBesoinModal(interaction);   return; }
       if (cid.startsWith('voice_rename_modal_') || cid.startsWith('voice_limit_modal_')) { await tempvoice.handleVoiceModal(interaction); return; }
       if (cid === 'hub_boutique_modal')          { await boutique.handleModal(interaction);         return; }
-    } catch (err) { console.error('Erreur modal :', err.message); }
+      if (cid.startsWith('xpadmin_bareme_modal_')) { await require('./commands/xp-admin').handleBaremeModal(interaction); return; }
+    } catch (err) { console.error('Erreur modal :', err.stack || err.message); }
     return;
   }
 
