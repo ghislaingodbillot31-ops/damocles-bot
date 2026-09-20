@@ -4,7 +4,6 @@ require('dotenv').config();
 
 const { dataPath }       = require('./paths');
 const CONFIG_PATH        = dataPath('welcome-config.json');
-const WELCOME_CHANNEL_ID = process.env.WELCOME_CHANNEL_ID;
 const LOG_CHANNEL_ID     = process.env.LOG_CHANNEL_ID;
 const REGLEMENT_CHANNEL_ID = process.env.REGLEMENT_CHANNEL_ID;
 const CHAT_CHANNEL_ID      = process.env.CHAT_CHANNEL_ID || '1538533261314236527';
@@ -12,16 +11,7 @@ const CHAT_CHANNEL_ID      = process.env.CHAT_CHANNEL_ID || '1538533261314236527
 // ── Config personnalisable ────────────────────────────────────────────────────
 function loadWelcomeConfig() {
   if (!fs.existsSync(CONFIG_PATH)) return {
-    message: [
-      "Bienvenue {pseudo} ! Tu as passé les premières étapes de ta vérification, désormais il ne te reste plus qu'à suivre les étapes suivantes :",
-      '',
-      '• 👋 Dire bonjour dans le salon <#1538533261314236527>',
-      '',
-      "Ensuite, n'hésite pas à discuter et à rejoindre les salons vocaux !",
-      'À bientôt 👋',
-      '',
-      '⚠️ Si tu ne publies rien et ne te connectes pas, tu seras automatiquement expulsé sous 24 heures.',
-    ].join('\n'),
+    message: '🎉 **Dernière étape** {mention} : présente-toi aux autres membres !',
     color: '2ECC71',
     enabled: true,
   };
@@ -38,10 +28,9 @@ function saveWelcomeConfig(cfg) {
 function getWelcomeConfig()      { return loadWelcomeConfig(); }
 function setWelcomeConfig(cfg)   { saveWelcomeConfig({ ...loadWelcomeConfig(), ...cfg }); return getWelcomeConfig(); }
 
-// ── Message de bienvenue après règlement validé ───────────────────────────────
+// ── Message de bienvenue après règlement validé (ping dans le général) ─────────
 async function sendWelcomeAfterReglement(member) {
-  if (!WELCOME_CHANNEL_ID) return;
-  const channel = member.guild.channels.cache.get(WELCOME_CHANNEL_ID);
+  const channel = member.guild.channels.cache.get(CHAT_CHANNEL_ID);
   if (!channel) return;
 
   const cfg  = loadWelcomeConfig();
