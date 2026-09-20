@@ -258,6 +258,9 @@ client.on(Events.InteractionCreate, async interaction => {
     if (id === 'hub_besoin')                  { await contrat.handleBesoinButton(interaction); return; }
     if (id === 'hub_annuaire')                { await hub.handleHubAnnuaire(interaction);    return; }
     if (id === 'hub_annuaire_off')            { await hub.handleHubAnnuaireOff(interaction); return; }
+    if (id.startsWith('hub_annuaire_delyes_')) { await hub.handleHubAnnuaireDelYes(interaction); return; }
+    if (id.startsWith('hub_annuaire_delno_'))  { await hub.handleHubAnnuaireDelNo(interaction);  return; }
+    if (id.startsWith('hub_annuaire_del_'))    { await hub.handleHubAnnuaireDel(interaction);    return; }
     if (id === 'hub_boutique')                { await boutique.handleBoutique(interaction);  return; }
     if (id === 'hub_boutique_monnaie')        { await boutique.handleMonnaie(interaction);   return; }
     if (id === 'hub_boutique_echange')        { await boutique.handleEchange(interaction);   return; }

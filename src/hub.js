@@ -657,13 +657,23 @@ async function handleHubExplCoDel(interaction) {
   await agrilog(interaction.guild, '➖ **' + exploit.nom + '** : <@' + coId + '> retiré des co-exploitants par <@' + interaction.user.id + '>');
 }
 
-// ═══ BOUTON « Annuaire » (ON = affiche la liste globale, OFF = l'efface) ═══
-async function handleHubAnnuaire(interaction) {
+function chunk(arr, size) {
+  const out = [];
+  for (let i = 0; i < arr.length; i += size) out.push(arr.slice(i, i + size));
+  return out;
+}
+
+function isAdmin(interaction) {
+  return !!interaction.member?.permissions?.has(PermissionFlagsBits.Administrator);
+}
+
+// Construit le payload complet de l'annuaire (embeds + boutons), utilisé pour
+// l'ouverture initiale et pour tous les rafraîchissements (annulation, suppression).
+// `admin` ajoute un bouton 🗑️ par exploitation, réservé aux administrateurs.
+function renderAnnuaire(admin) {
   const all = exp.getAll().filter(e => e.nom).sort((a, b) => a.nom.localeCompare(b.nom));
   if (all.length === 0) {
-    await interaction.reply({ embeds: [{ description: '📭 Aucune exploitation enregistrée pour le moment.', color: 0x95A5A6 }], flags: 64 });
-    autoClean(interaction, 30000);
-    return;
+    return { embeds: [{ description: '📭 Aucune exploitation enregistrée pour le moment.', color: 0x95A5A6 }], components: [], empty: true };
   }
 
   // Un EMBED distinct par exploitation → chacune a sa propre barre de couleur (bien séparées)
@@ -712,20 +722,86 @@ async function handleHubAnnuaire(interaction) {
     };
   });
 
-  await interaction.reply({
-    ...panneau({ embeds: [header, ...cartes] }),
-    components: [new ActionRowBuilder().addComponents(
-      new ButtonBuilder().setCustomId('hub_annuaire_off').setLabel('📖 Annuaire · OFF').setStyle(ButtonStyle.Danger),
-    )],
-    flags: 64,
-  });
-  autoClean(interaction, 15 * 60 * 1000);
+  const rows = [];
+  if (admin) {
+    const delButtons = shown.map(e => new ButtonBuilder()
+      .setCustomId('hub_annuaire_del_' + e.id)
+      .setLabel('🗑️ ' + e.nom.slice(0, 20))
+      .setStyle(ButtonStyle.Danger));
+    for (const group of chunk(delButtons, 5)) rows.push(new ActionRowBuilder().addComponents(group));
+  }
+  rows.push(new ActionRowBuilder().addComponents(
+    new ButtonBuilder().setCustomId('hub_annuaire_off').setLabel('📖 Annuaire · OFF').setStyle(ButtonStyle.Danger),
+  ));
+
+  return { ...panneau({ embeds: [header, ...cartes] }), components: rows, empty: false };
+}
+
+// ═══ BOUTON « Annuaire » (ON = affiche la liste globale, OFF = l'efface) ═══
+async function handleHubAnnuaire(interaction) {
+  const { empty, ...view } = renderAnnuaire(isAdmin(interaction));
+  await interaction.reply({ ...view, flags: 64 });
+  autoClean(interaction, empty ? 30000 : 15 * 60 * 1000);
 }
 
 // Bouton OFF → efface l'annuaire du joueur
 async function handleHubAnnuaireOff(interaction) {
   await interaction.deferUpdate();
   await interaction.deleteReply().catch(() => {});
+}
+
+// ── Suppression admin d'une exploitation depuis l'annuaire ──────────────────
+// Étape 1 : demande de confirmation (remplace les boutons de la carte concernée).
+async function handleHubAnnuaireDel(interaction) {
+  if (!isAdmin(interaction)) {
+    await interaction.reply({ content: '❌ Réservé aux administrateurs.', flags: 64 });
+    autoClean(interaction);
+    return;
+  }
+  const id = interaction.customId.replace('hub_annuaire_del_', '');
+  const exploit = exp.getById(id);
+  if (!exploit) {
+    await interaction.reply({ content: '❌ Exploitation introuvable (déjà supprimée ?).', flags: 64 });
+    autoClean(interaction);
+    return;
+  }
+
+  await interaction.update({
+    embeds: [{
+      title: '⚠️ Confirmer la suppression',
+      description: 'Supprimer définitivement **' + exploit.nom + '** (créateur <@' + exploit.ownerId + '>) ?\n'
+        + 'Action **irréversible** : co-exploitants, ouvriers et produits liés seront perdus.',
+      color: 0xE74C3C,
+    }],
+    components: [new ActionRowBuilder().addComponents(
+      new ButtonBuilder().setCustomId('hub_annuaire_delyes_' + id).setLabel('🗑️ Confirmer la suppression').setStyle(ButtonStyle.Danger),
+      new ButtonBuilder().setCustomId('hub_annuaire_delno_' + id).setLabel('Annuler').setStyle(ButtonStyle.Secondary),
+    )],
+  });
+}
+
+// Étape 2a : confirmation → suppression effective puis retour à l'annuaire rafraîchi.
+async function handleHubAnnuaireDelYes(interaction) {
+  if (!isAdmin(interaction)) {
+    await interaction.reply({ content: '❌ Réservé aux administrateurs.', flags: 64 });
+    autoClean(interaction);
+    return;
+  }
+  const id = interaction.customId.replace('hub_annuaire_delyes_', '');
+  const exploit = exp.getById(id);
+  if (exploit) {
+    exp.deleteExploitation(id);
+    await agrilog(interaction.guild, '🗑️ Exploitation supprimée : **' + exploit.nom + '** (créateur <@' + exploit.ownerId + '>) · par <@' + interaction.user.id + '>');
+  }
+
+  const { empty, ...view } = renderAnnuaire(true);
+  await interaction.update({ ...view });
+}
+
+// Étape 2b : annulation → retour à l'annuaire sans rien supprimer.
+async function handleHubAnnuaireDelNo(interaction) {
+  const { empty, ...view } = renderAnnuaire(isAdmin(interaction));
+  await interaction.update({ ...view });
 }
 
 // ── Helpers ─────────────────────────────────────────────────────────────────
@@ -741,6 +817,7 @@ module.exports = {
   handleHubExpl, handleHubExplCreer, handleHubExplCreerModal,
   handleHubExplManage, handleHubExplSetAct, handleHubExplNom,
   handleHubExplOuvAdd, handleHubExplOuvDel, handleHubAnnuaire, handleHubAnnuaireOff,
+  handleHubAnnuaireDel, handleHubAnnuaireDelYes, handleHubAnnuaireDelNo,
   handleHubExplRecrute, handleHubExplProdAdd, handleHubExplProdModal,
   handleHubExplProdDel, handleHubExplDone,
   handleHubExplSwitch, handleHubExplCouleur, handleHubExplCoAdd, handleHubExplCoDel,
