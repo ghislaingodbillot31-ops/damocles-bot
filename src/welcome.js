@@ -16,7 +16,6 @@ function loadWelcomeConfig() {
       "Bienvenue {pseudo} ! Tu as passé les premières étapes de ta vérification, désormais il ne te reste plus qu'à suivre les étapes suivantes :",
       '',
       '• 👋 Dire bonjour dans le salon <#1538533261314236527>',
-      '• 🎭 Prendre un rôle dans le salon <#1538537709633802270>',
       '',
       "Ensuite, n'hésite pas à discuter et à rejoindre les salons vocaux !",
       'À bientôt 👋',
