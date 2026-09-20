@@ -6,6 +6,8 @@ const { dataPath }       = require('./paths');
 const CONFIG_PATH        = dataPath('welcome-config.json');
 const WELCOME_CHANNEL_ID = process.env.WELCOME_CHANNEL_ID;
 const LOG_CHANNEL_ID     = process.env.LOG_CHANNEL_ID;
+const REGLEMENT_CHANNEL_ID = process.env.REGLEMENT_CHANNEL_ID;
+const CHAT_CHANNEL_ID      = process.env.CHAT_CHANNEL_ID || '1538533261314236527';
 
 // ── Config personnalisable ────────────────────────────────────────────────────
 function loadWelcomeConfig() {
@@ -64,6 +66,36 @@ async function sendWelcomeAfterReglement(member) {
   }).catch(console.error);
 }
 
+// ── MP envoyé à l'arrivée : marche à suivre (règlement + présentation) ──────────
+async function sendJoinDM(member) {
+  const reglementMention = REGLEMENT_CHANNEL_ID ? '<#' + REGLEMENT_CHANNEL_ID + '>' : 'le salon **#règlement**';
+  const chatMention      = CHAT_CHANNEL_ID ? '<#' + CHAT_CHANNEL_ID + '>' : 'le salon **#bavardage**';
+
+  try {
+    await member.send({
+      embeds: [{
+        title: '👋 Bienvenue sur ' + member.guild.name + ' !',
+        description: [
+          'Salut ' + member.user.username + ' !',
+          '',
+          'Avant de pouvoir profiter du serveur, deux petites étapes :',
+          '',
+          '**1.** ✅ Accepte le règlement dans ' + reglementMention,
+          '**2.** 💬 Présente-toi dans ' + chatMention,
+          '',
+          'À très vite sur le serveur 🌾',
+        ].join('\n'),
+        color: 0x2ECC71,
+        thumbnail: { url: member.user.displayAvatarURL() },
+        footer: { text: member.guild.name + ' · Damoclès Bot' },
+        timestamp: new Date().toISOString(),
+      }],
+    });
+  } catch {
+    // MP fermés : on ne bloque pas l'arrivée du membre pour autant.
+  }
+}
+
 // ── Message de départ ─────────────────────────────────────────────────────────
 async function sendLeave(member) {
   const leaveChannelId = process.env.DAMOCLES_LOG_CHANNEL_ID || process.env.LOG_CHANNEL_ID;
@@ -81,4 +113,4 @@ async function sendLeave(member) {
   }).catch(console.error);
 }
 
-module.exports = { sendWelcomeAfterReglement, sendLeave, getWelcomeConfig, setWelcomeConfig };
+module.exports = { sendWelcomeAfterReglement, sendJoinDM, sendLeave, getWelcomeConfig, setWelcomeConfig };

@@ -9,7 +9,7 @@ process.on('uncaughtException', err => {
 
 const { Client, GatewayIntentBits, Partials, Events } = require('discord.js');
 const { verifyMember, handleVerifyButton, handleVerifRefButton } = require('./verification');
-const { sendWelcomeAfterReglement, sendLeave }         = require('./welcome');
+const { sendWelcomeAfterReglement, sendJoinDM, sendLeave } = require('./welcome');
 const { createTicket, takeTicket, closeTicket }        = require('./tickets');
 const { checkSpam, checkLinks }                        = require('./antiraid');
 const { checkNewMember }                               = require('./antidoublecompte');
@@ -111,6 +111,7 @@ client.on(Events.GuildMemberAdd, async member => {
   await db.upsertMember(member.user, { joinedAt: member.joinedAt?.toISOString() });
   await levels.onMemberAdd(member);
   if (VERIFICATION_ROLE_ID) await member.roles.add(VERIFICATION_ROLE_ID).catch(() => {});
+  await sendJoinDM(member);
   await checkNewMember(member);
   await log(client, 'member_join', { userId: member.id });
   await verifyMember(member);
