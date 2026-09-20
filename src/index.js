@@ -297,18 +297,24 @@ client.on(Events.InteractionCreate, async interaction => {
     const member = interaction.member;
     await interaction.reply({
       embeds: [{
-        description: '✅ **Règlement accepté !**\nConsulte le salon **#bienvenue** pour la suite.',
+        description: '✅ **Règlement accepté !**\nRends-toi dans le salon général pour la suite.',
         color: 0x2ECC71,
         footer: { text: 'Damoclès Security Bot' },
       }],
       flags: 64,
-    });
+    }).catch(err => console.error('⚠️ accept_reglement reply :', err.message));
+
     if (ATTENTE_ROLE_ID)      await member.roles.remove(ATTENTE_ROLE_ID).catch(() => {});
     if (VERIFICATION_ROLE_ID) await member.roles.remove(VERIFICATION_ROLE_ID).catch(() => {});
     if (REGLEMENT_ROLE_ID)    await member.roles.add(REGLEMENT_ROLE_ID).catch(() => {});
-    await db.reglementAccepted(member.id);
-    await log(client, 'reglement_accepted', { userId: member.id });
-    await sendWelcomeAfterReglement(member);
+
+    try { await db.reglementAccepted(member.id); }
+    catch (err) { console.error('⚠️ db.reglementAccepted :', err.message); }
+
+    await log(client, 'reglement_accepted', { userId: member.id }).catch(err => console.error('⚠️ log reglement_accepted :', err.message));
+
+    // Toujours tenté, même si une étape précédente a échoué.
+    await sendWelcomeAfterReglement(member).catch(err => console.error('⚠️ sendWelcomeAfterReglement :', err.message));
     console.log('📜 Règlement accepté : ' + member.user.tag);
     return;
   }

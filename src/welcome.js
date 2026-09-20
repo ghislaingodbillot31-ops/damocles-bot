@@ -30,10 +30,14 @@ function setWelcomeConfig(cfg)   { saveWelcomeConfig({ ...loadWelcomeConfig(), .
 
 // ── Message de bienvenue après règlement validé (ping dans le général) ─────────
 async function sendWelcomeAfterReglement(member) {
-  const channel = member.guild.channels.cache.get(CHAT_CHANNEL_ID);
-  if (!channel) return;
+  const channel = member.guild.channels.cache.get(CHAT_CHANNEL_ID)
+    || await member.guild.channels.fetch(CHAT_CHANNEL_ID).catch(() => null);
+  if (!channel) {
+    console.error('⚠️ sendWelcomeAfterReglement : salon général introuvable (CHAT_CHANNEL_ID=' + CHAT_CHANNEL_ID + ')');
+    return;
+  }
 
-  const cfg  = loadWelcomeConfig();
+  const cfg = loadWelcomeConfig();
   if (!cfg.enabled) return;
 
   const text = (cfg.message || '')
