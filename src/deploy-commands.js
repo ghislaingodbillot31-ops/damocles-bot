@@ -20,6 +20,7 @@ const commands = [
   require('./commands/boutique-admin').data.toJSON(),
   require('./commands/purge').dataStart.toJSON(),
   require('./commands/purge').dataEnd.toJSON(),
+  require('./commands/invite').data.toJSON(),
 ];
 
 const rest = new REST().setToken(process.env.DISCORD_TOKEN);

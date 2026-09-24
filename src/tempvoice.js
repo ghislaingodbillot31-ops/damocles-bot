@@ -40,19 +40,23 @@ async function postVoicePanel(channel) {
 
   await channel.send(panneau({
     embeds: [{
-      title: '🔊  SALONS VOCAUX TEMPORAIRES',
+      title: '🔊  SALONS TEMPORAIRES',
       description: [
-        'Clique sur le bouton pour créer **ton propre salon vocal**.',
-        '',
+        '**🔊 Salon vocal**',
         '> • Tu es déplacé dedans automatiquement si tu es déjà en vocal.',
         '> • Tu peux le **renommer**, définir une **limite**, le **verrouiller**.',
         '> • Il est **supprimé automatiquement** dès qu\'il est vide.',
+        '',
+        '**💬 Salon textuel**',
+        '> • Choisis son **nom**, rends-le **privé** et invite qui tu veux avec **/invite**.',
+        '> • Il est **supprimé automatiquement** après 24 h sans message.',
       ].join('\n'),
       color: 0x5865F2,
       footer: { text: 'EUROAGRI · Damoclès Bot' },
     }],
     components: [new ActionRowBuilder().addComponents(
       new ButtonBuilder().setCustomId('voice_create').setLabel('➕ Créer mon salon vocal').setStyle(ButtonStyle.Success),
+      new ButtonBuilder().setCustomId('text_create').setLabel('💬 Créer mon salon textuel').setStyle(ButtonStyle.Primary),
     )],
   })).catch(console.error);
 }

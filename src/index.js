@@ -63,6 +63,7 @@ client.once(Events.ClientReady, async () => {
   startDailyTasks(client, cron);
   require('./restart').startDailyRestart(client, cron);
   tempvoice.startTempVoice(client);
+  require('./temptext').startTempText(client);
   levels.startLevels(client);
   boutique.startBoutique(client);
 
@@ -187,6 +188,7 @@ client.on(Events.InteractionCreate, async interaction => {
       'sanction':     './commands/sanction',
       'bouton':       './commands/bouton',
       'analyse':      './commands/analyse',
+      'invite':       './commands/invite',
     };
     const cmdPath = cmdMap[interaction.commandName];
     if (cmdPath) {
@@ -245,6 +247,7 @@ client.on(Events.InteractionCreate, async interaction => {
       if (cid.startsWith('contrat_modal_'))     { await contrat.handleContratModal(interaction);  return; }
       if (cid.startsWith('besoin_modal_'))      { await contrat.handleBesoinModal(interaction);   return; }
       if (cid.startsWith('voice_rename_modal_') || cid.startsWith('voice_limit_modal_')) { await tempvoice.handleVoiceModal(interaction); return; }
+      if (cid === 'text_create_modal' || cid.startsWith('text_rename_modal_')) { await require('./temptext').handleTextModal(interaction); return; }
       if (cid === 'hub_boutique_modal')          { await boutique.handleModal(interaction);         return; }
       if (cid.startsWith('xpadmin_bareme_modal_')) { await require('./commands/xp-admin').handleBaremeModal(interaction); return; }
     } catch (err) { console.error('Erreur modal :', err.stack || err.message); }
@@ -297,6 +300,8 @@ client.on(Events.InteractionCreate, async interaction => {
   try {
     if (id === 'voice_create')                { await tempvoice.handleVoiceCreate(interaction);  return; }
     if (/^voice_(rename|limit|lock|delete)_/.test(id)) { await tempvoice.handleVoiceControl(interaction); return; }
+    if (id === 'text_create')                 { await require('./temptext').handleTextCreate(interaction); return; }
+    if (/^text_(rename|lock|delete)_/.test(id)) { await require('./temptext').handleTextControl(interaction); return; }
   } catch (err) { console.error('Erreur bouton vocal :', err.message); }
 
   // Vérification admin
