@@ -7,10 +7,12 @@ const { panneau } = require('./embed-format');
 const { dataPath } = require('./paths');
 
 // Salons textuels temporaires, dans la catégorie TEXTUEL.
-// Création par le bouton du panneau des salons temporaires (tempvoice.js),
-// gestion par le panneau posté dans le salon, invitations par /invite.
+// Création par le bouton du salon d'accueil (lui aussi dans TEXTUEL, séparé des
+// salons vocaux), gestion par le panneau posté dans chaque salon, invitations par /invite.
 const TEXT_CATEGORY = '1552693042161385532';
 const STORE_PATH    = dataPath('temptext.json');
+const ACCUEIL_NOM   = '➕-créer-un-salon';
+let accueilId = null; // salon d'accueil (mémorisé : il peut être renommé)
 const INACTIF_MS    = 24 * 60 * 60 * 1000; // supprimé après 24 h sans message
 const SWEEP_MS      = 10 * 60 * 1000;
 
@@ -24,10 +26,60 @@ function load() {
   try {
     const raw = JSON.parse(fs.readFileSync(STORE_PATH, 'utf-8'));
     for (const [id, v] of Object.entries(raw.channels || {})) salons.set(id, v);
+    accueilId = raw.accueilId || null;
   } catch {}
 }
 function save() {
-  try { fs.writeFileSync(STORE_PATH, JSON.stringify({ channels: Object.fromEntries(salons) }, null, 2), 'utf-8'); } catch {}
+  try { fs.writeFileSync(STORE_PATH, JSON.stringify({ accueilId, channels: Object.fromEntries(salons) }, null, 2), 'utf-8'); } catch {}
+}
+
+// ── Salon d'accueil avec le bouton de création ────────────────────────────────
+// Retrouve le salon mémorisé, sinon un salon de TEXTUEL non temporaire portant le
+// nom d'accueil, sinon le crée (lecture seule pour les joueurs, seul le bot écrit).
+async function salonAccueil(guild) {
+  const connu = accueilId && guild.channels.cache.get(accueilId);
+  if (connu) return connu;
+  const existant = guild.channels.cache.find(c => c.parentId === TEXT_CATEGORY && c.type === ChannelType.GuildText
+    && !salons.has(c.id) && c.name === ACCUEIL_NOM);
+  const salon = existant || await guild.channels.create({
+    name: ACCUEIL_NOM,
+    type: ChannelType.GuildText,
+    parent: TEXT_CATEGORY,
+    position: 0,
+    permissionOverwrites: [
+      { id: guild.id, allow: [PermissionFlagsBits.ViewChannel, PermissionFlagsBits.ReadMessageHistory], deny: [PermissionFlagsBits.SendMessages] },
+      { id: guild.client.user.id, allow: [PermissionFlagsBits.ViewChannel, PermissionFlagsBits.SendMessages, PermissionFlagsBits.ManageMessages, PermissionFlagsBits.EmbedLinks] },
+    ],
+    reason: 'Salon d\'accueil des salons textuels temporaires',
+  });
+  accueilId = salon.id;
+  save();
+  return salon;
+}
+
+async function postTextPanel(channel) {
+  try {
+    const msgs = await channel.messages.fetch({ limit: 20 });
+    for (const [, m] of msgs) if (m.author.id === channel.client.user.id) await m.delete().catch(() => {});
+  } catch {}
+
+  await channel.send(panneau({
+    embeds: [{
+      title: '💬  SALONS TEXTUELS TEMPORAIRES',
+      description: [
+        'Clique sur le bouton pour créer **ton propre salon textuel**.',
+        '',
+        '> • Tu choisis son **nom** à la création.',
+        '> • Tu peux le rendre **privé** et y inviter des joueurs avec **/invite** `joueur`.',
+        '> • Il est **supprimé automatiquement** après 24 h sans message.',
+      ].join('\n'),
+      color: 0x5865F2,
+      footer: { text: 'EUROAGRI · Damoclès Bot' },
+    }],
+    components: [new ActionRowBuilder().addComponents(
+      new ButtonBuilder().setCustomId('text_create').setLabel('💬 Créer mon salon textuel').setStyle(ButtonStyle.Success),
+    )],
+  })).catch(console.error);
 }
 
 function autoClean(interaction, delay = 5000) {
@@ -235,11 +287,17 @@ async function nettoyer(client) {
   }
 }
 
-function startTempText(client) {
+async function startTempText(client) {
   load();
-  nettoyer(client).catch(() => {});
   setInterval(() => nettoyer(client).catch(() => {}), SWEEP_MS);
-  console.log('💬 Salons textuels temporaires — prêt (' + salons.size + ' actif(s))');
+  try {
+    await nettoyer(client);
+    const guild = client.guilds.cache.first();
+    if (guild) await postTextPanel(await salonAccueil(guild));
+    console.log('💬 Salons textuels temporaires — prêt (' + salons.size + ' actif(s))');
+  } catch (err) {
+    console.error('⚠️ Salons textuels temporaires :', err.message);
+  }
 }
 
 module.exports = { TEXT_CATEGORY, startTempText, handleTextCreate, handleTextControl, handleTextModal, inviter };
