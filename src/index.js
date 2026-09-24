@@ -64,6 +64,7 @@ client.once(Events.ClientReady, async () => {
   require('./restart').startDailyRestart(client, cron);
   tempvoice.startTempVoice(client);
   require('./temptext').startTempText(client);
+  require('./suggestions').startSuggestions(client);
   levels.startLevels(client);
   boutique.startBoutique(client);
 
@@ -248,6 +249,8 @@ client.on(Events.InteractionCreate, async interaction => {
       if (cid.startsWith('besoin_modal_'))      { await contrat.handleBesoinModal(interaction);   return; }
       if (cid.startsWith('voice_rename_modal_') || cid.startsWith('voice_limit_modal_')) { await tempvoice.handleVoiceModal(interaction); return; }
       if (cid === 'text_create_modal' || cid.startsWith('text_rename_modal_')) { await require('./temptext').handleTextModal(interaction); return; }
+      if (cid === 'sugg_modal')                 { await require('./suggestions').handleSuggModal(interaction); return; }
+      if (/^sugg_(ok|no)modal_\d+$/.test(cid))  { await require('./suggestions').handleSuggDecisionModal(interaction); return; }
       if (cid === 'hub_boutique_modal')          { await boutique.handleModal(interaction);         return; }
       if (cid.startsWith('xpadmin_bareme_modal_')) { await require('./commands/xp-admin').handleBaremeModal(interaction); return; }
     } catch (err) { console.error('Erreur modal :', err.stack || err.message); }
@@ -303,6 +306,12 @@ client.on(Events.InteractionCreate, async interaction => {
     if (id === 'text_create')                 { await require('./temptext').handleTextCreate(interaction); return; }
     if (/^text_(rename|lock|delete)_/.test(id)) { await require('./temptext').handleTextControl(interaction); return; }
   } catch (err) { console.error('Erreur bouton vocal :', err.message); }
+
+  // Boîte à idées
+  try {
+    if (id === 'sugg_new')                    { await require('./suggestions').handleSuggNew(interaction); return; }
+    if (/^sugg_(ok|no)_\d+$/.test(id))        { await require('./suggestions').handleSuggDecision(interaction); return; }
+  } catch (err) { console.error('Erreur bouton suggestions :', err.stack || err.message); }
 
   // Vérification admin
   if (id.startsWith('verifref_')) {
