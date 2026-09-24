@@ -162,6 +162,22 @@ async function getAbsentMembers() {
   return Object.values(loadDB()).filter(m => !m.present);
 }
 
+// ── Visibilité publique ───────────────────────────────────────────────────────
+// Un joueur parti, expulsé, banni ou inactif garde toutes ses données (XP,
+// anniversaire, historique…) mais n'apparaît plus dans ce que le bot affiche
+// sur Discord : classement, anniversaires, annuaire. Il réapparaît s'il revient
+// ou redevient actif. Le dashboard, lui, montre toujours tout.
+const MASQUES = [STATUS.LEFT, STATUS.KICKED, STATUS.BANNED, 'inactive'];
+
+function estVisible(m) {
+  return !!m && m.present === true && !MASQUES.includes(m.status);
+}
+
+// Version synchrone (lecture directe du fichier) pour les affichages construits à la volée.
+function idsVisibles() {
+  return new Set(Object.values(loadDB()).filter(estVisible).map(m => m.id));
+}
+
 async function recordActivity(userId, type) {
   await updateMember(userId, null, { history: { event: type, date: new Date().toISOString() } });
 }
@@ -240,5 +256,5 @@ module.exports = {
   reglementAccepted, setAnniversaire, getAnniversairesDuMois,
   getAnniversairesAujourdhui, getMember, getAllMembers, getPresentMembers,
   getAbsentMembers, recordActivity, getStats, STATUS,
-  removeMember, cleanDatabase,
+  removeMember, cleanDatabase, estVisible, idsVisibles,
 };

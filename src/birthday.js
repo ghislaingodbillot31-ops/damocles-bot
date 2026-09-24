@@ -10,7 +10,7 @@ const MOIS = ['', 'Janvier', 'Février', 'Mars', 'Avril', 'Mai', 'Juin',
 
 // ── Message d'anniversaire dans #général ──────────────────────────────────────
 async function sendBirthdayMessages(client) {
-  const members = await db.getAnniversairesAujourdhui();
+  const members = (await db.getAnniversairesAujourdhui()).filter(db.estVisible);
   if (!members.length) return;
 
   const guild   = client.guilds.cache.first();
@@ -52,9 +52,10 @@ async function updateBirthdayChannel(client) {
   const now    = new Date();
   const today0 = new Date(now.getFullYear(), now.getMonth(), now.getDate());
 
-  // Membres avec un anniversaire valide JJ/MM/AAAA
+  // Membres visibles avec un anniversaire valide JJ/MM/AAAA
+  // (partis / inactifs : date conservée en base, mais plus affichée)
   const all = (await db.getAllMembers())
-    .filter(m => m.anniversaire && /^\d{1,2}\/\d{1,2}\/\d{4}$/.test(m.anniversaire));
+    .filter(m => db.estVisible(m) && m.anniversaire && /^\d{1,2}\/\d{1,2}\/\d{4}$/.test(m.anniversaire));
 
   // Effacer les anciens messages du bot
   try {

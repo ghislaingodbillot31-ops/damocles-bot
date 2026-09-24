@@ -1,5 +1,7 @@
-// Tâche quotidienne : rafraîchir la liste des membres, nettoyer la base,
-// relancer l'analyse actifs/inactifs et le message de statut.
+// Tâche quotidienne (04h00 et à chaque démarrage, donc après chaque redémarrage) :
+// rafraîchir la liste des membres, nettoyer la base, relancer l'analyse
+// actifs/inactifs, redessiner les salons Classement et Anniversaires, puis le
+// message de statut.
 const db = require('./database');
 
 // Réconcilie la base avec les membres réellement présents sur le serveur
@@ -63,6 +65,17 @@ async function runDaily(client) {
     const b = await levels.checkRetention();
     if (b) console.log('   🎚️ Bonus rétention 7 j : ' + b + ' invitation(s) créditée(s)');
   } catch (e) { console.error('   ⚠️ Niveaux :', e.message); }
+
+  // Salons Classement et Anniversaires : redessinés APRÈS la synchro des membres
+  // et l'analyse, pour ne plus afficher les joueurs partis ou devenus inactifs.
+  try {
+    await require('./levels').refreshLeaderboard();
+    console.log('   🏆 Salon classement mis à jour');
+  } catch (e) { console.error('   ⚠️ Classement :', e.message); }
+
+  try {
+    await require('./birthday').updateBirthdayChannel(client);
+  } catch (e) { console.error('   ⚠️ Anniversaires :', e.message); }
 
   try {
     const { updateStatusMessage } = require('./statusbot');

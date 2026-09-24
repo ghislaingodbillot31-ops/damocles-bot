@@ -470,9 +470,15 @@ async function backfillFromHistory(guild, { jours = 90, maxParSalon = 8000, onPr
 }
 
 // ── Getters pour les commandes ───────────────────────────────────────────────
+// Joueurs classés : XP > 0 et visibles (les partis / inactifs gardent leur XP
+// dans xp.json mais sortent du classement ; ils y reviennent à leur retour).
+function classables() {
+  const visibles = db.idsVisibles();
+  return Object.entries(_xp).filter(([id, v]) => (v.xp || 0) > 0 && visibles.has(id));
+}
+
 function getClassement(limit = 15) {
-  return Object.entries(_xp)
-    .filter(([, v]) => (v.xp || 0) > 0)
+  return classables()
     .sort((a, b) => (b[1].xp || 0) - (a[1].xp || 0))
     .slice(0, limit)
     .map(([id, v], i) => ({
@@ -481,8 +487,7 @@ function getClassement(limit = 15) {
 }
 
 function getRang(userId) {
-  const classees = Object.entries(_xp)
-    .filter(([, v]) => (v.xp || 0) > 0)
+  const classees = classables()
     .sort((a, b) => (b[1].xp || 0) - (a[1].xp || 0));
   const idx = classees.findIndex(([id]) => id === userId);
   const r   = _xp[userId] || {};

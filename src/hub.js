@@ -674,7 +674,13 @@ function isAdmin(interaction) {
 // l'ouverture initiale et pour tous les rafraîchissements (annulation, suppression).
 // `admin` ajoute un bouton 🗑️ par exploitation, réservé aux administrateurs.
 function renderAnnuaire(admin) {
-  const all = exp.getAll().filter(e => e.nom).sort((a, b) => a.nom.localeCompare(b.nom));
+  // Joueurs partis / inactifs : fiches conservées, mais masqués de l'annuaire.
+  // Une exploitation n'apparaît que si au moins un de ses exploitants est visible.
+  const vis = require('./database').idsVisibles();
+  const all = exp.getAll()
+    .filter(e => e.nom && [e.ownerId, ...(e.coExploitants || [])].some(id => vis.has(id)))
+    .map(e => ({ ...e, ouvriers: (e.ouvriers || []).filter(id => vis.has(id)), coExploitants: (e.coExploitants || []).filter(id => vis.has(id)) }))
+    .sort((a, b) => a.nom.localeCompare(b.nom));
   if (all.length === 0) {
     return { embeds: [{ description: '📭 Aucune exploitation enregistrée pour le moment.', color: 0x95A5A6 }], components: [], empty: true };
   }
@@ -703,7 +709,7 @@ function renderAnnuaire(admin) {
     const prodBloc = e.produits?.length
       ? e.produits.map(p => '• ' + p).join('\n')
       : '*Aucun produit ni prestation pour le moment.*';
-    const exploitants = [e.ownerId, ...(e.coExploitants || [])];
+    const exploitants = [e.ownerId, ...(e.coExploitants || [])].filter(id => vis.has(id));
     const explLabel   = exploitants.length > 1 ? 'Exploitants' : 'Exploitant';
 
     return {
