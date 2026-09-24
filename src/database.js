@@ -1,30 +1,10 @@
 const fs   = require('fs');
 const path = require('path');
 
-const { dataPath } = require('./paths');
+const { dataPath, REPO_DATA } = require('./paths');
 const DB_PATH = dataPath('members.json');
-const USE_MONGO = !!process.env.MONGODB_URI && process.env.NODE_ENV !== 'local';
 
-let _col = null;
-
-// ── Initialisation MongoDB si dispo ──────────────────────────────────────────
-async function initMongo() {
-  if (!process.env.MONGODB_URI) return false;
-  try {
-    const { MongoClient } = require('mongodb');
-    const client = new MongoClient(process.env.MONGODB_URI);
-    await client.connect();
-    _col = client.db('damocles').collection('members');
-    console.log('🍃 MongoDB connecté');
-    return true;
-  } catch (err) {
-    console.log('⚠️ MongoDB indisponible — utilisation JSON local :', err.message);
-    _col = null;
-    return false;
-  }
-}
-
-// ── JSON local ────────────────────────────────────────────────────────────────
+// ── Stockage JSON ─────────────────────────────────────────────────────────────
 function loadDB() {
   if (!fs.existsSync(path.dirname(DB_PATH))) {
     fs.mkdirSync(path.dirname(DB_PATH), { recursive: true });
@@ -41,6 +21,25 @@ function saveDB(db) {
   fs.writeFileSync(DB_PATH, JSON.stringify(db, null, 2), 'utf-8');
 }
 
+// ── Reprise unique des données de l'ancienne base MongoDB ────────────────────
+// data/members-depuis-mongo.json (dans le dépôt) = export complet de MongoDB.
+// Au premier démarrage, il est fusionné dans members.json (les fiches de
+// l'export priment), puis un marqueur empêche de le refaire.
+(function repriseMongo() {
+  const src    = path.join(REPO_DATA, 'members-depuis-mongo.json');
+  const marque = dataPath('.reprise-mongo-faite');
+  if (!fs.existsSync(src) || fs.existsSync(marque)) return;
+  try {
+    const exportMongo = JSON.parse(fs.readFileSync(src, 'utf-8'));
+    const fusion = { ...loadDB(), ...exportMongo };
+    saveDB(fusion);
+    fs.writeFileSync(marque, new Date().toISOString(), 'utf-8');
+    console.log('📥 Reprise MongoDB : ' + Object.keys(exportMongo).length + ' fiches reprises (' + Object.keys(fusion).length + ' au total)');
+  } catch (err) {
+    console.error('⚠️ Reprise MongoDB :', err.message);
+  }
+})();
+
 const STATUS = {
   ACTIVE:        'active',
   LEFT:          'left',
@@ -53,42 +52,6 @@ const STATUS = {
 async function upsertMember(user, extra = {}) {
   const now = new Date().toISOString();
 
-  if (_col) {
-    const existing = await _col.findOne({ id: user.id });
-    if (!existing) {
-      const doc = {
-        id: user.id, tag: user.tag, username: user.username,
-        avatar: user.avatar || null, status: STATUS.ACTIVE, present: true,
-        firstSeen: now, joinedAt: extra.joinedAt || now,
-        leftAt: null, kickedAt: null, bannedAt: null, banReason: null,
-        verifiedAt: null, verificationResult: null,
-        adminAccepted: null, adminAcceptedBy: null,
-        reglementAcceptedAt: null, firstMessageAt: null,
-        anniversaire: null, warnings: [], visits: 1,
-        history: [{ event: 'join', date: extra.joinedAt || now }],
-        ...extra,
-      };
-      await _col.insertOne(doc);
-      return doc;
-    } else {
-      const update = { tag: user.tag, username: user.username };
-      if (user.avatar) update.avatar = user.avatar;
-      if (!existing.present) {
-        update.present = true; update.status = STATUS.ACTIVE;
-        update.visits = (existing.visits || 1) + 1;
-        update.joinedAt = extra.joinedAt || now; update.leftAt = null;
-        await _col.updateOne({ id: user.id }, {
-          $set: update, $push: { history: { event: 'rejoin', date: now } }
-        });
-      } else {
-        if (extra) Object.assign(update, extra);
-        await _col.updateOne({ id: user.id }, { $set: update });
-      }
-      return await _col.findOne({ id: user.id });
-    }
-  }
-
-  // JSON local
   const db = loadDB();
   if (!db[user.id]) {
     db[user.id] = {
@@ -118,23 +81,16 @@ async function upsertMember(user, extra = {}) {
 
 // ── Helpers CRUD ──────────────────────────────────────────────────────────────
 async function updateMember(userId, set, push) {
-  if (_col) {
-    const ops = {};
-    if (set)  ops.$set  = set;
-    if (push) ops.$push = push;
-    await _col.updateOne({ id: userId }, ops);
-  } else {
-    const db = loadDB();
-    if (!db[userId]) return;
-    if (set)  Object.assign(db[userId], set);
-    if (push) {
-      for (const [key, val] of Object.entries(push)) {
-        if (!db[userId][key]) db[userId][key] = [];
-        db[userId][key].push(val);
-      }
+  const db = loadDB();
+  if (!db[userId]) return;
+  if (set)  Object.assign(db[userId], set);
+  if (push) {
+    for (const [key, val] of Object.entries(push)) {
+      if (!db[userId][key]) db[userId][key] = [];
+      db[userId][key].push(val);
     }
-    saveDB(db);
   }
+  saveDB(db);
 }
 
 async function addWarning(userId, reason, moderator) {
@@ -191,22 +147,18 @@ async function setAnniversaire(userId, dateStr) {
 
 // ── Getters ───────────────────────────────────────────────────────────────────
 async function getMember(userId) {
-  if (_col) return await _col.findOne({ id: userId });
   return loadDB()[userId] || null;
 }
 
 async function getAllMembers() {
-  if (_col) return await _col.find({}).toArray();
   return Object.values(loadDB());
 }
 
 async function getPresentMembers() {
-  if (_col) return await _col.find({ present: true }).toArray();
   return Object.values(loadDB()).filter(m => m.present);
 }
 
 async function getAbsentMembers() {
-  if (_col) return await _col.find({ present: false }).toArray();
   return Object.values(loadDB()).filter(m => !m.present);
 }
 
@@ -216,7 +168,6 @@ async function recordActivity(userId, type) {
 
 // ── Nettoyage ─────────────────────────────────────────────────────────────────
 async function removeMember(userId) {
-  if (_col) { await _col.deleteOne({ id: userId }); return; }
   const db = loadDB();
   if (db[userId]) { delete db[userId]; saveDB(db); }
 }
@@ -285,7 +236,7 @@ async function getStats() {
 }
 
 module.exports = {
-  initMongo, upsertMember, updateMember, addWarning, banMember, kickMember, memberLeft,
+  upsertMember, updateMember, addWarning, banMember, kickMember, memberLeft,
   reglementAccepted, setAnniversaire, getAnniversairesDuMois,
   getAnniversairesAujourdhui, getMember, getAllMembers, getPresentMembers,
   getAbsentMembers, recordActivity, getStats, STATUS,

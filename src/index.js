@@ -54,8 +54,6 @@ client.once(Events.ClientReady, async () => {
   console.log('✅ Bot connecté : ' + client.user.tag);
   console.log('📡 Serveurs : ' + client.guilds.cache.size);
   setClient(client);
-  await db.initMongo();
-
   const members = await db.getAllMembers();
   console.log('💾 DB : ' + members.length + ' membres');
 
@@ -279,6 +277,13 @@ client.on(Events.InteractionCreate, async interaction => {
     if (id.startsWith('contrat_deal_done_'))    { await contrat.handleContratDealDone(interaction);    return; }
     if (id.startsWith('contrat_supprimer_'))    { await contrat.handleContratSupprimer(interaction);   return; }
   } catch (err) { console.error('Erreur bouton farming :', err.message); }
+
+  // HUB d'information (boutons Règlement / Exploitant / Activité / Paramètre)
+  if (id.startsWith('hubinfo_')) {
+    try { await require('./hub-info').handleButton(interaction); }
+    catch (err) { console.error('Erreur bouton HUB info :', err.stack || err.message); }
+    return;
+  }
 
   // Purge de messages (confirmation)
   if (id.startsWith('purge_ok_') || id.startsWith('purge_no_')) {

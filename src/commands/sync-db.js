@@ -20,9 +20,9 @@ module.exports = {
   },
 };
 
-// Toutes les écritures passent par src/database.js (Mongo si dispo, sinon JSON).
-// On ne touche JAMAIS members.json directement : sinon la commande ignore Mongo
-// en prod, et surtout un load→save brut autour du `await fetch()` écrase toute
+// Toutes les écritures passent par src/database.js.
+// On ne touche JAMAIS members.json directement : un load→save brut autour du
+// `await fetch()` écraserait toute
 // écriture concurrente (ban, règlement, 1er message…) faite pendant le fetch.
 async function syncDatabase(interaction) {
   const guild = interaction.guild;
