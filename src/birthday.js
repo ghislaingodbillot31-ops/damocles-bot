@@ -135,16 +135,16 @@ async function updateBirthdayChannel(client) {
 }
 
 // ── Tâches cron ───────────────────────────────────────────────────────────────
+// La liste du salon anniversaires n'est redessinée que :
+//  - à chaque enregistrement /anniversaire (commands/anniversaire.js)
+//  - au redémarrage quotidien (dailytasks.js), pour retirer les joueurs partis
 function startBirthdayTasks(client, cron) {
-  // Tous les jours à minuit
+  // Tous les jours à minuit : souhaits du jour dans le général
   cron.schedule('0 0 * * *', () => {
     sendBirthdayMessages(client);
-    updateBirthdayChannel(client);
     console.log('🎂 Vérification anniversaires du jour');
   }, { timezone: 'Europe/Paris' });
 
-  // Au démarrage
-  updateBirthdayChannel(client);
   console.log('🎂 Système anniversaires démarré');
 }
 

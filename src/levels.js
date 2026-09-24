@@ -573,7 +573,7 @@ async function startLevels(client) {
   process.once('beforeExit', _shutdown);
 
   await refreshLeaderboard();
-  _refreshTimer = setInterval(() => refreshLeaderboard().catch(() => {}), 60 * 60_000); // toutes les heures
+  _refreshTimer = setInterval(() => refreshLeaderboard().catch(() => {}), 2 * 60 * 60_000); // toutes les 2 heures
 
   console.log('🎚️ Système de niveaux — prêt (' + Object.keys(_xp).length + ' membre(s) avec XP)');
 }
