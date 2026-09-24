@@ -65,13 +65,26 @@ function panelPayload() {
   });
 }
 
-async function reposterPanneau(channel) {
-  if (store.panelMsgId) {
-    const ancien = await channel.messages.fetch(store.panelMsgId).catch(() => null);
+// Le HUB reste en tête du salon, les propositions en attente en dessous.
+// Déjà en place : on le met juste à jour. Sinon (absent, ou une proposition plus
+// ancienne que lui) : on reposte le HUB puis les propositions en attente.
+async function installerHub(channel) {
+  const hub = store.panelMsgId && await channel.messages.fetch(store.panelMsgId).catch(() => null);
+  const enAttente = Object.entries(store.items).filter(([, s]) => s.status === 'attente');
+  const enTete = hub && enAttente.every(([, s]) => !s.msgId || BigInt(s.msgId) > BigInt(hub.id));
+  if (enTete) { await hub.edit(panelPayload()).catch(() => {}); return; }
+
+  if (hub) await hub.delete().catch(() => {});
+  for (const [, s] of enAttente) {
+    const ancien = s.msgId && await channel.messages.fetch(s.msgId).catch(() => null);
     if (ancien) await ancien.delete().catch(() => {});
   }
   const msg = await channel.send(panelPayload()).catch(err => { console.error('⚠️ Suggestions :', err.message); return null; });
   store.panelMsgId = msg?.id || null;
+  for (const [n, s] of enAttente) {
+    const m = await channel.send(suggPayload(n, s)).catch(() => null);
+    s.msgId = m?.id || null;
+  }
   save();
 }
 
@@ -159,7 +172,6 @@ async function handleSuggModal(interaction) {
   store.items[n] = s;
   save();
   derniere.set(interaction.user.id, Date.now());
-  await reposterPanneau(channel);
 
   await interaction.reply({ content: '✅ Ta proposition de mod n°' + n + ' est publiée. Tu recevras la décision du staff en MP.', flags: 64 });
   autoClean(interaction, 8000);
@@ -197,14 +209,12 @@ async function handleSuggDecisionModal(interaction) {
   s.commentaire = (interaction.fields.getTextInputValue('commentaire') || '').trim() || null;
   save();
 
-  if (interaction.isFromMessage()) await interaction.update(suggPayload(num, s)).catch(() => {});
-  else {
-    const channel = await salon(interaction.client);
-    const msg = channel && await channel.messages.fetch(s.msgId).catch(() => null);
-    if (msg) await msg.edit(suggPayload(num, s)).catch(() => {});
-    await interaction.reply({ content: '✅ Décision enregistrée.', flags: 64 });
-    autoClean(interaction);
-  }
+  // Une fois traitée, la proposition disparaît du salon (la décision part en MP et dans les logs)
+  await interaction.reply({ content: (valide ? '✅ Proposition n°' + num + ' validée.' : '❌ Proposition n°' + num + ' refusée.') + ' Le joueur est prévenu en MP.', flags: 64 });
+  autoClean(interaction);
+  const channel = await salon(interaction.client);
+  const msg = interaction.message || (channel && s.msgId && await channel.messages.fetch(s.msgId).catch(() => null));
+  if (msg) await msg.delete().catch(() => {});
 
   let mp = true;
   try {
@@ -234,7 +244,7 @@ async function startSuggestions(client) {
   try {
     const channel = await salon(client);
     if (!channel) { console.error('⚠️ Suggestions : salon ' + SUGG_CHANNEL + ' introuvable'); return; }
-    await reposterPanneau(channel);
+    await installerHub(channel);
     const enAttente = Object.values(store.items).filter(s => s.status === 'attente').length;
     console.log('🛠️ Propositions de mods · prêt (' + enAttente + ' proposition(s) en attente)');
   } catch (err) {
