@@ -204,6 +204,10 @@ client.on(Events.InteractionCreate, async interaction => {
     if (interaction.commandName === 'Ajouter bouton ticket') {
       await require('./commands/ticket').execute(interaction);
     }
+    try {
+      if (interaction.commandName === 'Purge : début') await require('./commands/purge').executeStart(interaction);
+      if (interaction.commandName === 'Purge : fin')   await require('./commands/purge').executeEnd(interaction);
+    } catch (err) { console.error('Erreur purge :', err.stack || err.message); }
     return;
   }
 
@@ -275,6 +279,13 @@ client.on(Events.InteractionCreate, async interaction => {
     if (id.startsWith('contrat_deal_done_'))    { await contrat.handleContratDealDone(interaction);    return; }
     if (id.startsWith('contrat_supprimer_'))    { await contrat.handleContratSupprimer(interaction);   return; }
   } catch (err) { console.error('Erreur bouton farming :', err.message); }
+
+  // Purge de messages (confirmation)
+  if (id.startsWith('purge_ok_') || id.startsWith('purge_no_')) {
+    try { await require('./commands/purge').handleButton(interaction); }
+    catch (err) { console.error('Erreur bouton purge :', err.stack || err.message); }
+    return;
+  }
 
   // Boutons salons vocaux temporaires
   try {
