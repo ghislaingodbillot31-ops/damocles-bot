@@ -40,6 +40,9 @@ const DEFAULT_CONFIG = {
   // Inactivité
   INACTIVE_DAYS: 15,
   EXPEL_DAYS: 40,
+
+  // Redémarrage quotidien : heure de Paris (0 à 23), vide = désactivé
+  RESTART_HOUR: 5,
 };
 
 function ensureDataDir() {

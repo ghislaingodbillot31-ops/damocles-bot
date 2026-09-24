@@ -61,6 +61,7 @@ client.once(Events.ClientReady, async () => {
   startBirthdayTasks(client, cron);
   startFS25Monitor(client);
   startDailyTasks(client, cron);
+  require('./restart').startDailyRestart(client, cron);
   tempvoice.startTempVoice(client);
   levels.startLevels(client);
   boutique.startBoutique(client);

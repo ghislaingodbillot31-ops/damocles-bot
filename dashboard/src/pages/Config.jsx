@@ -31,6 +31,9 @@ const FIELDS = [
     { key: 'INACTIVE_DAYS', label: 'Jours avant inactif', type: 'number' },
     { key: 'EXPEL_DAYS',    label: 'Jours avant expulsion', type: 'number' },
   ]},
+  { section: '🔄 Redémarrage quotidien', fields: [
+    { key: 'RESTART_HOUR', label: 'Heure du redémarrage (0 à 23, heure de Paris · vide = désactivé)', type: 'number' },
+  ]},
 ];
 
 export default function Config() {
@@ -107,7 +110,7 @@ export default function Config() {
                     ) : (
                       <input
                         type={field.type || 'text'}
-                        value={cfg[field.key] || ''}
+                        value={cfg[field.key] ?? ''}
                         onChange={e => setCfg(c => ({ ...c, [field.key]: e.target.value }))}
                         className="w-full bg-gray-800 border border-gray-700 rounded-lg px-3 py-2 text-white text-sm focus:outline-none focus:border-indigo-500"
                         placeholder={field.key} />

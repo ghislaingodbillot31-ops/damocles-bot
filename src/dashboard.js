@@ -306,6 +306,14 @@ function createDashboard() {
     res.json(roles);
   });
 
+  // ── API Redémarrage manuel ────────────────────────────────────────────────
+  app.post('/api/restart', requireAuth, (req, res) => {
+    res.json({ success: true });
+    // Laisse partir la réponse avant d'arrêter le bot
+    setTimeout(() => require('./restart').redemarrer('manuel, par ' + req.session.user.username)
+      .catch(err => console.error('⚠️ Redémarrage :', err.message)), 500);
+  });
+
   // ── API Messages récurrents ───────────────────────────────────────────────
   const sched = require('./scheduled-messages');
   const schedInput = b => ({

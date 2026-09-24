@@ -17,6 +17,20 @@ export default function Dashboard() {
   const [stats, setStats] = useState(null);
   const [analysing, setAnalysing] = useState(false);
   const [analyseResult, setAnalyseResult] = useState(null);
+  const [confirmRestart, setConfirmRestart] = useState(false);
+  const [restarting, setRestarting] = useState(false);
+
+  async function restart() {
+    setConfirmRestart(false);
+    setRestarting(true);
+    await fetch('/api/restart', { method: 'POST' }).catch(() => {});
+    // Le dashboard tombe pendant le redémarrage : on recharge quand il revient
+    setTimeout(() => {
+      const retry = setInterval(async () => {
+        try { const r = await fetch('/api/me'); if (r.ok) { clearInterval(retry); window.location.reload(); } } catch {}
+      }, 5000);
+    }, 20000);
+  }
 
   function load() {
     fetch('/api/stats').then(r => r.json()).then(setStats).catch(() => {});
@@ -60,6 +74,18 @@ export default function Dashboard() {
             className="bg-gray-800 hover:bg-gray-700 text-gray-300 px-3 py-2 rounded-lg text-sm transition-colors">
             🔄 Rafraîchir
           </button>
+          {confirmRestart ? (
+            <span className="flex items-center gap-2 text-sm">
+              <span className="text-orange-300">Redémarrer le bot ?</span>
+              <button onClick={restart} className="bg-orange-600 hover:bg-orange-500 text-white px-3 py-2 rounded-lg">Oui</button>
+              <button onClick={() => setConfirmRestart(false)} className="bg-gray-800 hover:bg-gray-700 text-gray-300 px-3 py-2 rounded-lg">Non</button>
+            </span>
+          ) : (
+            <button onClick={() => setConfirmRestart(true)} disabled={restarting}
+              className="bg-gray-800 hover:bg-gray-700 disabled:opacity-50 text-gray-300 px-3 py-2 rounded-lg text-sm transition-colors">
+              {restarting ? '⏳ Redémarrage...' : '⏻ Redémarrer le bot'}
+            </button>
+          )}
           <button onClick={runAnalyse} disabled={analysing}
             className="bg-indigo-600 hover:bg-indigo-500 disabled:opacity-50 text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors">
             {analysing ? '⏳ Analyse...' : '🔍 Lancer /analyse'}
