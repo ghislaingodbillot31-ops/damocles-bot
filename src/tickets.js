@@ -1,5 +1,12 @@
 const { ActionRowBuilder, ButtonBuilder, ButtonStyle, PermissionFlagsBits, ChannelType } = require('discord.js');
 const { log } = require('./logger');
+const db = require('./database');
+
+// Trace l'événement dans la fiche du membre : c'est ce que lit la page Tickets du dashboard.
+function historique(userId, event, extra) {
+  return db.updateMember(userId, null, { history: { event, date: new Date().toISOString(), ...extra } })
+    .catch(err => console.error('⚠️ historique ticket :', err.message));
+}
 const { panneau } = require('./embed-format');
 require('dotenv').config();
 
@@ -90,6 +97,7 @@ async function createTicket(interaction) {
 
   await interaction.reply({ content: '✅ Ton ticket a été créé : <#' + ticketChannel.id + '>', ephemeral: true });
   await log(interaction.client, 'ticket_created', { userId: member.id, channelId: ticketChannel.id, channelName });
+  await historique(member.id, 'ticket_created', { channelId: ticketChannel.id, channelName });
 }
 
 async function takeTicket(interaction, memberId) {
@@ -115,12 +123,14 @@ async function takeTicket(interaction, memberId) {
   });
 
   await log(interaction.client, 'ticket_taken', { userId: memberId, modId: interaction.user.id, channelId: interaction.channel.id });
+  await historique(memberId, 'ticket_taken', { channelId: interaction.channel.id, modId: interaction.user.id });
   console.log('✋ Ticket pris en charge par ' + interaction.user.tag);
 }
 
 async function closeTicket(interaction, memberId) {
   await interaction.reply({ content: '🔒 Ticket clôturé par <@' + interaction.user.id + '>. Ce salon sera supprimé dans 5 secondes.' });
   await log(interaction.client, 'ticket_closed', { userId: memberId, modId: interaction.user.id, channelId: interaction.channel.id, channelName: interaction.channel.name });
+  await historique(memberId, 'ticket_closed', { channelId: interaction.channel.id, channelName: interaction.channel.name, modId: interaction.user.id });
   console.log('🔒 Ticket clôturé : ' + interaction.channel.name);
   setTimeout(async () => { await interaction.channel.delete().catch(() => {}); }, 5000);
 }

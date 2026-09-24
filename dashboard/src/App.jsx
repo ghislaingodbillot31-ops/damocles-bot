@@ -7,6 +7,8 @@ import Logs from './pages/Logs';
 import Tickets from './pages/Tickets';
 import Messages from './pages/Messages';
 import Login from './pages/Login';
+import Hubs from './pages/Hubs';
+import Exploitations from './pages/Exploitations';
 
 export default function App() {
   const [user, setUser] = useState(null);
@@ -39,6 +41,8 @@ export default function App() {
           <Route path="/logs" element={<Logs />} />
           <Route path="/tickets"  element={<Tickets />} />
           <Route path="/messages"     element={<Messages />} />
+          <Route path="/hubs"         element={<Hubs />} />
+          <Route path="/exploitations" element={<Exploitations />} />
         </Routes>
       </main>
     </div>
@@ -49,13 +53,13 @@ function Sidebar({ user }) {
   const loc = useLocation();
   const links = [
     { to: '/dashboard', icon: '📊', label: 'Tableau de bord' },
+    { to: '/hubs',      icon: '📌', label: 'HUB d\'information' },
+    { to: '/exploitations', icon: '🌾', label: 'Exploitations' },
     { to: '/members',   icon: '👥', label: 'Membres' },
     { to: '/config',    icon: '⚙️',  label: 'Configuration' },
     { to: '/logs',      icon: '📋', label: 'Logs' },
     { to: '/tickets',   icon: '🎫', label: 'Tickets' },
-    { to: '/messages',     icon: '📢', label: 'Messages récurrents' },
-    { to: '/feeds',        icon: '📡', label: 'Annonces auto' },
-  ];
+    { to: '/messages',     icon: '📢', label: 'Messages récurrents' },  ];
 
   return (
     <aside className="w-64 bg-gray-900 border-r border-gray-800 flex flex-col">

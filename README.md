@@ -1,101 +1,62 @@
-# 🛡️ DAMOCLES — Gestion des inactifs
+# 🛡️ DAMOCLES · Bot Discord EUROAGRI
 
-Bot Discord qui détecte automatiquement les membres n'ayant jamais envoyé de message et leur attribue un rôle **Inactif** chaque semaine.
+Bot Discord du serveur EUROAGRI (Farming Simulator 25) : accueil et vérification des arrivants, modération, HUB des exploitants, niveaux, boutique, tickets, et un dashboard web d'administration.
 
----
+## Fonctionnalités
 
-## 📦 Installation
+| Domaine | Ce que fait le bot | Fichiers |
+|---|---|---|
+| Arrivées | Vérification automatique, bouton règlement, MP et ping de bienvenue | `verification.js`, `welcome.js` |
+| Sécurité | Anti-raid, anti-spam, liens suspects, détection des doubles comptes | `antiraid.js`, `antidoublecompte.js` |
+| Modération | `/expulsion`, `/banid`, `/sanction`, purge d'une plage de messages (clic droit « Purge : début / fin ») | `src/commands/` |
+| Inactivité | Analyse quotidienne à 04h00, `/analyse` | `activity.js`, `dailytasks.js` |
+| HUB | HUB d'information (Règlement, Exploitant, Activité, Paramètre) au-dessus du HUB des exploitants (exploitation, contrats, besoins, annuaire, boutique) | `hub-info.js`, `hub.js`, `exploitation.js`, `commands/contrat.js`, `boutique.js` |
+| Communauté | Niveaux et classement, anniversaires, salons vocaux temporaires, rôles à boutons, messages récurrents, tickets | `levels.js`, `birthday.js`, `tempvoice.js`, `roles.js`, `scheduled-messages.js`, `tickets.js` |
+| Suivi | Salon de logs, statut du bot, surveillance du serveur FS25 | `logger.js`, `statusbot.js`, `fs25-monitor.js` |
 
-### 1. Prérequis
-- [Node.js 18+](https://nodejs.org/) installé sur ta machine
-- Un compte Discord avec accès au [Developer Portal](https://discord.com/developers/applications)
+## Dashboard
 
----
+Servi par le bot lui-même (`src/dashboard.js`), sur le même port : `https://<service>.onrender.com`. Connexion avec Discord, réservée aux ID de `OWNER_IDS`.
 
-### 2. Créer le bot sur Discord
+Pages : tableau de bord, HUB d'information, exploitations, membres, configuration, logs, tickets, messages récurrents.
 
-1. Va sur https://discord.com/developers/applications
-2. Clique **New Application** → donne-lui un nom
-3. Onglet **Bot** → clique **Add Bot**
-4. Copie le **Token** (garde-le secret !)
-5. Active ces **Privileged Gateway Intents** :
-   - ✅ Server Members Intent
-   - ✅ Message Content Intent
-6. Onglet **OAuth2 > URL Generator** :
-   - Scopes : `bot`, `applications.commands`
-   - Permissions : `Manage Roles`, `Read Messages`, `View Channels`, `Read Message History`
-7. Copie l'URL générée et ouvre-la pour inviter le bot sur ton serveur
-
----
-
-### 3. Préparer le serveur Discord
-
-1. Crée un rôle **Inactif** dans ton serveur
-2. Crée un salon **#logs-bot** (ou utilise un existant)
-3. Active le **Mode Développeur** (Paramètres > Apparence) pour copier les IDs :
-   - Clic droit sur le rôle Inactif → **Copier l'ID**
-   - Clic droit sur le salon logs → **Copier l'ID**
-   - Clic droit sur les rôles à exclure (admin, modo...) → **Copier l'ID**
-
----
-
-### 4. Configurer le bot
+Après une modification dans `dashboard/src/`, recompiler puis commiter `dashboard/dist/` :
 
 ```bash
-# Copier le fichier de config
-cp .env.example .env
+cd dashboard && npm install && npm run build
 ```
 
-Édite `.env` et remplis les valeurs :
+Pour que la connexion marche, ajouter `<DASHBOARD_URL>/auth/callback` dans Discord Developer Portal > OAuth2 > Redirects.
 
-```env
-DISCORD_TOKEN=ton_token_ici
-INACTIVE_ROLE_ID=123456789
-LOG_CHANNEL_ID=123456789
-EXCLUDED_ROLE_IDS=111111,222222
-```
+## Données
 
----
+Tout est stocké en JSON dans le dossier donné par `DATA_DIR` (sur Render : le disque persistant), sinon dans `data/`. Tous les modules passent par `dataPath()` (`src/paths.js`). Au premier démarrage sur un disque vide, les fichiers de `data/` du dépôt y sont copiés (jamais écrasés ensuite).
 
-### 5. Lancer le bot
+Fichiers principaux : `members.json` (joueurs), `exploitations.json`, `hub-info.json`, `xp.json`, `config.json`, `scheduled-messages.json`.
+
+Les joueurs étaient auparavant dans MongoDB. `data/members-depuis-mongo.json` est l'export de cette base : il est fusionné une seule fois dans `members.json` au démarrage (marqueur `.reprise-mongo-faite`).
+
+## Installation
 
 ```bash
-# Installer les dépendances
 npm install
-
-# Démarrer
+npm run deploy   # enregistre les commandes slash et clic droit auprès de Discord
 npm start
 ```
 
----
+Variables d'environnement (`.env` en local, onglet Environment sur Render) :
 
-## 🔄 Fonctionnement
+| Variable | Rôle |
+|---|---|
+| `DISCORD_TOKEN`, `CLIENT_ID`, `GUILD_ID` | Bot et serveur |
+| `DISCORD_CLIENT_SECRET`, `DASHBOARD_URL`, `DASHBOARD_SECRET` | Connexion au dashboard |
+| `DATA_DIR` | Dossier des données (disque Render) |
+| `*_ROLE_ID`, `*_CHANNEL_ID`, `TICKET_CATEGORY_ID`, `EXCLUDED_ROLE_IDS` | Rôles et salons (aussi réglables dans le dashboard, page Configuration) |
 
-| Événement | Action |
-|-----------|--------|
-| Démarrage du bot | Scan immédiat de tous les membres |
-| Chaque lundi à 08h00 | Scan automatique hebdomadaire |
-| Membre envoie un message | Marqué actif en temps réel |
-| Fin de scan | Rapport envoyé dans le salon logs |
+Intents privilégiés à activer dans le Developer Portal : Server Members et Message Content.
 
-**Logique du scan :**
-- Parcourt les 100 derniers messages de chaque salon pour détecter les membres actifs
-- Attribue le rôle **Inactif** à ceux sans message
-- Retire le rôle **Inactif** si un membre est devenu actif
-- Ignore les bots et les rôles exclus
+⚠️ Ne pas lancer `npm start` en local pendant que le bot tourne sur Render : deux bots avec le même token répondraient chacun aux clics.
 
----
+## Scripts ponctuels
 
-## ☁️ Hébergement gratuit (Render)
-
-1. Va sur https://render.com et connecte ton compte GitHub
-2. Push ce projet sur un repo GitHub privé
-3. Dans Render : **New > Web Service > Build and deploy from a Git repository**
-4. Ajoute les variables d'environnement dans l'onglet **Environment**
-5. Le bot tourne 24h/24 ; `startKeepAlive()` (`src/keepalive.js`) ping le service toutes les 10 min pour éviter la mise en veille du plan gratuit
-
----
-
-## ⚠️ Limites connues
-
-Discord ne donne pas accès à l'historique complet des messages. Le scan historique est limité aux **100 derniers messages par salon**. Pour une détection parfaite, laisse le bot tourner en continu — il mémorise tous les messages en temps réel.
+`setup.js`, `get-ids.js`, `give-reglement.js`, `reset-inactif.js` : outils à lancer à la main (`node <script>`), hors du bot.

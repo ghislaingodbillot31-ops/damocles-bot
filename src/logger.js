@@ -102,11 +102,6 @@ async function log(client, type, data) {
       color = 0x95A5A6;
       break;
 
-    case 'banned_word':
-      text  = '`▶` 🚫 **Mot interdit** · <@' + data.userId + '> dans #' + data.channelName + ' · ' + now;
-      color = 0xE74C3C;
-      break;
-
     case 'messages_purged':
       text  = '`▶` 🗑️ **Purge** · ' + data.count + ' message(s) dans #' + data.channelName + ' par <@' + data.modId + '> · ' + now;
       color = 0xE67E22;

@@ -124,17 +124,20 @@ function startAll(client) {
 }
 
 // ── Envoi ─────────────────────────────────────────────────────────────────────
-async function sendMessage(id, client) {
+// force = envoi manuel depuis le dashboard : part même si le message est en pause,
+// et remonte les erreurs au lieu de les avaler.
+async function sendMessage(id, client, force = false) {
   const messages = load();
   const msg = messages.find(m => m.id === id);
-  if (!msg || !msg.enabled) return;
+  if (!msg || (!msg.enabled && !force)) return;
 
   const guild = client.guilds.cache.first();
-  if (!guild) return;
+  if (!guild) { if (force) throw new Error('Bot non connecté au serveur'); return; }
 
   const channel = guild.channels.cache.get(msg.channelId);
   if (!channel) {
     console.error(`❌ Message récurrent "${msg.name}" — salon introuvable : ${msg.channelId}`);
+    if (force) throw new Error('Salon introuvable');
     return;
   }
 
@@ -152,20 +155,21 @@ async function sendMessage(id, client) {
     const idx = messages.findIndex(m => m.id === id);
     if (idx !== -1) {
       messages[idx].lastSent = new Date().toISOString();
-      messages[idx].nextSend = new Date(Date.now() + msg.intervalMinutes * 60000).toISOString();
+      if (msg.enabled) messages[idx].nextSend = new Date(Date.now() + msg.intervalMinutes * 60000).toISOString();
       save(messages);
     }
 
     console.log(`📢 Message récurrent envoyé : "${msg.name}" → #${channel.name}`);
   } catch (err) {
     console.error(`❌ Erreur envoi message récurrent "${msg.name}" :`, err.message);
+    if (force) throw err;
   }
 }
 
 async function sendNow(id, client) {
   const msg = load().find(m => m.id === id);
   if (!msg) throw new Error('Message introuvable');
-  await sendMessage(id, client);
+  await sendMessage(id, client, true);
 }
 
 module.exports = { getAll, create, update, remove, startTimer, startAll, sendNow };

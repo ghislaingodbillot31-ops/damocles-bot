@@ -72,6 +72,9 @@ async function postHub(channel) {
     }
   } catch {}
 
+  // HUB d'information (réglé depuis le dashboard), toujours au-dessus
+  await channel.send(require('./hub-info').buildMessage());
+
   await channel.send(panneau({
     embeds: [{
       title: '🌾  EUROAGRI  ·  HUB DES EXPLOITANTS',

@@ -155,19 +155,18 @@ function createDashboard() {
   });
 
   // ── API Tickets ──────────────────────────────────────────────────────────
-  app.get('/api/tickets', requireAuth, (req, res) => {
-    const db2 = require('./database');
-    const tickets = db2.getAllMembers()
+  app.get('/api/tickets', requireAuth, async (req, res) => {
+    const tickets = (await db.getAllMembers())
       .flatMap(m => (m.history || [])
         .filter(h => h.event === 'ticket_created' || h.event === 'ticket_taken' || h.event === 'ticket_closed')
         .map(h => ({ ...h, userId: m.id, username: m.username }))
       )
-      .sort((a, b) => new Date(b.date) - new Date(a.date));
+      .sort((a, b) => new Date(a.date) - new Date(b.date));
 
-    // Grouper par ticket (channelName)
+    // Grouper par ticket (salon), du plus ancien au plus récent événement
     const ticketMap = new Map();
     for (const e of tickets) {
-      const key = e.channelName || e.channelId || e.userId;
+      const key = e.channelId || e.channelName || e.userId;
       if (!ticketMap.has(key)) {
         ticketMap.set(key, {
           id: key,
@@ -185,9 +184,10 @@ function createDashboard() {
       if (e.event === 'ticket_created') { t.status = 'open';   t.createdAt = e.date; }
       if (e.event === 'ticket_taken')   { t.status = 'taken';  t.takenBy = e.modId; }
       if (e.event === 'ticket_closed')  { t.status = 'closed'; t.closedBy = e.modId; }
+      if (e.channelName) t.channelName = e.channelName;
     }
 
-    res.json([...ticketMap.values()]);
+    res.json([...ticketMap.values()].reverse());
   });
 
   app.post('/api/tickets/publish', requireAuth, async (req, res) => {
@@ -304,6 +304,111 @@ function createDashboard() {
       .filter(r => r.id !== guild.id)
       .map(r => ({ id: r.id, name: r.name, color: r.color }));
     res.json(roles);
+  });
+
+  // ── API Messages récurrents ───────────────────────────────────────────────
+  const sched = require('./scheduled-messages');
+  const schedInput = b => ({
+    name: typeof b.name === 'string' ? b.name.slice(0, 100) : undefined,
+    channelId: typeof b.channelId === 'string' ? b.channelId : undefined,
+    message: typeof b.message === 'string' ? b.message.slice(0, 4000) : undefined,
+    intervalMinutes: Number.isFinite(+b.intervalMinutes) && +b.intervalMinutes >= 1 ? +b.intervalMinutes : undefined,
+    color: typeof b.color === 'string' && /^[0-9a-fA-F]{6}$/.test(b.color.replace('#', '')) ? b.color.replace('#', '') : undefined,
+    enabled: typeof b.enabled === 'boolean' ? b.enabled : undefined,
+  });
+
+  app.get('/api/scheduled-messages', requireAuth, (req, res) => {
+    res.json(sched.getAll());
+  });
+
+  app.post('/api/scheduled-messages', requireAuth, (req, res) => {
+    const data = schedInput(req.body || {});
+    if (!data.channelId || !data.message?.trim()) return res.status(400).json({ error: 'Salon et message obligatoires' });
+    const msg = sched.create(data);
+    if (msg.enabled && _client) sched.startTimer(msg, _client);
+    res.json({ success: true, message: msg });
+  });
+
+  app.put('/api/scheduled-messages/:id', requireAuth, (req, res) => {
+    const msg = sched.update(req.params.id, schedInput(req.body || {}), _client);
+    if (!msg) return res.status(404).json({ error: 'Message introuvable' });
+    res.json({ success: true, message: msg });
+  });
+
+  app.delete('/api/scheduled-messages/:id', requireAuth, (req, res) => {
+    sched.remove(req.params.id);
+    res.json({ success: true });
+  });
+
+  app.post('/api/scheduled-messages/:id/send-now', requireAuth, async (req, res) => {
+    if (!_client) return res.status(500).json({ error: 'Bot non connecté' });
+    try { await sched.sendNow(req.params.id, _client); res.json({ success: true }); }
+    catch (err) { res.status(500).json({ error: err.message }); }
+  });
+
+  // ── API HUB d'information ─────────────────────────────────────────────────
+  const hubInfo = require('./hub-info');
+  const exp     = require('./exploitation');
+  const { HUB_CHANNEL, ACTIVITES } = require('./hub');
+
+  app.get('/api/hub-info', requireAuth, (req, res) => {
+    res.json(hubInfo.get());
+  });
+
+  app.post('/api/hub-info', requireAuth, (req, res) => {
+    res.json(hubInfo.set(req.body || {}));
+  });
+
+  // Republie les deux HUB (information + exploitants) dans le salon du HUB
+  app.post('/api/hub-info/publish', requireAuth, async (req, res) => {
+    const channel = _client?.channels.cache.get(HUB_CHANNEL);
+    if (!channel) return res.status(500).json({ error: 'Bot non connecté ou salon du HUB introuvable' });
+    try {
+      await require('./hub').postHub(channel);
+      res.json({ success: true });
+    } catch (err) {
+      res.status(500).json({ error: err.message });
+    }
+  });
+
+  // ── API Exploitations ─────────────────────────────────────────────────────
+  const nomDe = id => _client?.users.cache.get(id)?.username || null;
+
+  app.get('/api/exploitations', requireAuth, (req, res) => {
+    const list = exp.getAll().map(e => ({
+      ...e,
+      ownerName: nomDe(e.ownerId) || e.ownerTag,
+      coNames:   (e.coExploitants || []).map((id, i) => nomDe(id) || e.coExploitantTags?.[i] || id),
+      ouvNames:  (e.ouvriers || []).map((id, i) => nomDe(id) || e.ouvrierTags?.[i] || id),
+    }));
+    res.json({ exploitations: list, activites: ACTIVITES.map(a => a.value) });
+  });
+
+  app.patch('/api/exploitations/:id', requireAuth, (req, res) => {
+    const b = req.body || {};
+    const acts = ACTIVITES.map(a => a.value);
+    const fields = {};
+    if (typeof b.nom === 'string' && b.nom.trim()) fields.nom = b.nom.trim().slice(0, 60);
+    for (const k of ['activitePrincipale', 'activiteSecondaire', 'activiteSupplementaire']) {
+      if (k in b) fields[k] = acts.includes(b[k]) ? b[k] : null;
+    }
+    if (typeof b.recrute === 'boolean') fields.recrute = b.recrute;
+    if (Number.isInteger(b.couleur) && b.couleur >= 0 && b.couleur <= 0xFFFFFF) fields.couleur = b.couleur;
+    if (Array.isArray(b.produits)) fields.produits = b.produits.filter(p => typeof p === 'string' && p.trim()).map(p => p.trim().slice(0, 100)).slice(0, 25);
+    const e = exp.updateExploitation(req.params.id, fields);
+    if (!e) return res.status(404).json({ error: 'Exploitation introuvable' });
+    res.json(e);
+  });
+
+  app.delete('/api/exploitations/:id', requireAuth, async (req, res) => {
+    const e = exp.deleteExploitation(req.params.id);
+    if (!e) return res.status(404).json({ error: 'Exploitation introuvable' });
+    const guild = _client?.guilds.cache.first();
+    if (guild) {
+      await require('./agrilog').agrilog(guild, '🗑️ Exploitation supprimée : **' + e.nom + '** (créateur <@' + e.ownerId + '>) · depuis le dashboard par ' + req.session.user.username)
+        .catch(() => {});
+    }
+    res.json({ success: true });
   });
 
   // ── API Auth user ─────────────────────────────────────────────────────────
