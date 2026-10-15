@@ -152,7 +152,7 @@ async function issueSimple(member) {
 async function onMessageSimple(message) {
   if (message.channel.id !== channelId()) return false;
   const { member } = message;
-  const membreId = process.env.MEMBRE_ROLE_ID;
+  const membreId = process.env.MEMBRE_ROLE_ID || process.env.ACTIVE_ROLE_ID; // rôle « membre » : Membres (DOMINIUS) ou Membre vérifié (VANGUARD)
   if (member.roles.cache.has(membreId) || member.permissions.has('ManageMessages')) return false;
 
   message.delete().catch(() => {});
