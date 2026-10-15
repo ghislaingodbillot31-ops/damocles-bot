@@ -14,7 +14,8 @@ const db = require('./database');
 const { log } = require('./logger');
 const { dataPath } = require('./paths');
 
-const channelId = () => process.env.VERIFICATION_CHANNEL_ID;
+// Salon où se tape le code : un salon nommé « code-de-validation » s'il existe (VANGUARD), sinon VERIFICATION_CHANNEL_ID (DOMINIUS)
+const codeChannel = guild => guild.channels.cache.find(c => c.name.includes('code-de-validation')) || guild.channels.cache.get(process.env.VERIFICATION_CHANNEL_ID);
 const FLOW = () => process.env.VERIF_MODE === 'code-compte';
 const MAX_ESSAIS = 5;
 // Rôles qui prouvent que le code a déjà été validé (ou que le membre est plus loin dans le parcours)
@@ -40,7 +41,7 @@ async function salonPrive(member) {
   const g = member.guild;
   const ancien = store[member.id]?.channelId && (g.channels.cache.get(store[member.id].channelId) || await g.channels.fetch(store[member.id].channelId).catch(() => null));
   if (ancien) return ancien;
-  const parent = g.channels.cache.get(process.env.CODE_CATEGORY_ID)?.id || g.channels.cache.get(channelId())?.parentId || null;
+  const parent = g.channels.cache.get(process.env.CODE_CATEGORY_ID)?.id || codeChannel(g)?.parentId || null;
   const voir = [P.ViewChannel, P.ReadMessageHistory, P.SendMessages];
   const overwrites = [
     { id: g.id, deny: [P.ViewChannel] },
@@ -133,7 +134,7 @@ async function cleanup(member) {
 const codes = new Map(); // userId → { code, msg }  (perdu au redémarrage : un nouveau code est alors redonné)
 
 async function issueSimple(member) {
-  const channel = member.guild.channels.cache.get(channelId());
+  const channel = codeChannel(member.guild);
   if (!channel) return;
   const prev = codes.get(member.id);
   if (prev) prev.msg?.delete().catch(() => {});
@@ -150,7 +151,7 @@ async function issueSimple(member) {
 }
 
 async function onMessageSimple(message) {
-  if (message.channel.id !== channelId()) return false;
+  if (message.channel.id !== codeChannel(message.guild)?.id) return false;
   const { member } = message;
   const membreId = process.env.MEMBRE_ROLE_ID || process.env.ACTIVE_ROLE_ID; // rôle « membre » : Membres (DOMINIUS) ou Membre vérifié (VANGUARD)
   if (member.roles.cache.has(membreId) || member.permissions.has('ManageMessages')) return false;
