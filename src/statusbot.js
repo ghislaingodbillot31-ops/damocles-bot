@@ -25,7 +25,7 @@ const JOURNAL_LIGNES = 9;
 
 const ESC = '\u001b[';
 const c = (code, s) => ESC + code + 'm' + s + ESC + '0m';
-const gris = s => c('1;30', s), cyan = s => c('1;36', s), vert = s => c('1;32', s), rouge = s => c('1;31', s);
+const gris = s => c('0;37', s), cyan = s => c('1;36', s), vert = s => c('1;32', s), rouge = s => c('1;31', s);
 const jaune = s => c('1;33', s), blanc = s => c('1;37', s), violet = s => c('1;35', s), bleu = s => c('1;34', s);
 
 function loadJson(file, def) { try { return JSON.parse(fs.readFileSync(file, 'utf8')); } catch { return def; } }
@@ -177,4 +177,4 @@ async function updateStatusMessage(client, animated = false) {
   _timer = setInterval(() => refresh().catch(() => {}), LIVE_MS);
 }
 
-module.exports = { updateStatusMessage, pushEvent };
+module.exports = { updateStatusMessage, pushEvent, W, hhmmss, ansi: { gris, cyan, vert, rouge, jaune, blanc, violet, bleu } };
