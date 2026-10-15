@@ -147,6 +147,7 @@ client.on(Events.GuildMemberAdd, async member => {
 client.on(Events.GuildMemberRemove, async member => {
   if (member.user.bot) return;
   await db.memberLeft(member.user);
+  await require('./codeverif').cleanup(member).catch(() => {}); // salon de code privé éventuel
   await sendLeave(member);
   await log(client, 'member_left', { userId: member.id });
   console.log('🚪 Départ : ' + member.user.tag);

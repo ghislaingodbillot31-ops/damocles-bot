@@ -83,9 +83,11 @@ async function verifyMember(member) {
   if (failed.length === 0) {
     if (CODE_COMPTE) {
       lignes.push('✅ **Compte vérifié**');
-      lignes.push('Bienvenue <@' + member.id + '> ! Tape le **code** affiché ci-dessous pour activer ton compte.');
+      const salonCode = await require('./codeverif').issue(member);
+      lignes.push(salonCode
+        ? 'Bienvenue <@' + member.id + '> ! Ton salon privé <#' + salonCode.id + '> est ouvert : ton **code** t\'a été envoyé en MP.'
+        : '⚠️ <@' + member.id + '> impossible d\'ouvrir ton salon de code, contacte le staff.');
       await render(0x2ECC71);
-      await require('./codeverif').issue(member);
     } else {
       lignes.push('✅ **Vérification complète · Accès accordé**');
       lignes.push('Bienvenue <@' + member.id + '> ! Rends-toi dans le salon **#règlement** pour accéder au serveur.');

@@ -2,13 +2,14 @@
 // Un nouvel arrivant n'a aucun rôle : il ne doit voir que le salon de vérification (+ le salon-piège anti-spam).
 //   node serveurs/euroagri/permissions-code-compte.js          → aperçu, ne modifie rien
 //   node serveurs/euroagri/permissions-code-compte.js --go     → applique (sauvegarde avant dans permissions-avant.json)
+//   node serveurs/euroagri/permissions-code-compte.js --verifier → liste les salons visibles à chaque étape du parcours
 // Annulation : node serveurs/euroagri/permissions-code-compte.js --restore
 const fs = require('fs');
 const path = require('path');
 require('dotenv').config();
 const { Client, GatewayIntentBits, ChannelType: T } = require('discord.js');
 
-const GO = process.argv.includes('--go'), RESTORE = process.argv.includes('--restore');
+const GO = process.argv.includes('--go'), RESTORE = process.argv.includes('--restore'), VERIFIER = process.argv.includes('--verifier');
 const SAUVEGARDE = path.join(__dirname, 'permissions-avant.json');
 const E = process.env;
 
@@ -19,6 +20,18 @@ client.once('clientReady', async () => {
   const ch = id => D.channels.cache.get(id);
   const parNom = (type, mot) => D.channels.cache.find(c => c.type === type && c.name.includes(mot));
   const ow = c => c.permissionOverwrites.cache.map(o => ({ id: o.id, type: o.type, allow: o.allow.bitfield.toString(), deny: o.deny.bitfield.toString() }));
+
+  if (VERIFIER) {
+    await D.roles.fetch();
+    const etapes = [['Nouvel arrivant (aucun rôle)', D.roles.everyone], ['Code validé (⏳ En attente)', D.roles.cache.get(E.ATTENTE_ROLE_ID)],
+      ['Règlement accepté seul (📜)', D.roles.cache.get(E.REGLEMENT_ROLE_ID)], ['Membre validé (✅)', D.roles.cache.get(E.ACTIVE_ROLE_ID)]];
+    for (const [nom, role] of etapes) {
+      const vus = D.channels.cache.filter(c => c.type !== T.GuildCategory && c.permissionsFor(role)?.has('ViewChannel'));
+      console.log('\n' + nom + ' → ' + vus.size + ' salon(s)');
+      if (vus.size <= 12) vus.forEach(c => console.log('   • ' + c.name + (c.permissionsFor(role).has('SendMessages') ? ' (écriture)' : ' (lecture)')));
+    }
+    return process.exit(0);
+  }
 
   if (RESTORE) {
     const avant = JSON.parse(fs.readFileSync(SAUVEGARDE, 'utf-8'));
@@ -35,11 +48,10 @@ client.once('clientReady', async () => {
   const textuel = parNom(T.GuildCategory, 'TEXTUEL');
   const lobby = D.channels.cache.find(c => c.type === T.GuildVoice && c.name.includes('LE G'));
 
-  // 1. salon de vérification : le nouveau (aucun rôle) peut y écrire, les autres le lisent seulement
-  // 2. le reste visible par @everyone passe en « membres activés uniquement »
+  // Le salon de vérification (bot-status) reste lisible par tous, sans écriture : le code se tape dans un salon privé.
+  // Tout le reste de ce qui était visible par @everyone passe en « membres activés uniquement ».
   const plan = [
-    [verif, { [D.id]: { ViewChannel: true, SendMessages: true }, [ATTENTE]: { ViewChannel: true, SendMessages: false },
-      [REGLEMENT]: { ViewChannel: true, SendMessages: false }, [ACTIVE]: { ViewChannel: true, SendMessages: false } }],
+    [verif, { [D.id]: { ViewChannel: true, SendMessages: false } }],
     [support, { [D.id]: { ViewChannel: false }, [ACTIVE]: { ViewChannel: true } }],
     ...D.channels.cache.filter(c => support && c.parentId === support.id).map(c => [c, c.permissionsLocked
       ? 'sync' : { [D.id]: { ViewChannel: false }, [ACTIVE]: { ViewChannel: true } }]),
