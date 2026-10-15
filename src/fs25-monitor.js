@@ -1,3 +1,4 @@
+const ids = require('./ids');
 const http = require('http');
 require('dotenv').config();
 const { panneauEmbed } = require('./embed-format');
@@ -5,7 +6,7 @@ const { panneauEmbed } = require('./embed-format');
 const FS25_IP       = '195.179.229.190';
 const FS25_PORT     = 9220;
 const FS25_CODE     = '5dWzqhCHJmcLqADn';
-const NOTIF_CHANNEL = '1541422309619802153';
+const NOTIF_CHANNEL = ids('FS25_CHANNEL_ID', '1541422309619802153');
 const POLL_INTERVAL = 30000;
 
 let previousPlayers = new Map(); // name -> { uptime, x, y, z }

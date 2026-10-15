@@ -1,3 +1,4 @@
+const ids = require('./ids');
 const fs = require('fs');
 const {
   ChannelType, PermissionFlagsBits, ActionRowBuilder, ButtonBuilder, ButtonStyle,
@@ -9,7 +10,7 @@ const { dataPath } = require('./paths');
 // Salons textuels temporaires, dans la catégorie TEXTUEL.
 // Création par le bouton du salon d'accueil (lui aussi dans TEXTUEL, séparé des
 // salons vocaux), gestion par le panneau posté dans chaque salon, invitations par /invite.
-const TEXT_CATEGORY = '1552693042161385532';
+const TEXT_CATEGORY = ids('TEXT_CATEGORY_ID', '1552693042161385532');
 const STORE_PATH    = dataPath('temptext.json');
 const ACCUEIL_NOM   = '➕-créer-un-salon';
 let accueilId = null; // salon d'accueil (mémorisé : il peut être renommé)
@@ -274,7 +275,7 @@ function dernierMessage(channel, info) {
 }
 
 async function nettoyer(client) {
-  const guild = client.guilds.cache.first();
+  const guild = (client.guilds.cache.get(process.env.GUILD_ID) || client.guilds.cache.first());
   if (!guild) return;
   for (const [cid, info] of [...salons.entries()]) {
     const channel = guild.channels.cache.get(cid);
@@ -292,7 +293,7 @@ async function startTempText(client) {
   setInterval(() => nettoyer(client).catch(() => {}), SWEEP_MS);
   try {
     await nettoyer(client);
-    const guild = client.guilds.cache.first();
+    const guild = (client.guilds.cache.get(process.env.GUILD_ID) || client.guilds.cache.first());
     if (guild) await postTextPanel(await salonAccueil(guild));
     console.log('💬 Salons textuels temporaires — prêt (' + salons.size + ' actif(s))');
   } catch (err) {

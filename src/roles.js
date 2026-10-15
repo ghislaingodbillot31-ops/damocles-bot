@@ -1,3 +1,4 @@
+const ids = require('./ids');
 const fs   = require('fs');
 const path = require('path');
 const { ActionRowBuilder, ButtonBuilder, ButtonStyle } = require('discord.js');
@@ -6,7 +7,7 @@ const { panneauEmbed } = require('./embed-format');
 // Salon des rôles. Le bot y maintient UN SEUL message :
 //   [ embed d'explication ]  +  [ boutons de rôle ]
 // Les boutons sont ajoutés/retirés via /bouton et le message se re-rend.
-const ROLES_CHANNEL = '1538537709633802270';
+const ROLES_CHANNEL = ids('ROLES_CHANNEL_ID', '1538537709633802270');
 const { dataPath } = require('./paths');
 const STORE_PATH   = dataPath('roles-panel.json');
 const MAX_BOUTONS   = 25; // 5 rangées de 5

@@ -1,6 +1,7 @@
+const ids = require('./ids');
 // Journal d'activité EUROAGRI : une ligne par événement (contrats / besoins /
 // exploitations). Publié dans le salon logs, sans ping.
-const LOG_CHANNEL = '1541422309619802153';
+const LOG_CHANNEL = ids('FS25_CHANNEL_ID', '1541422309619802153');
 
 async function agrilog(guild, line) {
   if (!guild || !line) return;

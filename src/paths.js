@@ -12,7 +12,8 @@ try { fs.mkdirSync(DATA_DIR, { recursive: true }); } catch {}
 // Premier montage d'un disque persistant vide : on y recopie TOUS les fichiers
 // présents dans le data/ du dépôt (et le sous-dossier images/) pour ne pas
 // repartir de zéro. Un fichier déjà sur le disque n'est jamais écrasé.
-if (DATA_DIR !== REPO_DATA) {
+// FRESH_DATA=1 (2e serveur) : disque vide, on ne reprend PAS les données du dépôt.
+if (DATA_DIR !== REPO_DATA && !process.env.FRESH_DATA) {
   const copierDossier = (srcDir, dstDir) => {
     let entries = [];
     try { entries = fs.readdirSync(srcDir, { withFileTypes: true }); } catch { return; }

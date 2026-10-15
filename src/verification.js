@@ -1,15 +1,16 @@
+const ids = require('./ids');
 const { ActionRowBuilder, ButtonBuilder, ButtonStyle, PermissionFlagsBits, ChannelType } = require('discord.js');
 const db = require('./database');
 const { SEP } = require('./embed-format');
 require('dotenv').config();
 
 // Salon unifié « bot-status + vérification » : par défaut le même que le statut.
-const VERIFICATION_CHANNEL_ID = process.env.VERIFICATION_CHANNEL_ID || '1538533342150918246';
+const VERIFICATION_CHANNEL_ID = process.env.VERIFICATION_CHANNEL_ID || ids('VERIFICATION_CHANNEL_ID', '1538533342150918246');
 const VERIFICATION_ROLE_ID    = process.env.VERIFICATION_ROLE_ID;
 const REGLEMENT_ROLE_ID       = process.env.REGLEMENT_ROLE_ID;
 const ATTENTE_ROLE_ID         = process.env.ATTENTE_ROLE_ID;
 const ACTIVE_ROLE_ID          = process.env.ACTIVE_ROLE_ID; // Membres validé
-const SUPPORT_CATEGORY_ID     = process.env.TICKET_CATEGORY_ID || '1538533307690520586'; // 🎫 SUPPORT
+const SUPPORT_CATEGORY_ID     = process.env.TICKET_CATEGORY_ID || ids('TICKET_CATEGORY_ID', '1538533307690520586'); // 🎫 SUPPORT
 const MIN_ACCOUNT_AGE_DAYS    = 7;
 
 const AUTO_DELETE_OK_MS = 15000; // effacement du message de vérif après un succès

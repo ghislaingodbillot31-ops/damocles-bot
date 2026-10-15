@@ -1,4 +1,5 @@
 require('dotenv').config();
+const ids = require('./ids');
 
 process.on('unhandledRejection', err => {
   console.error('⚠️ Erreur non gérée :', err.message || err);
@@ -32,7 +33,7 @@ const VERIFICATION_ROLE_ID = process.env.VERIFICATION_ROLE_ID;
 const ATTENTE_ROLE_ID      = process.env.ATTENTE_ROLE_ID;
 const REGLEMENT_ROLE_ID    = process.env.REGLEMENT_ROLE_ID;
 const ACTIVE_ROLE_ID       = process.env.ACTIVE_ROLE_ID;
-const GENERAL_CHANNEL_ID   = '1538533261314236527';
+const GENERAL_CHANNEL_ID   = ids('CHAT_CHANNEL_ID', '1538533261314236527');
 
 const firstMessageDone = new Set();
 
@@ -47,6 +48,14 @@ const client = new Client({
     GatewayIntentBits.GuildInvites,
   ],
   partials: [Partials.Message, Partials.Channel],
+});
+
+// Le bot peut être invité sur plusieurs serveurs : on n'écoute que celui de GUILD_ID (base de données propre à chaque serveur).
+const _on = client.on.bind(client);
+client.on = (ev, fn) => _on(ev, (...a) => {
+  const g = a[0]?.guild?.id ?? a[0]?.guildId ?? a[1]?.guild?.id;
+  if (g && process.env.GUILD_ID && g !== process.env.GUILD_ID) return;
+  return fn(...a);
 });
 
 // ── Ready ─────────────────────────────────────────────────────────────────────
@@ -65,6 +74,8 @@ client.once(Events.ClientReady, async () => {
   tempvoice.startTempVoice(client);
   require('./temptext').startTempText(client);
   require('./suggestions').startSuggestions(client);
+  require('./bugs').startBugs(client);
+  require('./antispam').startAntiSpam(client);
   levels.startLevels(client);
   boutique.startBoutique(client);
 
@@ -86,7 +97,7 @@ client.once(Events.ClientReady, async () => {
 
   // Ré-attribuer le rôle Exploitant aux exploitants existants
   try {
-    const guild = client.guilds.cache.first();
+    const guild = (client.guilds.cache.get(process.env.GUILD_ID) || client.guilds.cache.first());
     const exploitations = require('./exploitation').getAll();
     for (const exploit of exploitations) {
       const member = await guild.members.fetch(exploit.ownerId).catch(() => null);
@@ -111,6 +122,13 @@ client.on(Events.GuildMemberAdd, async member => {
 
   await db.upsertMember(member.user, { joinedAt: member.joinedAt?.toISOString() });
   await levels.onMemberAdd(member);
+  if (process.env.VERIF_MODE === 'code') {
+    if (VERIFICATION_ROLE_ID) await member.roles.add(VERIFICATION_ROLE_ID).catch(() => {});
+    await checkNewMember(member);
+    await log(client, 'member_join', { userId: member.id });
+    await require('./codeverif').issue(member);
+    return;
+  }
   if (VERIFICATION_ROLE_ID) await member.roles.add(VERIFICATION_ROLE_ID).catch(() => {});
   await sendJoinDM(member);
   await checkNewMember(member);
@@ -146,8 +164,10 @@ client.on(Events.InviteDelete, inv => { try { levels.cacheInvites(inv.guild); } 
 client.on(Events.MessageCreate, async message => {
   if (message.author.bot) return;
   if (!message.guild) return;
+  if (await require('./antispam').onMessage(message)) return; // salon-piège anti-spam
   const member = message.member;
   if (!member) return;
+  if (process.env.VERIF_MODE === 'code' && await require('./codeverif').onMessage(message)) return;
 
   try { levels.onMessage(message); } catch {}
   await checkSpam(client, message);
@@ -251,7 +271,9 @@ client.on(Events.InteractionCreate, async interaction => {
       if (cid === 'text_create_modal' || cid.startsWith('text_rename_modal_')) { await require('./temptext').handleTextModal(interaction); return; }
       if (cid === 'sugg_modal')                 { await require('./suggestions').handleSuggModal(interaction); return; }
       if (/^sugg_(ok|no)modal_\d+$/.test(cid))  { await require('./suggestions').handleSuggDecisionModal(interaction); return; }
-      if (cid === 'hub_boutique_modal')          { await boutique.handleModal(interaction);         return; }
+      if (/^bug_modal(_en)?$/.test(cid))        { await require('./bugs').handleBugModal(interaction); return; }
+      if (/^bug_nomodal_\d+$/.test(cid))        { await require('./bugs').handleBugRefus(interaction); return; }
+      if (cid === 'hub_boutique_modal')         { await boutique.handleModal(interaction);         return; }
       if (cid.startsWith('xpadmin_bareme_modal_')) { await require('./commands/xp-admin').handleBaremeModal(interaction); return; }
     } catch (err) { console.error('Erreur modal :', err.stack || err.message); }
     return;
@@ -312,6 +334,12 @@ client.on(Events.InteractionCreate, async interaction => {
     if (id === 'sugg_new')                    { await require('./suggestions').handleSuggNew(interaction); return; }
     if (/^sugg_(ok|no)_\d+$/.test(id))        { await require('./suggestions').handleSuggDecision(interaction); return; }
   } catch (err) { console.error('Erreur bouton suggestions :', err.stack || err.message); }
+
+  // Signalement de bugs
+  try {
+    if (/^bug_new(_en)?$/.test(id))           { await require('./bugs').handleBugNew(interaction); return; }
+    if (/^bug_(ok|fix|no)_\d+$/.test(id))     { await require('./bugs').handleBugDecision(interaction); return; }
+  } catch (err) { console.error('Erreur bouton bugs :', err.stack || err.message); }
 
   // Vérification admin
   if (id.startsWith('verifref_')) {

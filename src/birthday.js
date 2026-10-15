@@ -1,9 +1,10 @@
+const ids = require('./ids');
 const db = require('./database');
 const { panneau } = require('./embed-format');
 require('dotenv').config();
 
-const BIRTHDAY_CHANNEL_ID = '1538533316410474547';
-const GENERAL_CHANNEL_ID  = process.env.CHAT_CHANNEL_ID || '1538533261314236527';
+const BIRTHDAY_CHANNEL_ID = ids('BIRTHDAY_CHANNEL_ID', '1538533316410474547');
+const GENERAL_CHANNEL_ID  = process.env.CHAT_CHANNEL_ID || ids('CHAT_CHANNEL_ID', '1538533261314236527');
 
 const MOIS = ['', 'Janvier', 'Février', 'Mars', 'Avril', 'Mai', 'Juin',
               'Juillet', 'Août', 'Septembre', 'Octobre', 'Novembre', 'Décembre'];
@@ -13,7 +14,7 @@ async function sendBirthdayMessages(client) {
   const members = (await db.getAnniversairesAujourdhui()).filter(db.estVisible);
   if (!members.length) return;
 
-  const guild   = client.guilds.cache.first();
+  const guild   = (client.guilds.cache.get(process.env.GUILD_ID) || client.guilds.cache.first());
   if (!guild) return;
   const channel = guild.channels.cache.get(GENERAL_CHANNEL_ID);
   if (!channel) return;
@@ -44,7 +45,7 @@ async function sendBirthdayMessages(client) {
 
 // ── Liste globale : prochain anniversaire en tête + tous les suivants ────────
 async function updateBirthdayChannel(client) {
-  const guild   = client.guilds.cache.first();
+  const guild   = (client.guilds.cache.get(process.env.GUILD_ID) || client.guilds.cache.first());
   if (!guild) return;
   const channel = guild.channels.cache.get(BIRTHDAY_CHANNEL_ID);
   if (!channel) return;

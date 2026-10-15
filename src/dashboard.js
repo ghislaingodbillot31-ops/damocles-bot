@@ -83,7 +83,7 @@ function createDashboard() {
   // ── API Stats ─────────────────────────────────────────────────────────────
   app.get('/api/stats', requireAuth, async (req, res) => {
     const stats = await db.getStats();
-    const guild = _client?.guilds.cache.first();
+    const guild = (_client?.guilds.cache.get(process.env.GUILD_ID) || _client?.guilds.cache.first());
     res.json({
       ...stats,
       guildName: guild?.name || 'Inconnu',
@@ -107,7 +107,7 @@ function createDashboard() {
   // ── API Actions membres ───────────────────────────────────────────────────
   app.post('/api/members/:id/ban', requireAuth, async (req, res) => {
     const { reason } = req.body;
-    const guild = _client?.guilds.cache.first();
+    const guild = (_client?.guilds.cache.get(process.env.GUILD_ID) || _client?.guilds.cache.first());
     if (!guild) return res.status(500).json({ error: 'Bot not ready' });
     try {
       await guild.members.ban(req.params.id, { reason: reason || 'Banni via dashboard' });
@@ -121,7 +121,7 @@ function createDashboard() {
 
   app.post('/api/members/:id/kick', requireAuth, async (req, res) => {
     const { reason } = req.body;
-    const guild = _client?.guilds.cache.first();
+    const guild = (_client?.guilds.cache.get(process.env.GUILD_ID) || _client?.guilds.cache.first());
     if (!guild) return res.status(500).json({ error: 'Bot not ready' });
     try {
       const member = await guild.members.fetch(req.params.id).catch(() => null);
@@ -191,7 +191,7 @@ function createDashboard() {
   });
 
   app.post('/api/tickets/publish', requireAuth, async (req, res) => {
-    const guild = _client?.guilds.cache.first();
+    const guild = (_client?.guilds.cache.get(process.env.GUILD_ID) || _client?.guilds.cache.first());
     if (!guild) return res.status(500).json({ error: 'Bot not ready' });
 
     const cfg = config.get();
@@ -233,7 +233,7 @@ function createDashboard() {
   });
 
   app.post('/api/tickets/:id/close', requireAuth, async (req, res) => {
-    const guild = _client?.guilds.cache.first();
+    const guild = (_client?.guilds.cache.get(process.env.GUILD_ID) || _client?.guilds.cache.first());
     if (!guild) return res.status(500).json({ error: 'Bot not ready' });
     const channel = guild.channels.cache.get(req.params.id) ||
       guild.channels.cache.find(c => c.name === req.params.id);
@@ -243,7 +243,7 @@ function createDashboard() {
 
   // ── API Analyse ───────────────────────────────────────────────────────────
   app.post('/api/analyse', requireAuth, async (req, res) => {
-    const guild = _client?.guilds.cache.first();
+    const guild = (_client?.guilds.cache.get(process.env.GUILD_ID) || _client?.guilds.cache.first());
     if (!guild) return res.status(500).json({ error: 'Bot not ready' });
     try {
       const { runAuto } = require('./commands/analyse');
@@ -256,7 +256,7 @@ function createDashboard() {
 
   // ── API Canaux & Rôles Discord ────────────────────────────────────────────
   app.get('/api/channels', requireAuth, (req, res) => {
-    const guild = _client?.guilds.cache.first();
+    const guild = (_client?.guilds.cache.get(process.env.GUILD_ID) || _client?.guilds.cache.first());
     if (!guild) return res.status(500).json({ error: 'Bot not ready' });
     const { ChannelType } = require('discord.js');
 
@@ -287,7 +287,7 @@ function createDashboard() {
   });
 
   app.get('/api/categories', requireAuth, (req, res) => {
-    const guild = _client?.guilds.cache.first();
+    const guild = (_client?.guilds.cache.get(process.env.GUILD_ID) || _client?.guilds.cache.first());
     if (!guild) return res.status(500).json({ error: 'Bot not ready' });
     const { ChannelType } = require('discord.js');
     const categories = guild.channels.cache
@@ -298,7 +298,7 @@ function createDashboard() {
   });
 
   app.get('/api/roles', requireAuth, (req, res) => {
-    const guild = _client?.guilds.cache.first();
+    const guild = (_client?.guilds.cache.get(process.env.GUILD_ID) || _client?.guilds.cache.first());
     if (!guild) return res.status(500).json({ error: 'Bot not ready' });
     const roles = guild.roles.cache
       .filter(r => r.id !== guild.id)
@@ -411,7 +411,7 @@ function createDashboard() {
   app.delete('/api/exploitations/:id', requireAuth, async (req, res) => {
     const e = exp.deleteExploitation(req.params.id);
     if (!e) return res.status(404).json({ error: 'Exploitation introuvable' });
-    const guild = _client?.guilds.cache.first();
+    const guild = (_client?.guilds.cache.get(process.env.GUILD_ID) || _client?.guilds.cache.first());
     if (guild) {
       await require('./agrilog').agrilog(guild, '🗑️ Exploitation supprimée : **' + e.nom + '** (créateur <@' + e.ownerId + '>) · depuis le dashboard par ' + req.session.user.username)
         .catch(() => {});

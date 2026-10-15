@@ -1,3 +1,4 @@
+const ids = require('./ids');
 const fs   = require('fs');
 const path = require('path');
 const {
@@ -7,8 +8,8 @@ const {
 const { panneau } = require('./embed-format');
 
 // ── Config ────────────────────────────────────────────────────────────────────
-const PANEL_CHANNEL   = '1544898451706482728'; // salon texte où se trouve le bouton
-const VOICE_CATEGORY  = '1345486205810118806'; // catégorie des salons vocaux temporaires
+const PANEL_CHANNEL   = ids('TEMPVOICE_PANEL_CHANNEL_ID', '1544898451706482728'); // salon texte où se trouve le bouton
+const VOICE_CATEGORY  = ids('VOICE_CATEGORY_ID', '1345486205810118806'); // catégorie des salons vocaux temporaires
 const { dataPath }    = require('./paths');
 const STORE_PATH      = dataPath('tempvoice.json');
 const SWEEP_MS        = 60_000; // vérification des salons vides
@@ -97,7 +98,7 @@ async function handleVoiceCreate(interaction) {
   // Déplacer le membre s'il est déjà en vocal
   let deplace = false;
   if (member.voice?.channelId) {
-    await member.voice.setChannel(voice).then(() => { deplace = true; }).catch(() => {});
+    await member.voice.setChannel(voice).then(() => { deplace = true; }).catch(e => console.error('⚠️ Déplacement vocal :', e.message));
   }
 
   // Panneau de contrôle : message permanent dans le chat du salon vocal.
@@ -112,7 +113,9 @@ async function handleVoiceCreate(interaction) {
     ...panneau({ embeds: [{
       title: '🔊 Ton salon est prêt',
       description: '<#' + voice.id + '>'
-        + (deplace ? '\n> Tu y as été déplacé.' : '\n> Rejoins-le quand tu veux !')
+        + (deplace ? '\n> Tu y as été déplacé.' : (member.voice?.channelId
+          ? '\n> Déplacement impossible : clique sur le salon pour le rejoindre.'
+          : '\n> Clique sur le salon pour le rejoindre (Discord ne permet pas de te déplacer sans que tu sois déjà en vocal).'))
         + (panel ? '\n> Le panneau pour le gérer est dans le salon.' : ''),
       color: 0x2ECC71,
     }] }),
@@ -150,7 +153,7 @@ async function sendControlPanel(channel, ownerId, locked) {
 // Au démarrage : garantit que chaque salon suivi a bien son panneau de contrôle
 // (re-poste s'il a été supprimé ou perdu).
 async function ensurePanels(client) {
-  const guild = client.guilds.cache.first();
+  const guild = (client.guilds.cache.get(process.env.GUILD_ID) || client.guilds.cache.first());
   if (!guild) return;
   for (const [cid, info] of [...salons.entries()]) {
     const channel = guild.channels.cache.get(cid);
@@ -277,7 +280,7 @@ async function handleVoiceModal(interaction) {
 
 // ── Suppression des salons vides ──────────────────────────────────────────────
 async function nettoyer(client) {
-  const guild = client.guilds.cache.first();
+  const guild = (client.guilds.cache.get(process.env.GUILD_ID) || client.guilds.cache.first());
   if (!guild) return;
 
   for (const [cid, info] of [...salons.entries()]) {

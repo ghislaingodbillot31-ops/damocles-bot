@@ -1,3 +1,4 @@
+const ids = require('./ids');
 const fs   = require('fs');
 const path = require('path');
 require('dotenv').config();
@@ -6,7 +7,7 @@ const { dataPath }       = require('./paths');
 const CONFIG_PATH        = dataPath('welcome-config.json');
 const LOG_CHANNEL_ID     = process.env.LOG_CHANNEL_ID;
 const REGLEMENT_CHANNEL_ID = process.env.REGLEMENT_CHANNEL_ID;
-const CHAT_CHANNEL_ID      = process.env.CHAT_CHANNEL_ID || '1538533261314236527';
+const CHAT_CHANNEL_ID      = process.env.CHAT_CHANNEL_ID || ids('CHAT_CHANNEL_ID', '1538533261314236527');
 
 // ── Config personnalisable ────────────────────────────────────────────────────
 function loadWelcomeConfig() {

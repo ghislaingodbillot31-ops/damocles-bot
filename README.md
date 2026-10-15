@@ -16,7 +16,7 @@ Bot Discord du serveur EUROAGRI (Farming Simulator 25) : accueil et vérificatio
 
 ## Dashboard
 
-Servi par le bot lui-même (`src/dashboard.js`), sur le même port : `https://<service>.onrender.com`. Connexion avec Discord, réservée aux ID de `OWNER_IDS`.
+Servi par le bot lui-même (`src/dashboard.js`), sur le même port : **https://damocles-bot-zo08.onrender.com** (service Render `srv-da0r4aflk1mc738jfl8g`). Connexion avec Discord, réservée aux ID de `OWNER_IDS`.
 
 Pages : tableau de bord, HUB d'information, exploitations, membres, configuration, logs, tickets, messages récurrents.
 
@@ -26,7 +26,22 @@ Après une modification dans `dashboard/src/`, recompiler puis commiter `dashboa
 cd dashboard && npm install && npm run build
 ```
 
-Pour que la connexion marche, ajouter `<DASHBOARD_URL>/auth/callback` dans Discord Developer Portal > OAuth2 > Redirects.
+### Connexion Discord (OAuth2)
+
+Réglages validés le 24/09/2026 :
+
+| Où | Réglage | Valeur |
+| --- | --- | --- |
+| Render > Environment | `DASHBOARD_URL` | `https://damocles-bot-zo08.onrender.com` (sans `/` final) |
+| Discord Developer Portal, app `1510313579117678795` > OAuth2 > Redirects | Redirect | `https://damocles-bot-zo08.onrender.com/auth/callback` |
+
+Si Discord répond « redirect_uri OAuth2 non valide », voir quelle adresse le bot envoie réellement :
+
+```bash
+curl -s -o /dev/null -D - https://damocles-bot-zo08.onrender.com/auth/login | grep -i location
+```
+
+Le paramètre `redirect_uri` doit être identique au Redirect déclaré côté Discord. Erreur déjà rencontrée : `DASHBOARD_URL` rempli avec le lien de la page Render (`dashboard.render.com/web/srv-...`) au lieu de l'URL `.onrender.com`.
 
 ## Données
 

@@ -131,7 +131,7 @@ async function sendMessage(id, client, force = false) {
   const msg = messages.find(m => m.id === id);
   if (!msg || (!msg.enabled && !force)) return;
 
-  const guild = client.guilds.cache.first();
+  const guild = (client.guilds.cache.get(process.env.GUILD_ID) || client.guilds.cache.first());
   if (!guild) { if (force) throw new Error('Bot non connecté au serveur'); return; }
 
   const channel = guild.channels.cache.get(msg.channelId);

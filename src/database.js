@@ -28,7 +28,7 @@ function saveDB(db) {
 (function repriseMongo() {
   const src    = path.join(REPO_DATA, 'members-depuis-mongo.json');
   const marque = dataPath('.reprise-mongo-faite');
-  if (!fs.existsSync(src) || fs.existsSync(marque)) return;
+  if (process.env.FRESH_DATA || !fs.existsSync(src) || fs.existsSync(marque)) return;
   try {
     const exportMongo = JSON.parse(fs.readFileSync(src, 'utf-8'));
     const fusion = { ...loadDB(), ...exportMongo };

@@ -38,7 +38,7 @@ async function refreshMembers(guild) {
 }
 
 async function runDaily(client) {
-  const guild = client.guilds.cache.first();
+  const guild = (client.guilds.cache.get(process.env.GUILD_ID) || client.guilds.cache.first());
   if (!guild) return;
 
   console.log('🔄 Tâche quotidienne — démarrage');
@@ -48,12 +48,15 @@ async function runDaily(client) {
     console.log('   👥 ' + synced + ' membres synchronisés, ' + left + ' marqués partis');
   } catch (e) { console.error('   ⚠️ Sync membres :', e.message); }
 
-  try {
+  // VERIF_MODE=code : on garde toute la base (joueurs partis compris) et on n'analyse pas l'inactivité
+  const garderTout = process.env.VERIF_MODE === 'code';
+
+  if (!garderTout) try {
     const { before, removed, after } = await db.cleanDatabase();
     console.log('   🧹 Base nettoyée : ' + removed + ' fiche(s) retirée(s) (' + before + ' → ' + after + ')');
   } catch (e) { console.error('   ⚠️ Nettoyage base :', e.message); }
 
-  try {
+  if (!garderTout) try {
     const { runAuto } = require('./commands/analyse');
     const r = await runAuto(guild);
     if (r) console.log('   📊 Analyse : ' + r.inactive + ' inactifs, ' + r.reactivated + ' réactivés, ' + r.toExpel + ' à expulser');

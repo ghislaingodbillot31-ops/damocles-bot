@@ -1,3 +1,4 @@
+const ids = require('./ids');
 const fs   = require('fs');
 const path = require('path');
 const db   = require('./database');
@@ -51,8 +52,8 @@ function setBaremeValeur(cle, valeur) {
   saveBareme();
   return { ...XP };
 }
-const LEVELUP_CHANNEL     = '1538533319430373516'; // annonces de montée de niveau
-const LEADERBOARD_CHANNEL = '1538533319430373516'; // message de classement permanent
+const LEVELUP_CHANNEL     = ids('LEVELUP_CHANNEL_ID', '1538533319430373516'); // annonces de montée de niveau
+const LEADERBOARD_CHANNEL = ids('LEVELUP_CHANNEL_ID', '1538533319430373516'); // message de classement permanent
 
 // ── Courbe de niveaux ────────────────────────────────────────────────────────
 function xpToNext(level)      { return 5 * level * level + 50 * level + 100; }
@@ -322,7 +323,7 @@ function onVoice() {}
 // chaque humain actif — fonctionne même s'il était déjà connecté au démarrage.
 function sweepVoice() {
   if (!_client) return;
-  const guild = _client.guilds.cache.first();
+  const guild = (_client.guilds.cache.get(process.env.GUILD_ID) || _client.guilds.cache.first());
   if (!guild) return;
 
   const salonsVocaux = guild.channels.cache.filter(c => c.isVoiceBased && c.isVoiceBased());
@@ -557,7 +558,7 @@ async function startLevels(client) {
   loadBareme();
   loadXp();
   loadState();
-  const guild = client.guilds.cache.first();
+  const guild = (client.guilds.cache.get(process.env.GUILD_ID) || client.guilds.cache.first());
   if (guild) await cacheInvites(guild);
 
   setInterval(() => sweepVoice(), 60_000);

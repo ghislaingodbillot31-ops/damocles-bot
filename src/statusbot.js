@@ -1,3 +1,4 @@
+const ids = require('./ids');
 require('dotenv').config();
 const fs = require('fs');
 const db = require('./database');
@@ -10,8 +11,8 @@ try { _cfgStatus = require('./config').get().STATUS_CHANNEL_ID || ''; } catch {}
 // Salon unifié « bot-status + vérification » : priorité au .env (VERIFICATION_CHANNEL_ID,
 // partagé avec verification.js), puis à l'ancienne clé STATUS_CHANNEL_ID / config dashboard,
 // sinon la valeur fixe.
-const STATUS_CHANNEL_ID = process.env.VERIFICATION_CHANNEL_ID
-  || process.env.STATUS_CHANNEL_ID || _cfgStatus || '1538533342150918246';
+const STATUS_CHANNEL_ID = (process.env.VERIF_MODE === 'code' ? null : process.env.VERIFICATION_CHANNEL_ID)
+  || process.env.STATUS_CHANNEL_ID || _cfgStatus || ids('VERIFICATION_CHANNEL_ID', '1538533342150918246');
 const sleep = ms => new Promise(r => setTimeout(r, ms));
 
 // ── Message de statut persistant ────────────────────────────────────────────
@@ -54,7 +55,7 @@ async function updateStatusMessage(client, animated = false) {
   if (!animated) return;
 
   const stats = await db.getStats();
-  const guild = client.guilds.cache.first();
+  const guild = (client.guilds.cache.get(process.env.GUILD_ID) || client.guilds.cache.first());
   const now   = new Date().toLocaleString('fr-FR', { timeZone: 'Europe/Paris' });
 
   // Récupérer le message persistant (édité en place), sinon on en créera un.

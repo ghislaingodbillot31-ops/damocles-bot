@@ -1,3 +1,4 @@
+const ids = require('./ids');
 // Boutique EUROAGRI : échange de points de classement (XP) contre de la monnaie
 // en jeu (Farming Simulator). Le bot ne peut pas créditer l'argent en jeu → il
 // crée une demande dans un salon staff. À la validation, les points sont retirés
@@ -14,7 +15,7 @@ const { agrilog } = require('./agrilog');
 const { panneau, SEP } = require('./embed-format');
 
 // ── Config ────────────────────────────────────────────────────────────────────
-const HUB_CHANNEL  = '1544303765602173020'; // salon #hub → on en déduit la catégorie
+const HUB_CHANNEL  = ids('HUB_CHANNEL_ID', '1544303765602173020'); // salon #hub → on en déduit la catégorie
 const CHANNEL_NAME = 'boutique';            // salon staff des demandes d'échange
 const TAUX         = 5;                     // 1 point = 5 € en jeu
 const MIN          = 10;                    // points mini par échange
@@ -123,7 +124,7 @@ function estAdmin(interaction) {
 
 // ── Salon staff : récupération / création ─────────────────────────────────────
 async function ensureStaffChannel(client) {
-  const guild = client.guilds.cache.first();
+  const guild = (client.guilds.cache.get(process.env.GUILD_ID) || client.guilds.cache.first());
   if (!guild) return null;
 
   const state = load();

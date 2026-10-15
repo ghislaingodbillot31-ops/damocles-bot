@@ -16,3 +16,8 @@ data/roles-panel.json
 data/contrat-sessions.json
 data/status-msg.json
 data/.reprise-mongo-faite
+
+# serveurs : secrets et données de DOMINIUS
+serveurs/dominius/.env*
+serveurs/dominius/nouveau-serveur.env
+serveurs/dominius/data/

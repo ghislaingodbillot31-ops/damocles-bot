@@ -1,3 +1,4 @@
+const ids = require('./ids');
 const fs = require('fs');
 const {
   PermissionFlagsBits, ActionRowBuilder, ButtonBuilder, ButtonStyle,
@@ -10,7 +11,9 @@ const { agrilog } = require('./agrilog');
 // Propositions de mods : panneau (règlement des mods) avec le bouton « Faire une proposition » dans le salon
 // des suggestions. Chaque proposition y est publiée, un admin la valide ou la
 // refuse (commentaire facultatif) et l'auteur reçoit la décision en MP.
-const SUGG_CHANNEL = '1544351510689747074';
+// SUGG_MODE=jeu (serveur DOMINIUS) : on propose des idées pour le jeu (FR/EN) au lieu de mods.
+const JEU = process.env.SUGG_MODE === 'jeu';
+const SUGG_CHANNEL = ids('SUGG_CHANNEL_ID', '1544351510689747074');
 const STORE_PATH   = dataPath('suggestions.json');
 const COOLDOWN_MS  = 5 * 60 * 1000; // une proposition toutes les 5 min par joueur
 
@@ -39,6 +42,35 @@ async function salon(client) {
 
 // ── Panneau du règlement (toujours remis en bas du salon) ─────────────────────
 function panelPayload() {
+  if (JEU) return panneau({
+    embeds: [{
+      title: '💡  PROPOSITIONS POUR LE JEU · GAME SUGGESTIONS',
+      description: [
+        '🇫🇷 **Français**',
+        'Une idée pour améliorer le jeu ? Clique sur **Faire une proposition** et sois le plus précis possible :',
+        '> • Un **titre** clair et une **catégorie** (gameplay, économie, interface, équilibrage…).',
+        '> • Une **description détaillée** : ce que tu proposes et comment cela fonctionnerait.',
+        '> • L\'**intérêt pour le jeu** : quel problème cela résout ou ce que cela apporte.',
+        '> • Des **exemples**, références ou liens (facultatif).',
+        '> • Un texte **soigné**, en français ou en anglais correct. Une proposition vague ou bâclée sera refusée.',
+        '',
+        '🇬🇧 **English**',
+        'Got an idea to improve the game? Click **Make a suggestion** and be as precise as possible:',
+        '> • A clear **title** and a **category** (gameplay, economy, interface, balance…).',
+        '> • A **detailed description**: what you suggest and how it would work.',
+        '> • The **benefit for the game**: the problem it solves or what it adds.',
+        '> • **Examples**, references or links (optional).',
+        '> • Well-written text, in correct French or English. Vague or careless suggestions will be declined.',
+        '',
+        '📩 Le staff valide ou refuse, tu reçois la décision en MP · The staff accepts or declines, you get the decision by DM.',
+      ].join('\n'),
+      color: 0xF1C40F,
+      footer: { text: 'DOMINIUS · Damoclès Bot' },
+    }],
+    components: [new ActionRowBuilder().addComponents(
+      new ButtonBuilder().setCustomId('sugg_new').setLabel('💡 Faire une proposition · Make a suggestion').setStyle(ButtonStyle.Primary),
+    )],
+  });
   return panneau({
     embeds: [{
       title: '🛠️  RÈGLEMENT DES MODS',
@@ -98,7 +130,9 @@ const STATUTS = {
 function suggPayload(n, s) {
   const st = STATUTS[s.status];
   const fields = [];
-  if (s.lien) fields.push({ name: '🔗 Lien', value: s.lien });
+  if (s.categorie) fields.push({ name: '🏷️ Catégorie · Category', value: s.categorie, inline: true });
+  if (s.pourquoi) fields.push({ name: '🎯 Intérêt pour le jeu · Benefit', value: s.pourquoi.slice(0, 1024) });
+  if (s.lien) fields.push({ name: JEU ? '🔗 Exemples / liens · Examples / links' : '🔗 Lien', value: s.lien });
   let statut = st.label;
   if (s.decidedBy) statut += ' par <@' + s.decidedBy + '>';
   fields.push({ name: '📌 Statut', value: statut });
@@ -107,7 +141,7 @@ function suggPayload(n, s) {
   return {
     content: '',
     ...panneau({ embeds: [{
-      title: '🛠️ Mod proposé n°' + n + ' · ' + s.titre,
+      title: (JEU ? '💡 Proposition n°' : '🛠️ Mod proposé n°') + n + ' · ' + s.titre,
       description: 'Proposée par <@' + s.userId + '>\n\n' + s.texte,
       fields,
       color: st.color,
@@ -130,8 +164,18 @@ async function handleSuggNew(interaction) {
     autoClean(interaction);
     return;
   }
-  const modal = new ModalBuilder().setCustomId('sugg_modal').setTitle('Proposer un mod');
-  modal.addComponents(
+  const modal = new ModalBuilder().setCustomId('sugg_modal').setTitle(JEU ? 'Proposition · Suggestion' : 'Proposer un mod');
+  const champ = (id, label, style, o = {}) => new ActionRowBuilder().addComponents(
+    new TextInputBuilder().setCustomId(id).setLabel(label).setStyle(style).setRequired(o.requis ?? true)
+      .setMaxLength(o.max).setMinLength(o.min || 0).setPlaceholder(o.ph || ' '));
+  if (JEU) modal.addComponents(
+    champ('titre', 'Titre · Title', TextInputStyle.Short, { max: 80, ph: 'Ex : Système de métiers · Job system' }),
+    champ('categorie', 'Catégorie · Category', TextInputStyle.Short, { max: 40, ph: 'Gameplay, économie, interface… · Gameplay, economy…' }),
+    champ('texte', 'Description détaillée · Detailed description', TextInputStyle.Paragraph, { min: 50, max: 1500, ph: 'Que proposes-tu, comment ça fonctionnerait ? · What do you suggest, how would it work?' }),
+    champ('pourquoi', 'Intérêt pour le jeu · Benefit for the game', TextInputStyle.Paragraph, { min: 20, max: 800, ph: 'Quel problème cela résout ? · What problem does it solve?' }),
+    champ('lien', 'Exemples ou liens · Examples or links', TextInputStyle.Short, { requis: false, max: 300, ph: 'https://... (facultatif · optional)' }),
+  );
+  else modal.addComponents(
     new ActionRowBuilder().addComponents(
       new TextInputBuilder().setCustomId('titre').setLabel('Nom du mod').setStyle(TextInputStyle.Short)
         .setMaxLength(80).setRequired(true),
@@ -152,6 +196,8 @@ async function handleSuggModal(interaction) {
   const titre = interaction.fields.getTextInputValue('titre').trim();
   const texte = interaction.fields.getTextInputValue('texte').trim();
   const lien  = (interaction.fields.getTextInputValue('lien') || '').trim();
+  const categorie = JEU ? interaction.fields.getTextInputValue('categorie').trim() : null;
+  const pourquoi  = JEU ? interaction.fields.getTextInputValue('pourquoi').trim() : null;
 
   if (!titre || !texte) { await interaction.reply({ content: '❌ Le titre et la proposition sont obligatoires.', flags: 64 }); autoClean(interaction); return; }
   if (lien && !/^https?:\/\/\S+$/i.test(lien)) {
@@ -164,7 +210,7 @@ async function handleSuggModal(interaction) {
   if (!channel) { await interaction.reply({ content: '⚠️ Salon des suggestions introuvable.', flags: 64 }); autoClean(interaction); return; }
 
   const n = store.next++;
-  const s = { userId: interaction.user.id, titre, texte, lien: lien || null, status: 'attente', createdAt: Date.now() };
+  const s = { userId: interaction.user.id, titre, texte, categorie, pourquoi, lien: lien || null, status: 'attente', createdAt: Date.now() };
   const msg = await channel.send(suggPayload(n, s)).catch(() => null);
   if (!msg) { store.next--; await interaction.reply({ content: '⚠️ Impossible de publier la proposition.', flags: 64 }); autoClean(interaction); return; }
 
@@ -173,9 +219,9 @@ async function handleSuggModal(interaction) {
   save();
   derniere.set(interaction.user.id, Date.now());
 
-  await interaction.reply({ content: '✅ Ta proposition de mod n°' + n + ' est publiée. Tu recevras la décision du staff en MP.', flags: 64 });
+  await interaction.reply({ content: '✅ Ta proposition ' + (JEU ? '' : 'de mod ') + 'n°' + n + ' est publiée · Your suggestion #' + n + ' is posted. Tu recevras la décision du staff en MP · You will get the decision by DM.', flags: 64 });
   autoClean(interaction, 8000);
-  await agrilog(interaction.guild, '🛠️ <@' + s.userId + '> propose le mod **' + titre + '** (n°' + n + ')');
+  await agrilog(interaction.guild, (JEU ? '💡 <@' + s.userId + '> propose **' : '🛠️ <@' + s.userId + '> propose le mod **') + titre + '** (n°' + n + ')');
 }
 
 // ── Décision admin : bouton puis modale (commentaire facultatif) ──────────────
@@ -220,17 +266,21 @@ async function handleSuggDecisionModal(interaction) {
   try {
     const user = await interaction.client.users.fetch(s.userId);
     await user.send(panneau({ embeds: [{
-      title: valide ? '✅ Ton mod proposé a été validé' : '❌ Ton mod proposé a été refusé',
+      title: JEU ? (valide ? '✅ Ta proposition a été validée · Suggestion accepted' : '❌ Ta proposition a été refusée · Suggestion declined')
+        : (valide ? '✅ Ton mod proposé a été validé' : '❌ Ton mod proposé a été refusé'),
       description: [
         '**' + s.titre + '** (n°' + num + ')',
         '',
-        valide
-          ? 'Merci pour ta proposition ! Le staff a **validé** ce mod.'
-          : 'Le staff a étudié ce mod mais l\'a **refusé**.',
+        JEU
+          ? (valide ? 'Merci pour ta proposition ! Le staff l\'a **validée**. · Thanks! The staff **accepted** it.'
+                    : 'Le staff a étudié ta proposition mais l\'a **refusée**. · The staff reviewed it but **declined** it.')
+          : valide
+            ? 'Merci pour ta proposition ! Le staff a **validé** ce mod.'
+            : 'Le staff a étudié ce mod mais l\'a **refusé**.',
         ...(s.commentaire ? ['', '💬 **Réponse du staff :**', s.commentaire] : []),
       ].join('\n'),
       color: valide ? 0x2ECC71 : 0xE74C3C,
-      footer: { text: 'EUROAGRI · Damoclès Bot' },
+      footer: { text: (JEU ? 'DOMINIUS' : 'EUROAGRI') + ' · Damoclès Bot' },
     }] }));
   } catch { mp = false; /* MP fermés */ }
 
@@ -246,7 +296,7 @@ async function startSuggestions(client) {
     if (!channel) { console.error('⚠️ Suggestions : salon ' + SUGG_CHANNEL + ' introuvable'); return; }
     await installerHub(channel);
     const enAttente = Object.values(store.items).filter(s => s.status === 'attente').length;
-    console.log('🛠️ Propositions de mods · prêt (' + enAttente + ' proposition(s) en attente)');
+    console.log((JEU ? '💡 Propositions du jeu' : '🛠️ Propositions de mods') + ' · prêt (' + enAttente + ' proposition(s) en attente)');
   } catch (err) {
     console.error('⚠️ Suggestions :', err.message);
   }
