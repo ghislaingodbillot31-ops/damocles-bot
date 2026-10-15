@@ -8,6 +8,9 @@ const {
 const { panneau } = require('./embed-format');
 
 // ── Config ────────────────────────────────────────────────────────────────────
+// « Visible par tous les membres » : en mode code-compte, seuls les membres activés voient ces salons (pas les nouveaux arrivants).
+const visiblePar = guild => process.env.VERIF_MODE === 'code-compte' && process.env.ACTIVE_ROLE_ID ? process.env.ACTIVE_ROLE_ID : guild.id;
+const cacherAuxAutres = guild => visiblePar(guild) !== guild.id ? [{ id: guild.id, deny: [PermissionFlagsBits.ViewChannel] }] : [];
 const PANEL_CHANNEL   = ids('TEMPVOICE_PANEL_CHANNEL_ID', '1544898451706482728'); // salon texte où se trouve le bouton
 const VOICE_CATEGORY  = ids('VOICE_CATEGORY_ID', '1345486205810118806'); // catégorie des salons vocaux temporaires
 const { dataPath }    = require('./paths');
@@ -78,7 +81,8 @@ async function handleVoiceCreate(interaction) {
       type: ChannelType.GuildVoice,
       parent: VOICE_CATEGORY,
       permissionOverwrites: [
-        { id: guild.id,   allow: [PermissionFlagsBits.ViewChannel, PermissionFlagsBits.Connect] },
+        { id: visiblePar(guild), allow: [PermissionFlagsBits.ViewChannel, PermissionFlagsBits.Connect] },
+        ...cacherAuxAutres(guild),
         { id: member.id,  allow: [
           PermissionFlagsBits.ViewChannel, PermissionFlagsBits.Connect,
           PermissionFlagsBits.ManageChannels, PermissionFlagsBits.MoveMembers, PermissionFlagsBits.MuteMembers,
@@ -230,7 +234,7 @@ async function handleVoiceControl(interaction) {
   if (id.startsWith('voice_lock_')) {
     const info    = salons.get(cid);
     const lock    = !info.locked;
-    await channel.permissionOverwrites.edit(interaction.guild.id, { Connect: lock ? false : null }).catch(() => {});
+    await channel.permissionOverwrites.edit(visiblePar(interaction.guild), { Connect: lock ? false : null }).catch(() => {});
     info.locked = lock;
     salons.set(cid, info);
     save();
