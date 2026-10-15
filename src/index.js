@@ -148,6 +148,9 @@ client.on(Events.GuildMemberRemove, async member => {
   if (member.user.bot) return;
   await db.memberLeft(member.user);
   await require('./codeverif').cleanup(member).catch(() => {}); // salon de code privé éventuel
+  // expulsion ? (les départs volontaires ne sont jamais publiés)
+  const kick = await require('./publiclog').auditRecent(member.guild, 'kick', member.id);
+  if (kick) await log(client, 'member_kicked', { userId: member.id, modId: kick.executor?.id, reason: kick.reason, publicOnly: true });
   await sendLeave(member);
   await log(client, 'member_left', { userId: member.id });
   console.log('🚪 Départ : ' + member.user.tag);
@@ -156,6 +159,10 @@ client.on(Events.GuildMemberRemove, async member => {
 // ── Ban ───────────────────────────────────────────────────────────────────────
 client.on(Events.GuildBanAdd, async ban => {
   await db.banMember(ban.user, ban.reason || 'Aucune raison', 'Discord');
+  // qui / pourquoi : lu dans le journal d'audit Discord (couvre /banid, le bouton Discord et l'anti-spam)
+  const audit = await require('./publiclog').auditRecent(ban.guild, 'ban', ban.user.id);
+  const reason = audit?.reason || ban.reason;
+  await log(client, 'member_banned', { userId: ban.user.id, modId: audit?.executor?.id || client.user.id, reason, publicOnly: true, noStatus: /^anti-spam/i.test(reason || '') });
 });
 
 // ── Vocal : salons temporaires vides + XP vocal ─────────────────────────────
@@ -401,9 +408,11 @@ client.on(Events.InteractionCreate, async interaction => {
     const member = interaction.member;
     if (member.roles.cache.has(roleId)) {
       await member.roles.remove(role);
+      log(client, 'role_removed', { userId: member.id, roleName: role.name, publicOnly: true });
       await interaction.reply({ content: '🔴 Rôle **' + role.name + '** retiré.', flags: 64 });
     } else {
       await member.roles.add(role);
+      log(client, 'role_added', { userId: member.id, roleName: role.name, publicOnly: true });
       await interaction.reply({ content: '✅ Rôle **' + role.name + '** attribué.', flags: 64 });
     }
     return;
