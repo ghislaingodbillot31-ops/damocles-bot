@@ -22,7 +22,7 @@ function panelPayload() {
       '🇬🇧 This channel is an **anti-spam trap**. **Any message sent here results in an immediate, automatic ban.**',
     ].join('\n\n'),
     color: 0xE74C3C,
-    footer: { text: 'VANGUARD · anti-spam' },
+    footer: { text: 'Anti-spam · salon-piège' },
   }] });
 }
 
@@ -39,6 +39,7 @@ async function onMessage(message) {
   try {
     await message.guild.members.ban(message.author, { reason: raison, deleteMessageSeconds: 24 * 3600 });
     store.bans++; save();
+    try { require('./statusbot').pushEvent('antispam_ban', { userId: message.author.id, tag: message.author.username }); } catch {}
     console.log('🚫 Anti-spam : ' + message.author.tag + ' banni');
   } catch (err) {
     console.error('⚠️ Anti-spam : ban impossible (' + message.author.tag + ') :', err.message);

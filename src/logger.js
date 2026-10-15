@@ -3,6 +3,7 @@ require('dotenv').config();
 const DAMOCLES_LOG_CHANNEL_ID = process.env.DAMOCLES_LOG_CHANNEL_ID;
 
 async function log(client, type, data) {
+  try { require('./statusbot').pushEvent(type, data); } catch {} // journal en direct du salon bot-status
   if (!DAMOCLES_LOG_CHANNEL_ID) return;
   const channel = client.channels.cache.get(DAMOCLES_LOG_CHANNEL_ID);
   if (!channel) return;
