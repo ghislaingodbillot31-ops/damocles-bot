@@ -76,6 +76,7 @@ client.once(Events.ClientReady, async () => {
   require('./suggestions').startSuggestions(client);
   require('./bugs').startBugs(client);
   require('./antispam').startAntiSpam(client);
+  require('./publiclog').demarrer(client).catch(() => {});
   levels.startLevels(client);
   boutique.startBoutique(client);
 

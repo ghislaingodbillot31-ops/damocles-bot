@@ -62,6 +62,18 @@ async function publier(client, type, data = {}) {
   }).catch(err => console.error('⚠️ journal public :', err.message));
 }
 
+// À chaque démarrage : une ligne « En attente de logs » à la suite de l'historique (rien n'est jamais supprimé)
+async function demarrer(client) {
+  const id = SALON();
+  const channel = id && (client.channels.cache.get(id) || await client.channels.fetch(id).catch(() => null));
+  if (!channel) return;
+  const { ansi, hhmmss } = sb();
+  const l = ligne([[ansi.gris, hhmmss(Date.now()) + ' '], [ansi.jaune, 'SYSTÈME '], [ansi.blanc, 'En attente de logs'], [ansi.jaune, ' ▓░░']]);
+  await channel.send({ embeds: [{ description: '```ansi\n' + l + '\n```', color: 0xF1C40F }], allowedMentions: { parse: [] } })
+    .catch(err => console.error('⚠️ journal public :', err.message));
+  console.log('📰 Journal public · prêt (#' + channel.name + ')');
+}
+
 // Entrée récente du journal d'audit Discord (ban / kick) visant ce joueur : { executor, reason } ou null
 async function auditRecent(guild, type, targetId) {
   const evt = type === 'ban' ? AuditLogEvent.MemberBanAdd : AuditLogEvent.MemberKick;
@@ -74,4 +86,4 @@ async function auditRecent(guild, type, targetId) {
   return null;
 }
 
-module.exports = { publier, auditRecent };
+module.exports = { publier, demarrer, auditRecent };
