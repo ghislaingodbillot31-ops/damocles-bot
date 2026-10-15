@@ -97,7 +97,8 @@ async function onMessageFlow(message) {
 
   if (message.content.trim().toUpperCase() === e.code) {
     if (process.env.ATTENTE_ROLE_ID) await member.roles.add(process.env.ATTENTE_ROLE_ID).catch(() => {});
-    if (process.env.VERIFICATION_ROLE_ID) await member.roles.remove(process.env.VERIFICATION_ROLE_ID).catch(() => {});
+    // (sur DOMINIUS le rôle « En attente » est le rôle Vérification lui-même : on ne le retire pas)
+    if (process.env.VERIFICATION_ROLE_ID && process.env.VERIFICATION_ROLE_ID !== process.env.ATTENTE_ROLE_ID) await member.roles.remove(process.env.VERIFICATION_ROLE_ID).catch(() => {});
     await db.upsertMember(member.user, { verifiedAt: new Date().toISOString(), verificationResult: 'ok', codeValidatedAt: new Date().toISOString() });
     delete store[userId]; save();
     await message.channel.send({ content: '<@' + userId + '>', embeds: [{
