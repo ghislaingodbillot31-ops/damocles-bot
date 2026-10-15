@@ -14,6 +14,9 @@ const TEXT_CATEGORY = ids('TEXT_CATEGORY_ID', '1552693042161385532');
 const STORE_PATH    = dataPath('temptext.json');
 const ACCUEIL_NOM   = '➕-créer-un-salon';
 let accueilId = null; // salon d'accueil (mémorisé : il peut être renommé)
+// « Visible par tous les membres » : en mode code-compte, seuls les membres activés voient ces salons (pas les nouveaux arrivants).
+const visiblePar = guild => process.env.VERIF_MODE === 'code-compte' && process.env.ACTIVE_ROLE_ID ? process.env.ACTIVE_ROLE_ID : guild.id;
+const cacherAuxAutres = guild => visiblePar(guild) !== guild.id ? [{ id: guild.id, deny: [PermissionFlagsBits.ViewChannel] }] : [];
 const INACTIF_MS    = 24 * 60 * 60 * 1000; // supprimé après 24 h sans message
 const SWEEP_MS      = 10 * 60 * 1000;
 
@@ -48,7 +51,8 @@ async function salonAccueil(guild) {
     parent: TEXT_CATEGORY,
     position: 0,
     permissionOverwrites: [
-      { id: guild.id, allow: [PermissionFlagsBits.ViewChannel, PermissionFlagsBits.ReadMessageHistory], deny: [PermissionFlagsBits.SendMessages] },
+      { id: visiblePar(guild), allow: [PermissionFlagsBits.ViewChannel, PermissionFlagsBits.ReadMessageHistory], deny: [PermissionFlagsBits.SendMessages] },
+      ...cacherAuxAutres(guild),
       { id: guild.client.user.id, allow: [PermissionFlagsBits.ViewChannel, PermissionFlagsBits.SendMessages, PermissionFlagsBits.ManageMessages, PermissionFlagsBits.EmbedLinks] },
     ],
     reason: 'Salon d\'accueil des salons textuels temporaires',
@@ -162,7 +166,8 @@ async function creerSalon(interaction, nom) {
       type: ChannelType.GuildText,
       parent: TEXT_CATEGORY,
       permissionOverwrites: [
-        { id: guild.id, allow: [PermissionFlagsBits.ViewChannel] },
+        { id: visiblePar(guild), allow: [PermissionFlagsBits.ViewChannel] },
+        ...cacherAuxAutres(guild),
         { id: member.id, allow: [...VOIR, PermissionFlagsBits.ManageMessages] },
         { id: interaction.client.user.id, allow: [...VOIR, PermissionFlagsBits.ManageChannels, PermissionFlagsBits.ManageMessages, PermissionFlagsBits.ManageRoles] },
       ],
@@ -207,7 +212,7 @@ async function handleTextControl(interaction) {
 
   if (id.startsWith('text_lock_')) {
     info.prive = !info.prive;
-    await channel.permissionOverwrites.edit(interaction.guild.id, { ViewChannel: info.prive ? false : true }).catch(() => {});
+    await channel.permissionOverwrites.edit(visiblePar(interaction.guild), { ViewChannel: info.prive ? false : true }).catch(() => {});
     salons.set(cid, info);
     save();
     await interaction.update(panelPayload(cid, info));

@@ -12,6 +12,7 @@ const ATTENTE_ROLE_ID         = process.env.ATTENTE_ROLE_ID;
 const ACTIVE_ROLE_ID          = process.env.ACTIVE_ROLE_ID; // Membres validé
 const SUPPORT_CATEGORY_ID     = process.env.TICKET_CATEGORY_ID || ids('TICKET_CATEGORY_ID', '1538533307690520586'); // 🎫 SUPPORT
 const MIN_ACCOUNT_AGE_DAYS    = 7;
+const CODE_COMPTE = process.env.VERIF_MODE === 'code-compte'; // compte vérifié d'abord, puis code (voir codeverif.js)
 
 const AUTO_DELETE_OK_MS = 15000; // effacement du message de vérif après un succès
 
@@ -80,21 +81,28 @@ async function verifyMember(member) {
   lignes.push(SEP);
 
   if (failed.length === 0) {
-    lignes.push('✅ **Vérification complète · Accès accordé**');
-    lignes.push('Bienvenue <@' + member.id + '> ! Rends-toi dans le salon **#règlement** pour accéder au serveur.');
-    await render(0x2ECC71);
+    if (CODE_COMPTE) {
+      lignes.push('✅ **Compte vérifié**');
+      lignes.push('Bienvenue <@' + member.id + '> ! Tape le **code** affiché ci-dessous pour activer ton compte.');
+      await render(0x2ECC71);
+      await require('./codeverif').issue(member);
+    } else {
+      lignes.push('✅ **Vérification complète · Accès accordé**');
+      lignes.push('Bienvenue <@' + member.id + '> ! Rends-toi dans le salon **#règlement** pour accéder au serveur.');
+      await render(0x2ECC71);
 
-    // Retirer rôle Vérification → donner En attente (accès au règlement)
-    if (VERIFICATION_ROLE_ID) await member.roles.remove(VERIFICATION_ROLE_ID).catch(() => {});
-    if (ATTENTE_ROLE_ID)      await member.roles.add(ATTENTE_ROLE_ID).catch(() => {});
+      // Retirer rôle Vérification → donner En attente (accès au règlement)
+      if (VERIFICATION_ROLE_ID) await member.roles.remove(VERIFICATION_ROLE_ID).catch(() => {});
+      if (ATTENTE_ROLE_ID)      await member.roles.add(ATTENTE_ROLE_ID).catch(() => {});
+    }
     console.log('✅ Vérification OK : ' + member.user.tag);
 
     // Le salon est commun au statut du bot : on nettoie le message une fois lu.
     if (msg) setTimeout(() => { msg.delete().catch(() => {}); }, AUTO_DELETE_OK_MS);
 
   } else {
-    // ❌ ÉCHEC → rôle Attente admin + boutons
-    if (ATTENTE_ROLE_ID) await member.roles.add(ATTENTE_ROLE_ID).catch(() => {});
+    // ❌ ÉCHEC → rôle Attente admin + boutons (code-compte : aucun rôle, le compte reste bloqué jusqu'à la décision du staff)
+    if (ATTENTE_ROLE_ID && !CODE_COMPTE) await member.roles.add(ATTENTE_ROLE_ID).catch(() => {});
 
     const row = new ActionRowBuilder().addComponents(
       new ButtonBuilder().setCustomId('verify_accept_' + member.id).setLabel('✅ Accepter').setStyle(ButtonStyle.Success),
@@ -222,12 +230,15 @@ async function handleVerifyButton(interaction) {
       return;
     }
 
-    // Retirer Vérification + Attente admin → donner Attente règlement
-    if (VERIFICATION_ROLE_ID) await member.roles.remove(VERIFICATION_ROLE_ID).catch(() => {});
-    if (ATTENTE_ROLE_ID)      await member.roles.remove(ATTENTE_ROLE_ID).catch(() => {});
-    if (REGLEMENT_ROLE_ID)    await member.roles.add(REGLEMENT_ROLE_ID).catch(() => {});
+    if (!CODE_COMPTE) {
+      // Retirer Vérification + Attente admin → donner Attente règlement
+      if (VERIFICATION_ROLE_ID) await member.roles.remove(VERIFICATION_ROLE_ID).catch(() => {});
+      if (ATTENTE_ROLE_ID)      await member.roles.remove(ATTENTE_ROLE_ID).catch(() => {});
+      if (REGLEMENT_ROLE_ID)    await member.roles.add(REGLEMENT_ROLE_ID).catch(() => {});
+    }
 
     await db.upsertMember(member.user, { status: 'active', adminAccepted: true, adminAcceptedBy: interaction.user.tag, adminAcceptedAt: new Date().toISOString() });
+    if (CODE_COMPTE) await require('./codeverif').issue(member); // accepté par le staff : le code lui est proposé
 
     await interaction.update({
       embeds: [{
@@ -362,10 +373,13 @@ async function handleVerifRefButton(interaction) {
 
   if (action === 'accept') {
     if (member) {
-      if (VERIFICATION_ROLE_ID) await member.roles.remove(VERIFICATION_ROLE_ID).catch(() => {});
-      if (ATTENTE_ROLE_ID)      await member.roles.remove(ATTENTE_ROLE_ID).catch(() => {});
-      if (REGLEMENT_ROLE_ID)    await member.roles.add(REGLEMENT_ROLE_ID).catch(() => {});
+      if (!CODE_COMPTE) {
+        if (VERIFICATION_ROLE_ID) await member.roles.remove(VERIFICATION_ROLE_ID).catch(() => {});
+        if (ATTENTE_ROLE_ID)      await member.roles.remove(ATTENTE_ROLE_ID).catch(() => {});
+        if (REGLEMENT_ROLE_ID)    await member.roles.add(REGLEMENT_ROLE_ID).catch(() => {});
+      }
       await db.upsertMember(member.user, { status: 'active', adminAccepted: true, adminAcceptedBy: par, adminAcceptedAt: new Date().toISOString() });
+      if (CODE_COMPTE) await require('./codeverif').issue(member);
     }
     console.log('✅ ' + memberId + ' accepté finalement par ' + par);
     cloture('✅ **Accepté par ' + par + '**\n<@' + memberId + '> a maintenant accès au règlement. Ce salon va être supprimé.', 0x2ECC71);

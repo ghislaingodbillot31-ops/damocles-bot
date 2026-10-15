@@ -122,6 +122,13 @@ client.on(Events.GuildMemberAdd, async member => {
 
   await db.upsertMember(member.user, { joinedAt: member.joinedAt?.toISOString() });
   await levels.onMemberAdd(member);
+  if (process.env.VERIF_MODE === 'code-compte') {
+    // aucun rôle : le membre ne voit que le salon de vérification ; compte vérifié d'abord, code ensuite
+    await checkNewMember(member);
+    await log(client, 'member_join', { userId: member.id });
+    await verifyMember(member);
+    return;
+  }
   if (process.env.VERIF_MODE === 'code') {
     if (VERIFICATION_ROLE_ID) await member.roles.add(VERIFICATION_ROLE_ID).catch(() => {});
     await checkNewMember(member);
@@ -167,7 +174,7 @@ client.on(Events.MessageCreate, async message => {
   if (await require('./antispam').onMessage(message)) return; // salon-piège anti-spam
   const member = message.member;
   if (!member) return;
-  if (process.env.VERIF_MODE === 'code' && await require('./codeverif').onMessage(message)) return;
+  if (['code', 'code-compte'].includes(process.env.VERIF_MODE) && await require('./codeverif').onMessage(message)) return;
 
   try { levels.onMessage(message); } catch {}
   await checkSpam(client, message);
@@ -366,6 +373,8 @@ client.on(Events.InteractionCreate, async interaction => {
     if (ATTENTE_ROLE_ID)      await member.roles.remove(ATTENTE_ROLE_ID).catch(() => {});
     if (VERIFICATION_ROLE_ID) await member.roles.remove(VERIFICATION_ROLE_ID).catch(() => {});
     if (REGLEMENT_ROLE_ID)    await member.roles.add(REGLEMENT_ROLE_ID).catch(() => {});
+    // code-compte : le règlement accepté ouvre tout de suite tous les salons (compte activé)
+    if (process.env.VERIF_MODE === 'code-compte' && ACTIVE_ROLE_ID) await member.roles.add(ACTIVE_ROLE_ID).catch(() => {});
 
     try { await db.reglementAccepted(member.id); }
     catch (err) { console.error('⚠️ db.reglementAccepted :', err.message); }

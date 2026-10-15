@@ -21,3 +21,4 @@ data/.reprise-mongo-faite
 serveurs/dominius/.env*
 serveurs/dominius/nouveau-serveur.env
 serveurs/dominius/data/
+serveurs/euroagri/permissions-avant.json
