@@ -215,8 +215,16 @@ async function runChecks(member) {
   return checks;
 }
 
+// Seuls les administrateurs peuvent trancher : les boutons sont visibles du joueur concerné, il ne doit pas pouvoir se valider.
+async function refuserSiPasAdmin(interaction) {
+  if (interaction.memberPermissions?.has(PermissionFlagsBits.Administrator)) return false;
+  await interaction.reply({ content: '❌ Réservé aux administrateurs.', flags: 64 }).catch(() => {});
+  return true;
+}
+
 // ── Handler boutons Accepter / Refuser (embed de vérification) ────────────────
 async function handleVerifyButton(interaction) {
+  if (await refuserSiPasAdmin(interaction)) return;
   const parts    = interaction.customId.split('_');
   const action   = parts[1];
   const memberId = parts[2];
@@ -360,6 +368,7 @@ async function ouvrirSalonRefus(interaction, member, memberId) {
 
 // ── Handler des 3 boutons du salon de refus ──────────────────────────────────
 async function handleVerifRefButton(interaction) {
+  if (await refuserSiPasAdmin(interaction)) return;
   const parts    = interaction.customId.split('_'); // verifref_<action>_<memberId>
   const action   = parts[1];
   const memberId = parts[2];
