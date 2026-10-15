@@ -284,6 +284,17 @@ async function handleSuggDecisionModal(interaction) {
     }] }));
   } catch { mp = false; /* MP fermés */ }
 
+  // Mod refusé : le motif est aussi affiché dans le salon FS25 status
+  if (!valide && !JEU) {
+    const fs25 = interaction.client.channels.cache.get(ids('FS25_CHANNEL_ID', '1541422309619802153'));
+    await fs25?.send({ ...panneau({ embeds: [{
+      title: '❌ Mod refusé · ' + s.titre,
+      description: 'Proposé par <@' + s.userId + '> · refusé par <@' + s.decidedBy + '>',
+      fields: [{ name: '💬 Raison du refus', value: s.commentaire || 'Non précisé' }],
+      color: 0xE74C3C,
+    }] }), allowedMentions: { parse: [] } }).catch(console.error);
+  }
+
   await agrilog(interaction.guild, (valide ? '✅' : '❌') + ' Proposition n°' + num + ' ' + (valide ? 'validée' : 'refusée')
     + ' par <@' + s.decidedBy + '> · auteur <@' + s.userId + '>' + (mp ? '' : ' (MP fermés)'));
 }
