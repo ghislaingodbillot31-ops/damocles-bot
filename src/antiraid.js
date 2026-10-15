@@ -41,9 +41,11 @@ async function checkRaid(client, member) {
 /**
  * Anti-spam : appelé à chaque messageCreate
  */
+const estStaff = member => !!member?.permissions?.has('ManageMessages');
+
 async function checkSpam(client, message) {
   if (message.author.bot) return;
-  if (EXCLUDED_ROLE_IDS.some(id => message.member?.roles.cache.has(id))) return;
+  if (estStaff(message.member) || EXCLUDED_ROLE_IDS.some(id => message.member?.roles.cache.has(id))) return;
 
   const userId = message.author.id;
   const now    = Date.now();
@@ -75,7 +77,7 @@ async function checkSpam(client, message) {
  */
 async function checkLinks(client, message) {
   if (message.author.bot) return;
-  if (EXCLUDED_ROLE_IDS.some(id => message.member?.roles.cache.has(id))) return;
+  if (estStaff(message.member) || EXCLUDED_ROLE_IDS.some(id => message.member?.roles.cache.has(id))) return;
 
   const urlRegex = /(https?:\/\/[^\s]+)/gi;
   const links    = message.content.match(urlRegex);

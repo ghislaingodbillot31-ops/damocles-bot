@@ -30,7 +30,7 @@ async function createTicket(interaction) {
 
   // Lire depuis .env EN PRIORITÉ, puis config.json
   const categoryId    = process.env.TICKET_CATEGORY_ID || cfg.TICKET_CATEGORY_ID || null;
-  const supportRoleId = process.env.TICKET_SUPPORT_ROLE_ID || cfg.TICKET_SUPPORT_ROLE_ID || null;
+  const supportRoleId = roleSupport(guild);
 
   console.log('🎫 Création ticket — catégorie:', categoryId || 'aucune', '| support:', supportRoleId || 'aucun');
 
@@ -100,9 +100,16 @@ async function createTicket(interaction) {
   await historique(member.id, 'ticket_created', { channelId: ticketChannel.id, channelName });
 }
 
-async function takeTicket(interaction, memberId) {
+// Rôle support : celui configuré (TICKET_SUPPORT_ROLE_ID) s'il existe encore sur le serveur, sinon le rôle Modérateur
+function roleSupport(guild) {
   const cfg = config.get();
-  const supportRoleId = process.env.TICKET_SUPPORT_ROLE_ID || cfg.TICKET_SUPPORT_ROLE_ID;
+  const id = process.env.TICKET_SUPPORT_ROLE_ID || cfg.TICKET_SUPPORT_ROLE_ID;
+  if (id && guild.roles.cache.has(id)) return id;
+  return guild.roles.cache.find(r => /mod[eé]rat/i.test(r.name) && !r.managed)?.id || null;
+}
+
+async function takeTicket(interaction, memberId) {
+  const supportRoleId = roleSupport(interaction.guild);
 
   if (supportRoleId) {
     await interaction.channel.permissionOverwrites.edit(supportRoleId, { SendMessages: true }).catch(() => {});
