@@ -152,12 +152,21 @@ async function refresh() {
   }
 }
 
+// Salon du centre de contrôle : l'ID configuré s'il existe, sinon le salon nommé « bot-status » (ID périmé ou absent)
+function trouverSalon(client) {
+  const parId = STATUS_CHANNEL_ID && client.channels.cache.get(STATUS_CHANNEL_ID);
+  if (parId) return parId;
+  const guild = client.guilds.cache.get(process.env.GUILD_ID) || client.guilds.cache.first();
+  return guild?.channels.cache.find(ch => ch.isTextBased() && ch.name.includes('bot-status')) || null;
+}
+
 async function updateStatusMessage(client, animated = false) {
-  if (!STATUS_CHANNEL_ID || !animated) return;
+  if (!animated) return;
   _client = client;
-  const channel = client.channels.cache.get(STATUS_CHANNEL_ID);
-  if (!channel) return;
+  const channel = trouverSalon(client);
+  if (!channel) { console.error('⚠️ Centre de contrôle : salon de statut introuvable (STATUS_CHANNEL_ID=' + (STATUS_CHANNEL_ID || 'vide') + ', aucun salon « bot-status »)'); return; }
   _channel = channel;
+  console.log('🛰️ Centre de contrôle · publication dans #' + channel.name);
 
   // Ancien message de statut supprimé, nouveau publié (séquence de boot), puis mise à jour en direct
   const ancienId = loadJson(MSG_FILE, {}).id;
@@ -177,4 +186,4 @@ async function updateStatusMessage(client, animated = false) {
   _timer = setInterval(() => refresh().catch(() => {}), LIVE_MS);
 }
 
-module.exports = { updateStatusMessage, pushEvent, W, hhmmss, ansi: { gris, cyan, vert, rouge, jaune, blanc, violet, bleu } };
+module.exports = { updateStatusMessage, trouverSalon, pushEvent, W, hhmmss, ansi: { gris, cyan, vert, rouge, jaune, blanc, violet, bleu } };
