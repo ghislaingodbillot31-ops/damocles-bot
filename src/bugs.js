@@ -291,6 +291,8 @@ async function handleBugRefus(interaction) {
 
 // ── Démarrage ─────────────────────────────────────────────────────────────────
 async function startBugs(client) {
+  // Le signalement de bugs n'existe que sur le serveur qui définit BUG_HUB_CHANNEL_ID (pas de recherche par nom : sur VANGUARD il tomberait sur #fs25-hub).
+  if (!ids('BUG_HUB_CHANNEL_ID')) return;
   load();
   try {
     const hub = await salon(client, 'hub');
