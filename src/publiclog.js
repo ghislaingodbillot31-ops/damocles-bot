@@ -56,10 +56,31 @@ async function publier(client, type, data = {}) {
   if (detail) {
     lignes.push(ligne([[ansi.gris, ' '.repeat(heure.length + 1)], [ansi.gris, 'raison '], [ansi.blanc, motif(data.reason)], [ansi.gris, ' · par '], [ansi.cyan, mod]], 2));
   }
+  let barre = couleur;
+  if (type === 'verification_ok') {
+    const c = await controles(client, data.userId);
+    if (c) { lignes.push(c.l1, c.l2); if (c.alerte) barre = 0xE67E22; }
+  }
   await channel.send({
-    embeds: [{ description: '```ansi\n' + lignes.join('\n') + '\n```', color: couleur }],
+    embeds: [{ description: '```ansi\n' + lignes.join('\n') + '\n```', color: barre }],
     allowedMentions: { parse: [] },
   }).catch(err => console.error('⚠️ journal public :', err.message));
+}
+
+// Contrôles d'un joueur qui valide son compte : âge, déjà venu, expulsé, banni (mêmes règles que la vérification)
+async function controles(client, userId) {
+  try {
+    const user = client.users.cache.get(userId) || await client.users.fetch(userId);
+    const checks = await require('./verification').runChecks({ user });
+    const v = label => checks.find(c => c.label.includes(label));
+    const age = Math.floor((Date.now() - user.createdTimestamp) / 86400000);
+    const { ansi } = sb(), pad = ' '.repeat(9);
+    const oui = (c, bad) => [c.value ? (bad ? ansi.rouge : ansi.jaune) : ansi.vert, c.value ? 'oui' : 'non'];
+    const jeune = !v('Âge').passed, venu = v('Ancien'), exp = v('Expulsions'), ban = v('Banni');
+    const l1 = ligne([[ansi.gris, pad + 'âge '], [jeune ? ansi.rouge : ansi.vert, age + ' j'], [ansi.gris, ' · déjà venu '], oui(venu), [ansi.gris, venu.value ? ' (' + venu.detail.split(' ')[0] + 'x)' : '']]);
+    const l2 = ligne([[ansi.gris, pad + 'expulsé '], oui(exp, true), [ansi.gris, ' · banni '], oui(ban, true)]);
+    return { l1, l2, alerte: jeune || exp.value || ban.value };
+  } catch (err) { console.error('⚠️ contrôles journal public :', err.message); return null; }
 }
 
 // À chaque démarrage : une ligne « En attente de logs » à la suite de l'historique (rien n'est jamais supprimé)
