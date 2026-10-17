@@ -48,17 +48,12 @@ async function sendWelcomeAfterReglement(member) {
     .replace(/{serveur}/g,      member.guild.name)
     .replace(/{membres}/g,      member.guild.memberCount);
 
-  await channel.send(panneau({
-    content: '<@' + member.id + '>',
-    embeds: [{
-      title: '🎉 BIENVENUE',
-      description: text,
-      color: parseInt(cfg.color || '2ECC71', 16),
-      thumbnail: { url: member.user.displayAvatarURL() },
-      footer: { text: member.guild.name + ' · MonCopainBot' },
-      timestamp: new Date().toISOString(),
-    }]
-  })).catch(console.error);
+  // message simple : du texte, sans cadre ni icône (le joueur est mentionné)
+  const simple = require('./simple').simplifier(text);
+  await channel.send({
+    content: simple.includes('<@' + member.id + '>') ? simple : '<@' + member.id + '> ' + simple,
+    allowedMentions: { users: [member.id] },
+  }).catch(console.error);
 }
 
 // ── Annonce d'arrivée dans « bienvenue » (+ qui a invité le joueur) ───────────

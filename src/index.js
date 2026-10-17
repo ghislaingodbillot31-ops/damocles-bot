@@ -59,6 +59,9 @@ client.on = (ev, fn) => _on(ev, (...a) => {
 });
 
 // ── Ready ─────────────────────────────────────────────────────────────────────
+// Réponses visibles par le joueur seul (clics, formulaires) : texte simple, sans cadre ni icône
+require('./simple').installer();
+
 client.once(Events.ClientReady, async () => {
   console.log('✅ Bot connecté : ' + client.user.tag);
   console.log('📡 Serveurs : ' + client.guilds.cache.size);
