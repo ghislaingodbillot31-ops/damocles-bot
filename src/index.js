@@ -86,6 +86,7 @@ client.once(Events.ClientReady, async () => {
   require('./bugs').startBugs(client);
   require('./invitations').startInvitations(client);
   require('./antispam').startAntiSpam(client);
+  if (process.env.VERIF_MODE === 'code') require('./codeverif').publierPanneau(client).catch(() => {});
   require('./publiclog').demarrer(client).catch(() => {});
   levels.startLevels(client);
   boutique.startBoutique(client);
@@ -291,6 +292,7 @@ client.on(Events.InteractionCreate, async interaction => {
   if (interaction.isModalSubmit()) {
     const cid = interaction.customId;
     try {
+      if (cid === 'verif_modal')                { await require('./codeverif').handleModal(interaction); return; }
       if (cid === 'anniv_modal')                { await require('./birthday').handleModal(interaction); return; }
       if (cid === 'hub_expl_creer_modal')       { await hub.handleHubExplCreerModal(interaction); return; }
       if (cid.startsWith('hub_expl_nom_'))      { await hub.handleHubExplNom(interaction);        return; }
@@ -314,6 +316,7 @@ client.on(Events.InteractionCreate, async interaction => {
 
   // Boutons HUB des exploitants
   try {
+    if (id === 'verif_code' || id === 'verif_saisir') { await require('./codeverif').handleButton(interaction); return; }
     if (id === 'anniv_btn')                   { await require('./birthday').handleButton(interaction); return; }
     if (id === 'hub_expl')                    { await hub.handleHubExpl(interaction);        return; }
     if (id === 'hub_expl_creer')              { await hub.handleHubExplCreer(interaction);   return; }

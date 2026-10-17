@@ -131,51 +131,91 @@ async function cleanup(member) {
   (member.guild.channels.cache.get(e.channelId) || await member.guild.channels.fetch(e.channelId).catch(() => null))?.delete('Joueur parti').catch(() => {});
 }
 
-// ── mode « code » (Le Coin des Copains) : code dans le salon de vérification ───────────────
-const codes = new Map(); // userId → { code, msg }  (perdu au redémarrage : un nouveau code est alors redonné)
+// ── mode « code » (Le Coin des Copains) : tout est privé ──────────────────────────────────
+// Le salon ne contient qu'un panneau avec deux boutons : « Obtenir mon code » (code affiché à toi seul) et
+// « Entrer mon code » (formulaire). Rien n'est tapé ni affiché publiquement.
+const { ActionRowBuilder, ButtonBuilder, ButtonStyle, ModalBuilder, TextInputBuilder, TextInputStyle } = require('discord.js');
+const codes = new Map(); // userId → code  (perdu au redémarrage : un nouveau code est alors redonné)
+const membreRole = () => process.env.MEMBRE_ROLE_ID || process.env.ACTIVE_ROLE_ID; // Membres (Le Coin des Copains) ou Membre vérifié
 
-async function issueSimple(member) {
-  const channel = codeChannel(member.guild);
-  if (!channel) return;
-  const prev = codes.get(member.id);
-  if (prev) prev.msg?.delete().catch(() => {});
-  const code = newCode();
-  const msg = await channel.send(panneau({
-    content: '<@' + member.id + '>',
-    embeds: [{
-      title: '🔐 Vérification',
-      description: 'Bienvenue sur **' + member.guild.name + '** !\nTape ce code dans ce salon pour accéder au serveur :\n# `' + code + '`',
+function panelPayload(nomServeur) {
+  return {
+    content: '',
+    ...panneau({ embeds: [{
+      title: '🔐 VÉRIFICATION · VERIFICATION',
+      description: [
+        '🇫🇷 Bienvenue sur **' + nomServeur + '** ! Clique sur **Obtenir mon code**, puis sur **Entrer mon code** pour accéder au serveur.',
+        '🇬🇧 Welcome to **' + nomServeur + '**! Click **Get my code**, then **Enter my code** to get access.',
+        '',
+        '🔒 Ton code et ta saisie restent privés : personne d\'autre ne les voit.',
+        '🔒 Your code and your entry stay private: nobody else can see them.',
+      ].join('\n'),
       color: 0x3498DB,
-    }],
-  })).catch(() => null);
-  codes.set(member.id, { code, msg });
+      footer: { text: nomServeur },
+    }] }),
+    components: [new ActionRowBuilder().addComponents(
+      new ButtonBuilder().setCustomId('verif_code').setLabel('🔑 Obtenir mon code · Get my code').setStyle(ButtonStyle.Primary),
+      new ButtonBuilder().setCustomId('verif_saisir').setLabel('⌨️ Entrer mon code · Enter my code').setStyle(ButtonStyle.Success),
+    )],
+  };
 }
 
-async function onMessageSimple(message) {
-  if (message.channel.id !== codeChannel(message.guild)?.id) return false;
-  const { member } = message;
-  const membreId = process.env.MEMBRE_ROLE_ID || process.env.ACTIVE_ROLE_ID; // rôle « membre » : Membres (Le Coin des Copains) ou Membre vérifié
-  if (member.roles.cache.has(membreId) || member.permissions.has('ManageMessages')) return false;
+// Un seul panneau dans le salon : mis à jour s'il existe, sinon posté (les anciens messages du bot sont retirés)
+async function publierPanneau(client) {
+  const id = process.env.VERIFICATION_CHANNEL_ID;
+  const channel = id && (client.channels.cache.get(id) || await client.channels.fetch(id).catch(() => null));
+  if (!channel) return;
+  const payload = panelPayload(channel.guild.name);
+  const existant = [...(await channel.messages.fetch({ limit: 50 }).catch(() => new Map())).values()]
+    .find(m => m.author.id === client.user.id && m.components.some(r => r.components.some(b => b.customId === 'verif_code')));
+  if (existant) await existant.edit(payload).catch(() => {});
+  else await channel.send(payload).catch(() => {});
+  await require('./nettoyage').epurer(client, id, true); // strict : les anciens codes affichés en public partent aussi
+}
 
+// Arrivée d'un membre : rien n'est écrit dans le salon, le panneau suffit
+const issueSimple = member => publierPanneau(member.client);
+
+// Salon de vérification : les messages écrits (code ou autre) sont supprimés, ils pourraient exposer un code
+async function onMessageSimple(message) {
+  if (message.channel.id !== process.env.VERIFICATION_CHANNEL_ID) return false;
+  const { member } = message;
+  if (member?.roles.cache.has(membreRole()) || member?.permissions.has('ManageMessages')) return false;
   message.delete().catch(() => {});
-  const entry = codes.get(member.id);
-  if (!entry) { await issueSimple(member); return true; }
-  if (message.content.trim().toUpperCase() !== entry.code) {
-    await flash(message.channel, '❌ <@' + member.id + '> code incorrect, réessaie.');
-    return true;
+  await flash(message.channel, '🔒 <@' + message.author.id + '> utilise les boutons ci-dessus, n\'écris pas ton code ici. · Use the buttons above, do not type your code here.', 8000);
+  return true;
+}
+
+// Boutons du panneau : réponses visibles par le joueur seul
+async function handleButton(interaction) {
+  const member = interaction.member;
+  if (member.roles.cache.has(membreRole())) return interaction.reply({ content: 'Tu es déjà vérifié. You are already verified.', flags: 64 });
+  if (interaction.customId === 'verif_code') {
+    if (!codes.has(member.id)) codes.set(member.id, newCode());
+    return interaction.reply({ content: 'Ton code : ' + codes.get(member.id) + '\nClique sur Entrer mon code pour le saisir. Your code is above, click Enter my code.', flags: 64 });
   }
-  await member.roles.add(membreId).catch(() => {});
+  if (!codes.has(member.id)) return interaction.reply({ content: 'Clique d\'abord sur Obtenir mon code. Click Get my code first.', flags: 64 });
+  return interaction.showModal(new ModalBuilder().setCustomId('verif_modal').setTitle('Vérification · Verification').addComponents(
+    new ActionRowBuilder().addComponents(new TextInputBuilder().setCustomId('code').setLabel('Ton code · Your code')
+      .setStyle(TextInputStyle.Short).setMinLength(6).setMaxLength(6).setRequired(true))));
+}
+
+async function handleModal(interaction) {
+  const member = interaction.member;
+  const saisi = interaction.fields.getTextInputValue('code').trim().toUpperCase();
+  if (!codes.has(member.id) || saisi !== codes.get(member.id)) {
+    return interaction.reply({ content: 'Code incorrect, réessaie. Wrong code, try again.', flags: 64 });
+  }
+  await member.roles.add(membreRole()).catch(() => {});
   if (process.env.VERIFICATION_ROLE_ID) await member.roles.remove(process.env.VERIFICATION_ROLE_ID).catch(() => {});
   await db.upsertMember(member.user, { verifiedAt: new Date().toISOString(), verificationResult: 'ok' });
-  entry.msg?.delete().catch(() => {});
   codes.delete(member.id);
-  await flash(message.channel, '✅ <@' + member.id + '> vérifié, bienvenue !');
-  await log(message.client, 'verification_ok', { userId: member.id });
-  return true;
+  await interaction.reply({ content: 'Vérifié, bienvenue ! Verified, welcome!', flags: 64 });
+  await log(interaction.client, 'verification_ok', { userId: member.id });
 }
 
 // true = message traité (salon de vérification / de code), l'appelant s'arrête là
 const onMessage = message => FLOW() ? onMessageFlow(message) : onMessageSimple(message);
 const issue = member => FLOW() ? issueFlow(member) : issueSimple(member);
 
-module.exports = { issue, onMessage, cleanup, dejaActif };
+module.exports = { issue, onMessage, cleanup, dejaActif, publierPanneau, handleButton, handleModal };
