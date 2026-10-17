@@ -81,6 +81,8 @@ client.once(Events.ClientReady, async () => {
   require('./publiclog').demarrer(client).catch(() => {});
   levels.startLevels(client);
   boutique.startBoutique(client);
+  // une seule version de chaque panneau : une fois les panneaux republiés, on supprime les anciens
+  setTimeout(() => require('./nettoyage').nettoyerTout(client).catch(() => {}), 60_000);
 
   // En-tête explicatif du salon des rôles
   try {
