@@ -119,7 +119,7 @@ function createDashboard() {
     }
   });
 
-  const PORT = process.env.PORT || 3000, HOST = process.env.DASHBOARD_HOST || '127.0.0.1';
+  const PORT = process.env.PORT || 3000, HOST = process.env.DASHBOARD_HOST || (process.env.RENDER ? '0.0.0.0' : '127.0.0.1'); // Render exige un port ouvert sur 0.0.0.0, sinon le service est arrêté (502)
   app.listen(PORT, HOST, () => console.log('🌐 Dashboard : http://' + (HOST === '127.0.0.1' ? 'localhost' : HOST) + ':' + PORT));
 }
 
