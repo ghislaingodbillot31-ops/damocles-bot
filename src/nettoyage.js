@@ -2,14 +2,17 @@
 // qui viennent d'être placés (le plus récent de chaque type est gardé). Les messages des joueurs ne sont jamais touchés.
 // Salons « stricts » : uniquement des panneaux. Salons « souples » (propositions, bugs, tickets) : seuls les doublons
 // de panneau partent, car ils contiennent aussi des messages à suivre (sugg_ok_12…).
-const STRICTS = ['INVITE_HUB_CHANNEL_ID', 'HUB_CHANNEL_ID', 'REGLEMENT_CHANNEL_ID', 'BIRTHDAY_CHANNEL_ID', 'TEMPVOICE_PANEL_CHANNEL_ID', 'ROLES_CHANNEL_ID'];
+const STRICTS = ['ANTISPAM_CHANNEL_ID', 'INVITE_HUB_CHANNEL_ID', 'HUB_CHANNEL_ID', 'REGLEMENT_CHANNEL_ID', 'BIRTHDAY_CHANNEL_ID', 'TEMPVOICE_PANEL_CHANNEL_ID', 'ROLES_CHANNEL_ID'];
 const SOUPLES = ['SUGG_CHANNEL_ID', 'BUG_HUB_CHANNEL_ID', 'TICKET_CHANNEL_ID'];
 
 // Signature d'un panneau : ses boutons (sans numéro), ou le titre de l'embed pour le centre de contrôle
 function signature(m, parTitre) {
   const ids = m.components.flatMap(r => r.components.map(b => b.customId)).filter(Boolean);
   if (ids.length) return ids.some(i => /\d/.test(i)) ? null : ids.join(',');
-  return parTitre ? (m.embeds[0]?.title || null) : null;
+  if (parTitre && m.embeds[0]?.title) return m.embeds[0].title;
+  // panneau sans bouton (anti-spam, centre de contrôle) : reconnu à l'en-tête de son cadre
+  const d = m.embeds[0]?.description || '';
+  return d.startsWith('```') ? d.split('\n').slice(0, 4).join('|') : null;
 }
 
 // strict : les messages du bot sans signature de panneau sont supprimés aussi

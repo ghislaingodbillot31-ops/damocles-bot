@@ -63,6 +63,7 @@ async function startAntiSpam(client) {
     if (ancien) await ancien.delete().catch(() => {});
     store.panelMsgId = (await ch.send(panelPayload()).catch(() => null))?.id || null;
     save();
+    await require('./nettoyage').epurer(client, ch.id);
     console.log('🚫 Anti-spam · prêt (salon-piège : #' + ch.name + ')');
   } catch (err) { console.error('⚠️ Anti-spam :', err.message); }
 }
