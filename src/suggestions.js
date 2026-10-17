@@ -98,10 +98,13 @@ function panelPayload() {
 }
 
 // Le HUB reste en tête du salon, les propositions en attente en dessous.
-// À chaque démarrage : on supprime l'ancien HUB puis on reposte le HUB et les propositions en attente.
+// Déjà en place : on le met juste à jour. Sinon (absent, ou une proposition plus
+// ancienne que lui) : on reposte le HUB puis les propositions en attente.
 async function installerHub(channel) {
   const hub = store.panelMsgId && await channel.messages.fetch(store.panelMsgId).catch(() => null);
   const enAttente = Object.entries(store.items).filter(([, s]) => s.status === 'attente');
+  const enTete = hub && enAttente.every(([, s]) => !s.msgId || BigInt(s.msgId) > BigInt(hub.id));
+  if (enTete) { await hub.edit(panelPayload()).catch(() => {}); return; }
 
   if (hub) await hub.delete().catch(() => {});
   for (const [, s] of enAttente) {
@@ -280,6 +283,17 @@ async function handleSuggDecisionModal(interaction) {
       footer: { text: (JEU ? 'DOMINIUS' : 'EUROAGRI') + ' · Damoclès Bot' },
     }] }));
   } catch { mp = false; /* MP fermés */ }
+
+  // Mod refusé : le motif est aussi affiché dans le salon FS25 status
+  if (!valide && !JEU) {
+    const fs25 = interaction.client.channels.cache.get(ids('FS25_CHANNEL_ID'));
+    await fs25?.send({ ...panneau({ embeds: [{
+      title: '❌ Mod refusé · ' + s.titre,
+      description: 'Proposé par <@' + s.userId + '> · refusé par <@' + s.decidedBy + '>',
+      fields: [{ name: '💬 Raison du refus', value: s.commentaire || 'Non précisé' }],
+      color: 0xE74C3C,
+    }] }), allowedMentions: { parse: [] } }).catch(console.error);
+  }
 
   await agrilog(interaction.guild, (valide ? '✅' : '❌') + ' Proposition n°' + num + ' ' + (valide ? 'validée' : 'refusée')
     + ' par <@' + s.decidedBy + '> · auteur <@' + s.userId + '>' + (mp ? '' : ' (MP fermés)'));

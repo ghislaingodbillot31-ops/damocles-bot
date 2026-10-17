@@ -130,9 +130,8 @@ function panelPayload() {
 }
 
 async function installerHub(channel) {
-  // À chaque démarrage : l'ancien panneau est supprimé, un nouveau est publié.
   const hub = store.panelMsgId && await channel.messages.fetch(store.panelMsgId).catch(() => null);
-  if (hub) await hub.delete().catch(() => {});
+  if (hub) { await hub.edit(panelPayload()).catch(() => {}); return; }
   const msg = await channel.send(panelPayload()).catch(err => { console.error('⚠️ Bugs :', err.message); return null; });
   store.panelMsgId = msg?.id || null;
   save();
@@ -292,6 +291,8 @@ async function handleBugRefus(interaction) {
 
 // ── Démarrage ─────────────────────────────────────────────────────────────────
 async function startBugs(client) {
+  // Le signalement de bugs n'existe que sur le serveur qui définit BUG_HUB_CHANNEL_ID (pas de recherche par nom : sur VANGUARD il tomberait sur #fs25-hub).
+  if (!ids('BUG_HUB_CHANNEL_ID')) return;
   load();
   try {
     const hub = await salon(client, 'hub');
