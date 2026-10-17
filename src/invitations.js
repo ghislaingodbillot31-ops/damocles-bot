@@ -24,28 +24,78 @@ load();
 // Créateur (userId) d'un lien généré par le bot, sinon null.
 const createur = code => store.links[code]?.userId || null;
 
+// HUB COMMUNAUTAIRE : bouton Invitation (lien personnel de 7 jours) + bouton Rôles (prendre / retirer un rôle d'un clic).
+// Les boutons de rôle sont ceux de la commande /bouton (roles.js) : /bouton role:@Rôle nom:Mon nom emoji:🎮 couleur:Vert.
 function panelPayload() {
   return panneau({
     embeds: [{
-      title: '🔗  INVITER DES JOUEURS · INVITE PLAYERS',
+      title: '🏘️  HUB COMMUNAUTAIRE · COMMUNITY HUB',
       description: [
-        '🇫🇷 **Français**',
-        'Clique sur **LIEN D\'INVITATION** pour générer ton lien personnel et invite tes amis sur le serveur.',
-        '> • Ton lien est valable **7 jours**, puis il expire.',
-        '> • Tu es crédité de chaque joueur qui arrive grâce à lui, et son arrivée est annoncée dans **bienvenue**.',
+        '## 🔗 Invitation',
+        'Génère ton **lien personnel** (valable 7 jours) et invite tes amis. Tu es crédité de chaque joueur qui arrive grâce à lui.',
+        'Generate your **personal link** (valid 7 days) and invite your friends. You get credit for every player who joins.',
         '',
-        '🇬🇧 **English**',
-        'Click **INVITATION LINK** to generate your personal link and invite your friends to the server.',
-        '> • Your link is valid for **7 days**, then it expires.',
-        '> • You get credit for every player who joins through it, and their arrival is announced in **bienvenue**.',
+        '## 🎭 Rôles',
+        'Choisis tes rôles : **un clic pour le prendre, un autre clic pour le retirer**.',
+        'Pick your roles: **click once to take it, click again to remove it**.',
       ].join('\n'),
-      color: 0x5865F2,
+      color: 0x00E5FF,
       footer: { text: 'DOMINIUS' },
     }],
     components: [new ActionRowBuilder().addComponents(
-      new ButtonBuilder().setCustomId('lien_invite').setLabel('🔗 LIEN D\'INVITATION · INVITATION LINK').setStyle(ButtonStyle.Primary),
+      new ButtonBuilder().setCustomId('lien_invite').setLabel('🔗 Invitation').setStyle(ButtonStyle.Primary),
+      new ButtonBuilder().setCustomId('hub_roles').setLabel('🎭 Rôles').setStyle(ButtonStyle.Success),
     )],
   });
+}
+
+// Liste des rôles proposés, vue du joueur : vert = il a le rôle, gris = il ne l'a pas
+function listeRoles(member) {
+  const boutons = require('./roles').listRoleButtons().filter(b => member.guild.roles.cache.has(b.roleId));
+  const rows = [];
+  for (let i = 0; i < boutons.length; i += 5) {
+    rows.push(new ActionRowBuilder().addComponents(boutons.slice(i, i + 5).map(b => {
+      const btn = new ButtonBuilder().setCustomId('hubrole_' + b.roleId).setLabel(b.label)
+        .setStyle(member.roles.cache.has(b.roleId) ? ButtonStyle.Success : ButtonStyle.Secondary);
+      if (b.emoji) { try { btn.setEmoji(b.emoji); } catch { /* emoji invalide : ignoré */ } }
+      return btn;
+    })));
+  }
+  return { rows, vide: !boutons.length };
+}
+
+function payloadRoles(member) {
+  const { rows, vide } = listeRoles(member);
+  return {
+    ...panneau({ embeds: [{
+      title: '🎭 TES RÔLES · YOUR ROLES',
+      description: vide
+        ? 'Aucun rôle n\'est proposé pour le moment. · No roles available yet.'
+        : '🟢 vert = tu as le rôle · 🔘 gris = tu ne l\'as pas\nClique pour le **prendre**, reclique pour le **retirer**.\nClick to **take** it, click again to **remove** it.',
+      color: 0x5865F2,
+    }] }),
+    components: rows,
+  };
+}
+
+async function handleRolesButton(interaction) {
+  await interaction.reply({ ...payloadRoles(interaction.member), flags: 64 });
+}
+
+// Prend ou retire le rôle, puis rafraîchit la liste sur place
+async function handleRoleToggle(interaction) {
+  const roleId = interaction.customId.replace('hubrole_', '');
+  const role = interaction.guild.roles.cache.get(roleId);
+  if (!role) return interaction.reply({ content: '❌ Rôle introuvable · Role not found.', flags: 64 });
+  const member = interaction.member;
+  const avait = member.roles.cache.has(roleId);
+  try {
+    if (avait) await member.roles.remove(role); else await member.roles.add(role);
+  } catch {
+    return interaction.reply({ content: '❌ Impossible de modifier ce rôle (permission du bot) · Could not change this role.', flags: 64 });
+  }
+  require('./logger').log(interaction.client, avait ? 'role_removed' : 'role_added', { userId: member.id, roleName: role.name, publicOnly: true });
+  await interaction.update(payloadRoles(await interaction.guild.members.fetch(member.id)));
 }
 
 async function salon(client) {
@@ -94,4 +144,4 @@ async function handleInviteButton(interaction) {
   }] }) });
 }
 
-module.exports = { startInvitations, handleInviteButton, createur };
+module.exports = { startInvitations, handleInviteButton, handleRolesButton, handleRoleToggle, createur };

@@ -359,6 +359,8 @@ client.on(Events.InteractionCreate, async interaction => {
   // Lien d'invitation (7 jours)
   try {
     if (id === 'lien_invite') { await require('./invitations').handleInviteButton(interaction); return; }
+    if (id === 'hub_roles')   { await require('./invitations').handleRolesButton(interaction); return; }
+    if (id.startsWith('hubrole_')) { await require('./invitations').handleRoleToggle(interaction); return; }
   } catch (err) { console.error('Erreur bouton invitation :', err.stack || err.message); }
 
   // Signalement de bugs
