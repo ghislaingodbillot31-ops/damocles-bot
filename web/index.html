@@ -1,0 +1,204 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>DOMINIUS · Éditeur d'embeds</title>
+<style>
+  :root { --bg:#1e1f22; --panel:#2b2d31; --panel2:#313338; --txt:#dbdee1; --mut:#949ba4; --acc:#5865f2; --ok:#23a55a; --err:#f23f43; --line:#3f4147; }
+  * { box-sizing: border-box; }
+  body { margin:0; background:var(--bg); color:var(--txt); font:14px/1.4 system-ui, "Segoe UI", sans-serif; }
+  button, input, select, textarea { font:inherit; color:var(--txt); background:var(--bg); border:1px solid var(--line); border-radius:6px; padding:7px 9px; }
+  textarea { width:100%; resize:vertical; min-height:110px; }
+  input[type=text], input[type=url], input[type=password], select { width:100%; }
+  input[type=color] { padding:0; width:42px; height:34px; }
+  button { cursor:pointer; background:var(--panel2); }
+  button:hover { filter:brightness(1.2); }
+  button.p { background:var(--acc); border-color:var(--acc); color:#fff; }
+  button.ok { background:var(--ok); border-color:var(--ok); color:#fff; }
+  button.d { background:transparent; border-color:var(--err); color:var(--err); }
+  label { display:block; color:var(--mut); font-size:12px; margin:10px 0 3px; text-transform:uppercase; letter-spacing:.03em; }
+  .row { display:flex; gap:8px; align-items:center; } .row > * { flex:1; } .row > .n { flex:none; }
+  #login { max-width:340px; margin:18vh auto; background:var(--panel); padding:24px; border-radius:10px; }
+  #app { display:none; grid-template-columns:260px minmax(340px,1fr) minmax(340px,1fr); gap:14px; padding:14px; height:100vh; }
+  .col { background:var(--panel); border-radius:10px; padding:14px; overflow:auto; }
+  h1 { font-size:16px; margin:0 0 12px; } h2 { font-size:13px; margin:16px 0 0; color:var(--mut); text-transform:uppercase; }
+  .item { padding:9px 10px; border-radius:6px; cursor:pointer; border:1px solid transparent; margin-bottom:4px; }
+  .item:hover { background:var(--panel2); } .item.sel { background:var(--panel2); border-color:var(--acc); }
+  .item small { display:block; color:var(--mut); }
+  .bar { display:flex; gap:8px; flex-wrap:wrap; margin-top:16px; position:sticky; bottom:-14px; background:var(--panel); padding:10px 0 4px; }
+  #msg { margin-top:8px; min-height:20px; } .e { color:var(--err); } .g { color:var(--ok); }
+  .field { background:var(--bg); border:1px solid var(--line); border-radius:6px; padding:8px; margin-top:6px; }
+  /* aperçu façon Discord */
+  #prev { background:var(--panel2); border-radius:8px; padding:16px; }
+  .pc { white-space:pre-wrap; margin-bottom:6px; }
+  .emb { display:grid; max-width:520px; background:#2b2d31; border-left:4px solid var(--acc); border-radius:4px; padding:8px 14px 14px 12px; gap:6px; }
+  .emb .a { display:flex; align-items:center; gap:8px; font-weight:600; font-size:13px; }
+  .emb .a img, .emb .f img { width:22px; height:22px; border-radius:50%; }
+  .emb .t { font-weight:700; font-size:16px; } .emb .t a { color:#00a8fc; text-decoration:none; }
+  .emb .d { white-space:pre-wrap; word-break:break-word; font-size:14px; }
+  .emb .fl { display:grid; grid-template-columns:repeat(3,1fr); gap:8px; }
+  .emb .fl > div { grid-column:span 3; } .emb .fl > div.i { grid-column:span 1; }
+  .emb .fl b { display:block; font-size:13px; margin-bottom:2px; } .emb .fl span { white-space:pre-wrap; font-size:13px; }
+  .emb .th { justify-self:end; max-width:80px; max-height:80px; border-radius:4px; grid-row:1; grid-column:2; }
+  .emb .im { max-width:100%; border-radius:4px; }
+  .emb .f { display:flex; align-items:center; gap:8px; color:var(--mut); font-size:12px; }
+  .hint { color:var(--mut); font-size:12px; margin-top:12px; }
+  @media (max-width:1000px){ #app{ grid-template-columns:1fr; height:auto; } }
+</style>
+</head>
+<body>
+
+<div id="login">
+  <h1>🔒 DOMINIUS · Dashboard</h1>
+  <label>Mot de passe</label>
+  <input type="password" id="pw" autofocus>
+  <div class="bar" style="position:static"><button class="p" id="go">Connexion</button></div>
+  <div id="lmsg" class="e"></div>
+</div>
+
+<div id="app">
+  <div class="col">
+    <h1>📚 Mes embeds</h1>
+    <button class="p" style="width:100%" id="nouveau">＋ Nouvel embed</button>
+    <div id="liste" style="margin-top:10px"></div>
+    <div class="bar" style="position:static"><button id="logout">Déconnexion</button></div>
+  </div>
+
+  <div class="col">
+    <h1>✏️ Édition</h1>
+    <label>Nom interne (pour te repérer)</label><input type="text" id="nom">
+    <label>Salon de publication</label><select id="channel"></select>
+    <label>Texte au-dessus de l'embed (facultatif)</label><input type="text" id="content" maxlength="2000">
+
+    <h2>Contenu</h2>
+    <label>Titre</label><input type="text" id="title" maxlength="256">
+    <label>Description (Markdown : **gras**, *italique*, `code`, > citation)</label><textarea id="description" maxlength="4096"></textarea>
+    <div class="row">
+      <div><label>Couleur</label><div class="row"><input type="color" id="colorp" value="#5865f2" class="n"><input type="text" id="color" value="#5865f2" maxlength="7"></div></div>
+      <div><label>Lien du titre</label><input type="url" id="url" placeholder="https://..."></div>
+    </div>
+
+    <h2>Auteur · Images · Pied de page</h2>
+    <div class="row"><div><label>Auteur</label><input type="text" id="authorName"></div><div><label>Icône auteur (URL)</label><input type="url" id="authorIcon"></div></div>
+    <div class="row"><div><label>Vignette (URL)</label><input type="url" id="thumbnail"></div><div><label>Grande image (URL)</label><input type="url" id="image"></div></div>
+    <div class="row"><div><label>Pied de page</label><input type="text" id="footerText"></div><div><label>Icône pied (URL)</label><input type="url" id="footerIcon"></div></div>
+    <label><input type="checkbox" id="timestamp" style="width:auto"> Afficher l'heure d'envoi</label>
+    <label><input type="checkbox" id="largeurFixe" style="width:auto"> Largeur fixe (comme les panneaux du bot)</label>
+
+    <h2>Champs</h2>
+    <div id="fields"></div>
+    <button id="addfield" style="margin-top:8px">＋ Ajouter un champ</button>
+
+    <div class="bar">
+      <button class="ok" id="save">💾 Enregistrer</button>
+      <button class="p" id="send">🚀 Publier / Relancer</button>
+      <button id="edit">✏️ Modifier le message publié</button>
+      <button class="d" id="del">🗑️ Supprimer</button>
+    </div>
+    <div id="msg"></div>
+    <div class="hint">« Publier / Relancer » poste un nouveau message et supprime l'ancien. « Modifier » met à jour l'ancien message sur place. Images : liens https:// uniquement.</div>
+  </div>
+
+  <div class="col">
+    <h1>👁️ Aperçu</h1>
+    <div id="prev"></div>
+    <div class="hint" id="lastinfo"></div>
+  </div>
+</div>
+
+<script>
+const $ = id => document.getElementById(id);
+const api = async (url, method = 'GET', body) => {
+  const r = await fetch(url, { method, headers: { 'Content-Type': 'application/json' }, body: body ? JSON.stringify(body) : undefined });
+  const j = await r.json().catch(() => ({}));
+  if (r.status === 401 && url !== '/api/login') { showLogin(); throw new Error('Non connecté'); }
+  if (!r.ok) throw new Error(j.error || 'Erreur ' + r.status);
+  return j;
+};
+const esc = s => String(s ?? '').replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
+const md = s => esc(s).replace(/\*\*(.+?)\*\*/g, '<b>$1</b>').replace(/\*(.+?)\*/g, '<i>$1</i>').replace(/`(.+?)`/g, '<code>$1</code>')
+  .replace(/^&gt; (.*)$/gm, '<blockquote style="margin:2px 0;padding-left:8px;border-left:3px solid #4e5058">$1</blockquote>');
+
+let embeds = [], cur = null, fields = [];
+const TXT = ['title', 'description', 'color', 'url', 'authorName', 'authorIcon', 'thumbnail', 'image', 'footerText', 'footerIcon'];
+
+function showLogin() { $('app').style.display = 'none'; $('login').style.display = 'block'; }
+async function showApp() {
+  $('login').style.display = 'none'; $('app').style.display = 'grid';
+  const chs = await api('/api/channels').catch(() => []);
+  $('channel').innerHTML = '<option value="">— choisir un salon —</option>' + chs.map(c => `<option value="${c.id}">${esc(c.category ? c.category + ' › ' : '')}#${esc(c.name)}</option>`).join('');
+  await charger(); nouveau();
+}
+async function charger() { embeds = await api('/api/embeds'); liste(); }
+function liste() {
+  $('liste').innerHTML = embeds.length ? embeds.slice().sort((a, b) => b.updatedAt - a.updatedAt).map(e =>
+    `<div class="item ${cur?.id === e.id ? 'sel' : ''}" data-id="${e.id}">${esc(e.nom)}<small>${e.last ? '✅ publié' : '📝 brouillon'}</small></div>`).join('')
+    : '<div class="hint">Aucun embed enregistré.</div>';
+  document.querySelectorAll('.item').forEach(i => i.onclick = () => ouvrir(embeds.find(e => e.id === i.dataset.id)));
+}
+function nouveau() { ouvrir({ id: null, nom: '', channelId: '', content: '', largeurFixe: true, embed: { color: '#5865f2', fields: [] }, last: null }); }
+function ouvrir(e) {
+  cur = e; const d = e.embed || {};
+  $('nom').value = e.nom; $('channel').value = e.channelId; $('content').value = e.content || '';
+  TXT.forEach(k => $(k).value = d[k] || (k === 'color' ? '#5865f2' : ''));
+  $('timestamp').checked = !!d.timestamp; $('largeurFixe').checked = !!e.largeurFixe;
+  fields = (d.fields || []).map(f => ({ ...f })); dessinerChamps(); apercu(); liste(); $('msg').textContent = '';
+}
+function lire() {
+  const embed = { timestamp: $('timestamp').checked, fields };
+  TXT.forEach(k => embed[k] = $(k).value);
+  return { id: cur?.id, nom: $('nom').value || embed.title || 'Sans titre', channelId: $('channel').value, content: $('content').value, largeurFixe: $('largeurFixe').checked, embed };
+}
+function dessinerChamps() {
+  $('fields').innerHTML = fields.map((f, i) => `<div class="field">
+    <input type="text" placeholder="Nom du champ" value="${esc(f.name)}" data-i="${i}" data-k="name">
+    <textarea style="min-height:60px;margin-top:6px" placeholder="Valeur" data-i="${i}" data-k="value">${esc(f.value)}</textarea>
+    <div class="row" style="margin-top:6px"><label style="margin:0"><input type="checkbox" style="width:auto" ${f.inline ? 'checked' : ''} data-i="${i}" data-k="inline"> En ligne</label>
+    <button class="d n" data-rm="${i}">Retirer</button></div></div>`).join('');
+  document.querySelectorAll('#fields [data-k]').forEach(el => el.oninput = () => { fields[el.dataset.i][el.dataset.k] = el.type === 'checkbox' ? el.checked : el.value; apercu(); });
+  document.querySelectorAll('[data-rm]').forEach(b => b.onclick = () => { fields.splice(+b.dataset.rm, 1); dessinerChamps(); apercu(); });
+}
+function apercu() {
+  const v = lire(), d = v.embed, col = /^#?[0-9a-f]{6}$/i.test(d.color) ? '#' + d.color.replace('#', '') : '#5865f2';
+  const img = u => /^https?:\/\//i.test(u || '') ? esc(u) : '';
+  $('prev').innerHTML = (v.content ? `<div class="pc">${md(v.content)}</div>` : '') + `<div class="emb" style="border-left-color:${col}">
+    ${d.authorName ? `<div class="a">${img(d.authorIcon) ? `<img src="${img(d.authorIcon)}">` : ''}${esc(d.authorName)}</div>` : ''}
+    ${d.title ? `<div class="t">${img(d.url) ? `<a href="${img(d.url)}" target="_blank">${esc(d.title)}</a>` : esc(d.title)}</div>` : ''}
+    ${d.description ? `<div class="d">${md(d.description)}</div>` : ''}
+    ${d.fields.length ? `<div class="fl">${d.fields.filter(f => f.name && f.value).map(f => `<div class="${f.inline ? 'i' : ''}"><b>${esc(f.name)}</b><span>${md(f.value)}</span></div>`).join('')}</div>` : ''}
+    ${img(d.image) ? `<img class="im" src="${img(d.image)}">` : ''}
+    ${img(d.thumbnail) ? `<img class="th" src="${img(d.thumbnail)}">` : ''}
+    ${d.footerText || d.timestamp ? `<div class="f">${img(d.footerIcon) ? `<img src="${img(d.footerIcon)}">` : ''}${esc(d.footerText || '')}${d.footerText && d.timestamp ? ' • ' : ''}${d.timestamp ? new Date().toLocaleString('fr-FR') : ''}</div>` : ''}
+  </div>`;
+  $('lastinfo').textContent = cur?.last ? 'Dernière publication : ' + new Date(cur.last.at).toLocaleString('fr-FR') : 'Pas encore publié.';
+}
+function dire(t, ok) { $('msg').className = ok ? 'g' : 'e'; $('msg').textContent = t; }
+async function enregistrer() { cur = await api('/api/embeds', 'POST', lire()); await charger(); return cur; }
+
+$('go').onclick = async () => { try { await api('/api/login', 'POST', { password: $('pw').value }); showApp(); } catch (e) { $('lmsg').textContent = e.message; } };
+$('pw').onkeydown = e => { if (e.key === 'Enter') $('go').click(); };
+$('logout').onclick = async () => { await api('/api/logout', 'POST'); showLogin(); };
+$('nouveau').onclick = nouveau;
+$('addfield').onclick = () => { fields.push({ name: '', value: '', inline: false }); dessinerChamps(); };
+$('save').onclick = async () => { try { await enregistrer(); dire('✅ Enregistré', true); apercu(); } catch (e) { dire(e.message); } };
+const publier = mode => async () => {
+  try {
+    if (!$('channel').value) return dire('Choisis un salon');
+    await enregistrer(); cur = await api('/api/embeds/' + cur.id + '/send', 'POST', { mode });
+    await charger(); apercu(); dire(mode === 'edit' ? '✅ Message modifié sur le serveur' : '✅ Publié sur le serveur', true);
+  } catch (e) { dire(e.message); }
+};
+$('send').onclick = publier('new'); $('edit').onclick = publier('edit');
+$('del').onclick = async () => {
+  if (!cur?.id || !confirm('Supprimer cet embed enregistré ? (le message déjà publié reste sur Discord)')) return;
+  await api('/api/embeds/' + cur.id, 'DELETE'); await charger(); nouveau();
+};
+document.querySelectorAll('#app input, #app textarea, #app select').forEach(el => el.addEventListener('input', apercu));
+$('colorp').oninput = () => { $('color').value = $('colorp').value; apercu(); };
+$('color').oninput = () => { if (/^#[0-9a-f]{6}$/i.test($('color').value)) $('colorp').value = $('color').value; };
+
+api('/api/me').then(r => r.ok ? showApp() : showLogin()).catch(showLogin);
+</script>
+</body>
+</html>
