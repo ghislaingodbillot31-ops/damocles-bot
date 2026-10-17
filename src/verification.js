@@ -138,11 +138,13 @@ async function runChecks(member) {
   });
 
   // 3. Ancien membre : a-t-il déjà été sur le serveur ?
-  const dejaVenu = !!record && (visits > 1 || hasEvent('leave', 'kick', 'rejoin', 'sync_absent', 'sync_rejoin'));
+  // connu de la base : déjà revenu, parti, expulsé… ou simplement enregistré avant cette arrivée (fiche importée ou plus ancienne que 10 min)
+  const dejaVenu = !!record && (visits > 1 || hasEvent('leave', 'kick', 'rejoin', 'sync_absent', 'sync_rejoin')
+    || (record.firstSeen && Date.now() - new Date(record.firstSeen).getTime() > 10 * 60 * 1000));
   checks.push({
     label: '🔁 Ancien membre', type: 'oui_non',
     value: dejaVenu, passed: true,
-    detail: dejaVenu ? visits + ' passage(s) sur le serveur' : null,
+    detail: dejaVenu ? 'Connu en base depuis le ' + fmtDate(record.firstSeen) + ' · ' + visits + ' passage(s)' : null,
   });
 
   // 4. Sanctions

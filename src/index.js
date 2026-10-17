@@ -148,6 +148,8 @@ client.on(Events.GuildMemberAdd, async member => {
     if (VERIFICATION_ROLE_ID) await member.roles.add(VERIFICATION_ROLE_ID).catch(() => {});
     await checkNewMember(member);
     await log(client, 'member_join', { userId: member.id });
+    // vérification complète de chaque arrivant (âge, pseudo, base de données : connu, expulsé, banni…) dans les logs publics
+    await log(client, 'verification_ok', { userId: member.id });
     await require('./codeverif').issue(member);
     return;
   }

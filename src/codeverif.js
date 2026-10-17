@@ -211,7 +211,6 @@ async function handleModal(interaction) {
   await db.upsertMember(member.user, { verifiedAt: new Date().toISOString(), verificationResult: 'ok' });
   codes.delete(member.id);
   await interaction.reply({ content: 'Vérifié, bienvenue ! Verified, welcome!', flags: 64 });
-  await log(interaction.client, 'verification_ok', { userId: member.id });
 }
 
 // true = message traité (salon de vérification / de code), l'appelant s'arrête là
