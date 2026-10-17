@@ -63,6 +63,11 @@ client.on = (ev, fn) => _on(ev, (...a) => {
 require('./simple').installer();
 
 client.once(Events.ClientReady, async () => {
+  // Sécurité : ce bot ne doit plus rien publier sur l'ancien serveur VANGUARD
+  if (process.env.GUILD_ID === '1208785889849905172') {
+    console.error('⛔ GUILD_ID pointe vers l ancien serveur : arrêt sans rien publier. Utilise la configuration de Le Coin des Copains.');
+    process.exit(0);
+  }
   console.log('✅ Bot connecté : ' + client.user.tag);
   console.log('📡 Serveurs : ' + client.guilds.cache.size);
   setClient(client);
