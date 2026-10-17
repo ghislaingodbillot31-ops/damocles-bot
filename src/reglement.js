@@ -40,6 +40,7 @@ async function publier(client) {
   const existant = [...(await channel.messages.fetch({ limit: 20 })).values()].find(m => m.author.id === client.user.id && m.embeds.length);
   if (existant) await existant.edit(payload(channel.guild.name));
   else await channel.send(payload(channel.guild.name));
+  await require('./nettoyage').epurer(client, channel.id);
   console.log('📜 Règlement publié (#' + channel.name + ')');
 }
 

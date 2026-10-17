@@ -823,7 +823,7 @@ function canManage(interaction, exploit) {
 
 module.exports = {
   HUB_CHANNEL, EXPLOITANT_ROLE_ID, ACTIVITES,
-  postHub,
+  postHub: async channel => { await postHub(channel); await require('./nettoyage').epurer(channel.client, channel.id); },
   handleHubExpl, handleHubExplCreer, handleHubExplCreerModal,
   handleHubExplManage, handleHubExplSetAct, handleHubExplNom,
   handleHubExplOuvAdd, handleHubExplOuvDel, handleHubAnnuaire, handleHubAnnuaireOff,

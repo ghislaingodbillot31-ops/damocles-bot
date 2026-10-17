@@ -141,6 +141,7 @@ async function updateBirthdayChannel(client) {
     }]
   })).catch(console.error);
 
+  await require('./nettoyage').epurer(client, channel.id);
   console.log('🎂 Salon anniversaires mis à jour — ' + all.length + ' anniversaire(s)');
 }
 

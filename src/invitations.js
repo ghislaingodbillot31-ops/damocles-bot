@@ -112,6 +112,7 @@ async function startInvitations(client) {
     const msg = await channel.send(panelPayload()).catch(err => { console.error('⚠️ Invitations :', err.message); return null; });
     store.panelMsgId = msg?.id || null;
     save();
+    await require('./nettoyage').epurer(client, channel.id);
     console.log('🔗 Invitations · prêt (HUB : #' + channel.name + ')');
   } catch (err) {
     console.error('⚠️ Invitations :', err.message);
