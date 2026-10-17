@@ -138,11 +138,19 @@ async function handleInviteButton(interaction) {
   save();
   const exp = Math.floor(store.links[code].expiresAt / 1000);
   // le lien reste en texte brut au-dessus du panneau pour rester cliquable et facile à copier
-  await interaction.editReply({ content: 'https://discord.gg/' + code, ...panneau({ embeds: [{
-    title: '🔗 TON LIEN · YOUR LINK',
-    description: '⏳ Valable jusqu\'au · Valid until <t:' + exp + ':f>',
-    color: 0x5865F2,
-  }] }) });
+  const lien = {
+    content: 'https://discord.gg/' + code,
+    ...panneau({ embeds: [{
+      title: '🔗 TON LIEN · YOUR LINK',
+      description: '⏳ Valable jusqu\'au · Valid until <t:' + exp + ':f>',
+      color: 0x5865F2,
+    }] }),
+  };
+  // envoyé en message privé ; si les MP sont fermés, affiché ici (visible par toi seul)
+  const mp = await interaction.user.send(lien).then(() => true).catch(() => false);
+  await interaction.editReply(mp
+    ? 'Ton lien d\'invitation t\'a été envoyé en message privé. / Your invite link was sent to you by DM.'
+    : { ...lien, content: 'Tes MP sont fermés, voici ton lien. / Your DMs are closed, here is your link.\n' + lien.content });
 }
 
 module.exports = { startInvitations, handleInviteButton, handleRolesButton, handleRoleToggle, createur };
