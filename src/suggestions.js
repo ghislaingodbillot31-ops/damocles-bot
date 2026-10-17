@@ -11,10 +11,10 @@ const { agrilog } = require('./agrilog');
 // Propositions de mods : panneau (règlement des mods) avec le bouton « Faire une proposition » dans le salon
 // des suggestions. Chaque proposition y est publiée, un admin la valide ou la
 // refuse (commentaire facultatif) et l'auteur reçoit la décision en MP.
-// SUGG_MODE=jeu (serveur Le Coin des Copains) : on propose des idées pour le jeu (FR/EN) au lieu de mods.
-const JEU = process.env.SUGG_MODE === 'jeu';
-const SUGG_CHANNEL = ids('SUGG_CHANNEL_ID');
-const STORE_PATH   = dataPath('suggestions.json');
+// Deux HUB sur le même code : idées pour le jeu (SUGG_CHANNEL_ID, boutons sugg_) et propositions de mods
+// (MODS_CHANNEL_ID, boutons modprop_), chacun avec son salon, son fichier et ses numéros.
+function creer({ JEU, SUGG_CHANNEL, P, fichier }) {
+const STORE_PATH   = dataPath(fichier);
 const COOLDOWN_MS  = 5 * 60 * 1000; // une proposition toutes les 5 min par joueur
 
 // { next, panelMsgId, items: { n: { userId, titre, texte, lien, msgId, status, createdAt, decidedBy, commentaire } } }
@@ -68,7 +68,7 @@ function panelPayload() {
       footer: { text: 'Le Coin des Copains · MonCopainBot' },
     }],
     components: [new ActionRowBuilder().addComponents(
-      new ButtonBuilder().setCustomId('sugg_new').setLabel('💡 Faire une proposition · Make a suggestion').setStyle(ButtonStyle.Primary),
+      new ButtonBuilder().setCustomId(P + '_new').setLabel('💡 Faire une proposition · Make a suggestion').setStyle(ButtonStyle.Primary),
     )],
   });
   return panneau({
@@ -89,10 +89,10 @@ function panelPayload() {
         '(facultatif). Le staff la valide ou la refuse, tu reçois la décision en MP.',
       ].join('\n'),
       color: 0xF1C40F,
-      footer: { text: 'EUROAGRI · MonCopainBot' },
+      footer: { text: 'Le Coin des Copains · MonCopainBot' },
     }],
     components: [new ActionRowBuilder().addComponents(
-      new ButtonBuilder().setCustomId('sugg_new').setLabel('💡 Faire une proposition').setStyle(ButtonStyle.Primary),
+      new ButtonBuilder().setCustomId(P + '_new').setLabel('💡 Faire une proposition').setStyle(ButtonStyle.Primary),
     )],
   });
 }
@@ -148,8 +148,8 @@ function suggPayload(n, s) {
       timestamp: new Date(s.createdAt).toISOString(),
     }] }),
     components: s.status === 'attente' ? [new ActionRowBuilder().addComponents(
-      new ButtonBuilder().setCustomId('sugg_ok_' + n).setLabel('✅ Valider').setStyle(ButtonStyle.Success),
-      new ButtonBuilder().setCustomId('sugg_no_' + n).setLabel('❌ Refuser').setStyle(ButtonStyle.Danger),
+      new ButtonBuilder().setCustomId(P + '_ok_' + n).setLabel('✅ Valider').setStyle(ButtonStyle.Success),
+      new ButtonBuilder().setCustomId(P + '_no_' + n).setLabel('❌ Refuser').setStyle(ButtonStyle.Danger),
     )] : [],
     allowedMentions: { parse: [] },
   };
@@ -164,7 +164,7 @@ async function handleSuggNew(interaction) {
     autoClean(interaction);
     return;
   }
-  const modal = new ModalBuilder().setCustomId('sugg_modal').setTitle(JEU ? 'Proposition · Suggestion' : 'Proposer un mod');
+  const modal = new ModalBuilder().setCustomId(P + '_modal').setTitle(JEU ? 'Proposition · Suggestion' : 'Proposer un mod');
   const champ = (id, label, style, o = {}) => new ActionRowBuilder().addComponents(
     new TextInputBuilder().setCustomId(id).setLabel(label).setStyle(style).setRequired(o.requis ?? true)
       .setMaxLength(o.max).setMinLength(o.min || 0).setPlaceholder(o.ph || ' '));
@@ -232,7 +232,7 @@ async function handleSuggDecision(interaction) {
   if (!s || s.status !== 'attente') { await interaction.reply({ content: 'ℹ️ Cette proposition a déjà été traitée.', flags: 64 }); autoClean(interaction); return; }
 
   const valide = action === 'ok';
-  const modal = new ModalBuilder().setCustomId('sugg_' + action + 'modal_' + num)
+  const modal = new ModalBuilder().setCustomId(P + '_' + action + 'modal_' + num)
     .setTitle((valide ? 'Valider' : 'Refuser') + ' la proposition n°' + num);
   modal.addComponents(new ActionRowBuilder().addComponents(
     new TextInputBuilder().setCustomId('commentaire').setLabel(valide ? 'Message pour le joueur (facultatif)' : 'Raison du refus (facultatif)')
@@ -242,7 +242,7 @@ async function handleSuggDecision(interaction) {
 }
 
 async function handleSuggDecisionModal(interaction) {
-  const m = interaction.customId.match(/^sugg_(ok|no)modal_(\d+)$/);
+  const m = interaction.customId.match(new RegExp('^' + P + '_(ok|no)modal_(\\d+)$'));
   const num = m[2];
   const valide = m[1] === 'ok';
   const s = store.items[num];
@@ -280,7 +280,7 @@ async function handleSuggDecisionModal(interaction) {
         ...(s.commentaire ? ['', '💬 **Réponse du staff :**', s.commentaire] : []),
       ].join('\n'),
       color: valide ? 0x2ECC71 : 0xE74C3C,
-      footer: { text: (JEU ? 'Le Coin des Copains' : 'EUROAGRI') + ' · MonCopainBot' },
+      footer: { text: 'Le Coin des Copains' + ' · MonCopainBot' },
     }] }));
   } catch { mp = false; /* MP fermés */ }
 
@@ -313,4 +313,13 @@ async function startSuggestions(client) {
   }
 }
 
-module.exports = { startSuggestions, handleSuggNew, handleSuggModal, handleSuggDecision, handleSuggDecisionModal };
+return { startSuggestions, handleSuggNew, handleSuggModal, handleSuggDecision, handleSuggDecisionModal };
+}
+
+const jeu  = creer({ JEU: true, SUGG_CHANNEL: ids('SUGG_CHANNEL_ID'), P: 'sugg', fichier: 'suggestions.json' });
+const mods = creer({ JEU: false, SUGG_CHANNEL: ids('MODS_CHANNEL_ID'), P: 'modprop', fichier: 'mods-propositions.json' });
+
+// Le HUB des mods n'est publié que si MODS_CHANNEL_ID est défini
+const startSuggestions = async client => { await jeu.startSuggestions(client); if (ids('MODS_CHANNEL_ID')) await mods.startSuggestions(client); };
+
+module.exports = { startSuggestions, jeu, mods };

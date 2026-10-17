@@ -299,8 +299,8 @@ client.on(Events.InteractionCreate, async interaction => {
       if (cid.startsWith('besoin_modal_'))      { await contrat.handleBesoinModal(interaction);   return; }
       if (cid.startsWith('voice_rename_modal_') || cid.startsWith('voice_limit_modal_')) { await tempvoice.handleVoiceModal(interaction); return; }
       if (cid === 'text_create_modal' || cid.startsWith('text_rename_modal_')) { await require('./temptext').handleTextModal(interaction); return; }
-      if (cid === 'sugg_modal')                 { await require('./suggestions').handleSuggModal(interaction); return; }
-      if (/^sugg_(ok|no)modal_\d+$/.test(cid))  { await require('./suggestions').handleSuggDecisionModal(interaction); return; }
+      if (cid === 'sugg_modal' || cid === 'modprop_modal') { await require('./suggestions')[cid.split('_')[0] === 'sugg' ? 'jeu' : 'mods'].handleSuggModal(interaction); return; }
+      if (/^(sugg|modprop)_(ok|no)modal_\d+$/.test(cid)) { await require('./suggestions')[cid.startsWith('sugg') ? 'jeu' : 'mods'].handleSuggDecisionModal(interaction); return; }
       if (/^bug_modal(_en)?$/.test(cid))        { await require('./bugs').handleBugModal(interaction); return; }
       if (/^bug_nomodal_\d+$/.test(cid))        { await require('./bugs').handleBugRefus(interaction); return; }
       if (cid === 'hub_boutique_modal')         { await boutique.handleModal(interaction);         return; }
@@ -362,8 +362,8 @@ client.on(Events.InteractionCreate, async interaction => {
 
   // Boîte à idées
   try {
-    if (id === 'sugg_new')                    { await require('./suggestions').handleSuggNew(interaction); return; }
-    if (/^sugg_(ok|no)_\d+$/.test(id))        { await require('./suggestions').handleSuggDecision(interaction); return; }
+    if (id === 'sugg_new' || id === 'modprop_new') { await require('./suggestions')[id.startsWith('sugg') ? 'jeu' : 'mods'].handleSuggNew(interaction); return; }
+    if (/^(sugg|modprop)_(ok|no)_\d+$/.test(id)) { await require('./suggestions')[id.startsWith('sugg') ? 'jeu' : 'mods'].handleSuggDecision(interaction); return; }
   } catch (err) { console.error('Erreur bouton suggestions :', err.stack || err.message); }
 
   // Lien d'invitation (7 jours)
