@@ -4,8 +4,8 @@ const { panneau } = require('./embed-format');
 const { ActionRowBuilder, ButtonBuilder, ButtonStyle, ModalBuilder, TextInputBuilder, TextInputStyle } = require('discord.js');
 require('dotenv').config();
 
-const BIRTHDAY_CHANNEL_ID = ids('BIRTHDAY_CHANNEL_ID', '1538533316410474547');
-const GENERAL_CHANNEL_ID  = process.env.CHAT_CHANNEL_ID || ids('CHAT_CHANNEL_ID', '1538533261314236527');
+const BIRTHDAY_CHANNEL_ID = ids('BIRTHDAY_CHANNEL_ID');
+const GENERAL_CHANNEL_ID  = process.env.CHAT_CHANNEL_ID || ids('CHAT_CHANNEL_ID');
 
 const MOIS = ['', 'Janvier', 'Février', 'Mars', 'Avril', 'Mai', 'Juin',
               'Juillet', 'Août', 'Septembre', 'Octobre', 'Novembre', 'Décembre'];

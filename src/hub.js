@@ -9,8 +9,8 @@ const { agrilog } = require('./agrilog');
 const { panneau } = require('./embed-format');
 
 // ── Config ────────────────────────────────────────────────────────────────────
-const HUB_CHANNEL        = ids('HUB_CHANNEL_ID', '1544303765602173020'); // salon du hub
-const EXPLOITANT_ROLE_ID = ids('EXPLOITANT_ROLE_ID', '1544719267495157831');
+const HUB_CHANNEL        = ids('HUB_CHANNEL_ID'); // salon du hub
+const EXPLOITANT_ROLE_ID = ids('EXPLOITANT_ROLE_ID');
 
 const ACTIVITES = [
   { label: '🌾 Céréales & Grandes cultures', value: 'Céréales & Grandes cultures' },

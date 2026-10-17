@@ -10,7 +10,7 @@ const { agrilog } = require('../agrilog');
 const { SEP, wrap } = require('../embed-format');
 
 const { dataPath }    = require('../paths');
-const CONTRAT_CHANNEL = ids('CONTRAT_CHANNEL_ID', '1544735442589450270');
+const CONTRAT_CHANNEL = ids('CONTRAT_CHANNEL_ID');
 const SESSION_PATH    = dataPath('contrat-sessions.json');
 
 function autoClean(interaction, delay = 4000) {

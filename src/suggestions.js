@@ -13,7 +13,7 @@ const { agrilog } = require('./agrilog');
 // refuse (commentaire facultatif) et l'auteur reçoit la décision en MP.
 // SUGG_MODE=jeu (serveur Le Coin des Copains) : on propose des idées pour le jeu (FR/EN) au lieu de mods.
 const JEU = process.env.SUGG_MODE === 'jeu';
-const SUGG_CHANNEL = ids('SUGG_CHANNEL_ID', '1544351510689747074');
+const SUGG_CHANNEL = ids('SUGG_CHANNEL_ID');
 const STORE_PATH   = dataPath('suggestions.json');
 const COOLDOWN_MS  = 5 * 60 * 1000; // une proposition toutes les 5 min par joueur
 

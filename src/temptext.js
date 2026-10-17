@@ -10,7 +10,7 @@ const { dataPath } = require('./paths');
 // Salons textuels temporaires, dans la catégorie TEXTUEL.
 // Création par le bouton du salon d'accueil (lui aussi dans TEXTUEL, séparé des
 // salons vocaux), gestion par le panneau posté dans chaque salon, invitations par /invite.
-const TEXT_CATEGORY = ids('TEXT_CATEGORY_ID', '1552693042161385532');
+const TEXT_CATEGORY = ids('TEXT_CATEGORY_ID');
 const STORE_PATH    = dataPath('temptext.json');
 const ACCUEIL_NOM   = '➕-créer-un-salon';
 let accueilId = null; // salon d'accueil (mémorisé : il peut être renommé)

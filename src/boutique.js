@@ -15,7 +15,7 @@ const { agrilog } = require('./agrilog');
 const { panneau, SEP } = require('./embed-format');
 
 // ── Config ────────────────────────────────────────────────────────────────────
-const HUB_CHANNEL  = ids('HUB_CHANNEL_ID', '1544303765602173020'); // salon #hub → on en déduit la catégorie
+const HUB_CHANNEL  = ids('HUB_CHANNEL_ID'); // salon #hub → on en déduit la catégorie
 const CHANNEL_NAME = 'boutique';            // salon staff des demandes d'échange
 const TAUX         = 5;                     // 1 point = 5 € en jeu
 const MIN          = 10;                    // points mini par échange

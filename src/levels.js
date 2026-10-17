@@ -52,8 +52,8 @@ function setBaremeValeur(cle, valeur) {
   saveBareme();
   return { ...XP };
 }
-const LEVELUP_CHANNEL     = ids('LEVELUP_CHANNEL_ID', '1538533319430373516'); // annonces de montée de niveau
-const LEADERBOARD_CHANNEL = ids('LEVELUP_CHANNEL_ID', '1538533319430373516'); // message de classement permanent
+const LEVELUP_CHANNEL     = ids('LEVELUP_CHANNEL_ID'); // annonces de montée de niveau
+const LEADERBOARD_CHANNEL = ids('LEVELUP_CHANNEL_ID'); // message de classement permanent
 
 // ── Courbe de niveaux ────────────────────────────────────────────────────────
 function xpToNext(level)      { return 5 * level * level + 50 * level + 100; }

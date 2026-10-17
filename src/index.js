@@ -33,7 +33,7 @@ const VERIFICATION_ROLE_ID = process.env.VERIFICATION_ROLE_ID;
 const ATTENTE_ROLE_ID      = process.env.ATTENTE_ROLE_ID;
 const REGLEMENT_ROLE_ID    = process.env.REGLEMENT_ROLE_ID;
 const ACTIVE_ROLE_ID       = process.env.ACTIVE_ROLE_ID;
-const GENERAL_CHANNEL_ID   = ids('CHAT_CHANNEL_ID', '1538533261314236527');
+const GENERAL_CHANNEL_ID   = ids('CHAT_CHANNEL_ID');
 
 const firstMessageDone = new Set();
 

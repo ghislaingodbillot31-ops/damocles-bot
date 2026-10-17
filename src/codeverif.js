@@ -4,7 +4,7 @@ const { panneau } = require('./embed-format');
 // • VERIF_MODE=code (Le Coin des Copains) : le nouvel arrivant reçoit un code dans le salon de vérification, le retape et obtient
 //   le rôle Membres. Aucune expulsion.
 //
-// • VERIF_MODE=code-compte (VANGUARD) : le compte est d'abord vérifié dans bot-status (verification.verifyMember).
+// • VERIF_MODE=code-compte : le compte est d'abord vérifié dans bot-status (verification.verifyMember).
 //   Une fois validé, un salon PRIVÉ « code-<pseudo> » s'ouvre (visible du seul joueur et du staff) et le code lui est envoyé
 //   en MP (à défaut dans ce salon privé). Le bon code donne le rôle « En attente » (accès au règlement) et supprime le salon ;
 //   l'acceptation du règlement donne ensuite l'accès à tout. Il n'est jamais nécessaire de parler pour activer son compte.
@@ -15,8 +15,8 @@ const db = require('./database');
 const { log } = require('./logger');
 const { dataPath } = require('./paths');
 
-// Salon où se tape le code : un salon nommé « code-de-validation » s'il existe (VANGUARD), sinon VERIFICATION_CHANNEL_ID (Le Coin des Copains)
-const codeChannel = guild => guild.channels.cache.find(c => c.name.includes('code-de-validation')) || guild.channels.cache.get(process.env.VERIFICATION_CHANNEL_ID);
+// Salon où se tape le code : VERIFICATION_CHANNEL_ID
+const codeChannel = guild => guild.channels.cache.get(process.env.VERIFICATION_CHANNEL_ID);
 const FLOW = () => process.env.VERIF_MODE === 'code-compte';
 const MAX_ESSAIS = 5;
 // Rôles qui prouvent que le code a déjà été validé (ou que le membre est plus loin dans le parcours)
@@ -154,7 +154,7 @@ async function issueSimple(member) {
 async function onMessageSimple(message) {
   if (message.channel.id !== codeChannel(message.guild)?.id) return false;
   const { member } = message;
-  const membreId = process.env.MEMBRE_ROLE_ID || process.env.ACTIVE_ROLE_ID; // rôle « membre » : Membres (Le Coin des Copains) ou Membre vérifié (VANGUARD)
+  const membreId = process.env.MEMBRE_ROLE_ID || process.env.ACTIVE_ROLE_ID; // rôle « membre » : Membres (Le Coin des Copains) ou Membre vérifié
   if (member.roles.cache.has(membreId) || member.permissions.has('ManageMessages')) return false;
 
   message.delete().catch(() => {});

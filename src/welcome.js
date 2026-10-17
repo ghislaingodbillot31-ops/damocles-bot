@@ -8,7 +8,7 @@ const { panneau }        = require('./embed-format');
 const CONFIG_PATH        = dataPath('welcome-config.json');
 const LOG_CHANNEL_ID     = process.env.LOG_CHANNEL_ID;
 const REGLEMENT_CHANNEL_ID = process.env.REGLEMENT_CHANNEL_ID;
-const CHAT_CHANNEL_ID      = process.env.CHAT_CHANNEL_ID || ids('CHAT_CHANNEL_ID', '1538533261314236527');
+const CHAT_CHANNEL_ID      = process.env.CHAT_CHANNEL_ID || ids('CHAT_CHANNEL_ID');
 
 // ── Config personnalisable ────────────────────────────────────────────────────
 function loadWelcomeConfig() {
