@@ -99,7 +99,7 @@ async function syncDatabase(interaction) {
         '❌ Absents : **' + stats.absent + '**',
       ].join('\n'),
       color: 0x2ECC71,
-      footer: { text: 'DAMOCLES' },
+      footer: { text: 'MonCopainBot' },
       timestamp: new Date().toISOString(),
     }],
   }));

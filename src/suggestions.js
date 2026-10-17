@@ -11,7 +11,7 @@ const { agrilog } = require('./agrilog');
 // Propositions de mods : panneau (règlement des mods) avec le bouton « Faire une proposition » dans le salon
 // des suggestions. Chaque proposition y est publiée, un admin la valide ou la
 // refuse (commentaire facultatif) et l'auteur reçoit la décision en MP.
-// SUGG_MODE=jeu (serveur DOMINIUS) : on propose des idées pour le jeu (FR/EN) au lieu de mods.
+// SUGG_MODE=jeu (serveur Le Coin des Copains) : on propose des idées pour le jeu (FR/EN) au lieu de mods.
 const JEU = process.env.SUGG_MODE === 'jeu';
 const SUGG_CHANNEL = ids('SUGG_CHANNEL_ID', '1544351510689747074');
 const STORE_PATH   = dataPath('suggestions.json');
@@ -65,7 +65,7 @@ function panelPayload() {
         '📩 Le staff valide ou refuse, tu reçois la décision en MP · The staff accepts or declines, you get the decision by DM.',
       ].join('\n'),
       color: 0xF1C40F,
-      footer: { text: 'DOMINIUS · Damoclès Bot' },
+      footer: { text: 'Le Coin des Copains · MonCopainBot' },
     }],
     components: [new ActionRowBuilder().addComponents(
       new ButtonBuilder().setCustomId('sugg_new').setLabel('💡 Faire une proposition · Make a suggestion').setStyle(ButtonStyle.Primary),
@@ -89,7 +89,7 @@ function panelPayload() {
         '(facultatif). Le staff la valide ou la refuse, tu reçois la décision en MP.',
       ].join('\n'),
       color: 0xF1C40F,
-      footer: { text: 'EUROAGRI · Damoclès Bot' },
+      footer: { text: 'EUROAGRI · MonCopainBot' },
     }],
     components: [new ActionRowBuilder().addComponents(
       new ButtonBuilder().setCustomId('sugg_new').setLabel('💡 Faire une proposition').setStyle(ButtonStyle.Primary),
@@ -280,7 +280,7 @@ async function handleSuggDecisionModal(interaction) {
         ...(s.commentaire ? ['', '💬 **Réponse du staff :**', s.commentaire] : []),
       ].join('\n'),
       color: valide ? 0x2ECC71 : 0xE74C3C,
-      footer: { text: (JEU ? 'DOMINIUS' : 'EUROAGRI') + ' · Damoclès Bot' },
+      footer: { text: (JEU ? 'Le Coin des Copains' : 'EUROAGRI') + ' · MonCopainBot' },
     }] }));
   } catch { mp = false; /* MP fermés */ }
 

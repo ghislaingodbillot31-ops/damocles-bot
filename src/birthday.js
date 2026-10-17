@@ -39,7 +39,7 @@ async function sendBirthdayMessages(client) {
           '🎉 Bon anniversaire de la part de toute la communauté !',
         ].join('\n'),
         color: 0xF1C40F,
-        footer: { text: 'Damoclès Security Bot' },
+        footer: { text: 'MonCopainBot' },
         timestamp: new Date().toISOString(),
       }]
     })).catch(console.error);
@@ -136,7 +136,7 @@ async function updateBirthdayChannel(client) {
         '-# Clique sur le bouton ci-dessous pour ajouter ou modifier ta date',
       ].join('\n'),
       color: 0xF1C40F,
-      footer: { text: 'Mis à jour le ' + now.toLocaleDateString('fr-FR') + ' · Damoclès Bot' },
+      footer: { text: 'Mis à jour le ' + now.toLocaleDateString('fr-FR') + ' · MonCopainBot' },
       timestamp: now.toISOString(),
     }]
   })).catch(console.error);

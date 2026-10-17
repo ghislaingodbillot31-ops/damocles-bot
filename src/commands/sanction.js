@@ -53,7 +53,7 @@ module.exports = {
               { name: 'Raison',     value: raison },
               { name: 'Date',       value: new Date().toLocaleString('fr-FR', { timeZone: 'Europe/Paris' }) },
             ],
-            footer: { text: 'Damoclès Security Bot' },
+            footer: { text: 'MonCopainBot' },
             timestamp: new Date().toISOString(),
           }]
         }));
@@ -93,7 +93,7 @@ module.exports = {
               { name: 'Actions effectuées', value: '🔇 Muté\n🔌 Déconnecté du vocal\n📋 Ajouté à la liste d\'expulsion' },
               { name: 'Date',              value: new Date().toLocaleString('fr-FR', { timeZone: 'Europe/Paris' }) },
             ],
-            footer: { text: 'Damoclès Security Bot · Action requise' },
+            footer: { text: 'MonCopainBot · Action requise' },
             timestamp: new Date().toISOString(),
           }]
         }));

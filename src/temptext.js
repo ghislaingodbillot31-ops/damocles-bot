@@ -79,7 +79,7 @@ async function postTextPanel(channel) {
         '> • Il est **supprimé automatiquement** après 24 h sans message.',
       ].join('\n'),
       color: 0x5865F2,
-      footer: { text: 'EUROAGRI · Damoclès Bot' },
+      footer: { text: 'EUROAGRI · MonCopainBot' },
     }],
     components: [new ActionRowBuilder().addComponents(
       new ButtonBuilder().setCustomId('text_create').setLabel('💬 Créer mon salon textuel').setStyle(ButtonStyle.Success),

@@ -55,7 +55,7 @@ async function sendWelcomeAfterReglement(member) {
       description: text,
       color: parseInt(cfg.color || '2ECC71', 16),
       thumbnail: { url: member.user.displayAvatarURL() },
-      footer: { text: member.guild.name + ' · Damoclès Bot' },
+      footer: { text: member.guild.name + ' · MonCopainBot' },
       timestamp: new Date().toISOString(),
     }]
   })).catch(console.error);
@@ -112,7 +112,7 @@ async function sendJoinDM(member) {
         ].join('\n'),
         color: 0x2ECC71,
         thumbnail: { url: member.user.displayAvatarURL() },
-        footer: { text: member.guild.name + ' · Damoclès Bot' },
+        footer: { text: member.guild.name + ' · MonCopainBot' },
         timestamp: new Date().toISOString(),
       }],
     }));

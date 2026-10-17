@@ -40,7 +40,7 @@ function panelPayload() {
         'Pick your roles: **click once to take it, click again to remove it**.',
       ].join('\n'),
       color: 0x00E5FF,
-      footer: { text: 'DOMINIUS' },
+      footer: { text: 'Le Coin des Copains' },
     }],
     components: [new ActionRowBuilder().addComponents(
       new ButtonBuilder().setCustomId('lien_invite').setLabel('🔗 Invitation').setStyle(ButtonStyle.Primary),

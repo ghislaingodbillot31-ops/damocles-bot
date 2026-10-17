@@ -7,7 +7,7 @@ const { ChannelType } = require('discord.js');
 const { panneau }  = require('./embed-format');
 const { dataPath } = require('./paths');
 
-// Dashboard DOMINIUS : éditeur d'embeds. Les embeds sont sauvegardés (data/embeds.json),
+// Dashboard Le Coin des Copains : éditeur d'embeds. Les embeds sont sauvegardés (data/embeds.json),
 // modifiables à volonté, puis (re)publiés dans le salon de ton choix.
 // Accès : http://localhost:<PORT> avec le mot de passe DASHBOARD_PASSWORD (.env).
 const STORE_PATH = dataPath('embeds.json');

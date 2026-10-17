@@ -126,7 +126,7 @@ async function poll(client) {
           playerList,
         ].join('\n'),
         color: 0x2ECC71,
-        footer: { text: 'FS25 Monitor · Damoclès Bot' },
+        footer: { text: 'FS25 Monitor · MonCopainBot' },
         timestamp: new Date().toISOString(),
       });
       return;

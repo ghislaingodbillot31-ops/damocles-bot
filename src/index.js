@@ -386,7 +386,7 @@ client.on(Events.InteractionCreate, async interaction => {
       embeds: [{
         description: '✅ **Règlement accepté !**\nRends-toi dans le salon général pour la suite.',
         color: 0x2ECC71,
-        footer: { text: 'Damoclès Security Bot' },
+        footer: { text: 'MonCopainBot' },
       }],
       flags: 64,
     }).catch(err => console.error('⚠️ accept_reglement reply :', err.message));

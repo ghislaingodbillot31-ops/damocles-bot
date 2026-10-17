@@ -118,7 +118,7 @@ async function log(client, type, data) {
     embeds: [{
       description: text,
       color,
-      footer: { text: 'Damoclès Log' },
+      footer: { text: 'MonCopainBot · Log' },
       timestamp: new Date().toISOString(),
     }]
   }).catch(err => console.error('Erreur log :', err.message));

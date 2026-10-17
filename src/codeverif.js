@@ -1,7 +1,7 @@
 // Deux modes de vérification par code :
 const { panneau } = require('./embed-format');
 //
-// • VERIF_MODE=code (DOMINIUS) : le nouvel arrivant reçoit un code dans le salon de vérification, le retape et obtient
+// • VERIF_MODE=code (Le Coin des Copains) : le nouvel arrivant reçoit un code dans le salon de vérification, le retape et obtient
 //   le rôle Membres. Aucune expulsion.
 //
 // • VERIF_MODE=code-compte (VANGUARD) : le compte est d'abord vérifié dans bot-status (verification.verifyMember).
@@ -15,7 +15,7 @@ const db = require('./database');
 const { log } = require('./logger');
 const { dataPath } = require('./paths');
 
-// Salon où se tape le code : un salon nommé « code-de-validation » s'il existe (VANGUARD), sinon VERIFICATION_CHANNEL_ID (DOMINIUS)
+// Salon où se tape le code : un salon nommé « code-de-validation » s'il existe (VANGUARD), sinon VERIFICATION_CHANNEL_ID (Le Coin des Copains)
 const codeChannel = guild => guild.channels.cache.find(c => c.name.includes('code-de-validation')) || guild.channels.cache.get(process.env.VERIFICATION_CHANNEL_ID);
 const FLOW = () => process.env.VERIF_MODE === 'code-compte';
 const MAX_ESSAIS = 5;
@@ -99,7 +99,7 @@ async function onMessageFlow(message) {
 
   if (message.content.trim().toUpperCase() === e.code) {
     if (process.env.ATTENTE_ROLE_ID) await member.roles.add(process.env.ATTENTE_ROLE_ID).catch(() => {});
-    // (sur DOMINIUS le rôle « En attente » est le rôle Vérification lui-même : on ne le retire pas)
+    // (sur Le Coin des Copains le rôle « En attente » est le rôle Vérification lui-même : on ne le retire pas)
     if (process.env.VERIFICATION_ROLE_ID && process.env.VERIFICATION_ROLE_ID !== process.env.ATTENTE_ROLE_ID) await member.roles.remove(process.env.VERIFICATION_ROLE_ID).catch(() => {});
     await db.upsertMember(member.user, { verifiedAt: new Date().toISOString(), verificationResult: 'ok', codeValidatedAt: new Date().toISOString() });
     delete store[userId]; save();
@@ -131,7 +131,7 @@ async function cleanup(member) {
   (member.guild.channels.cache.get(e.channelId) || await member.guild.channels.fetch(e.channelId).catch(() => null))?.delete('Joueur parti').catch(() => {});
 }
 
-// ── mode « code » (DOMINIUS) : code dans le salon de vérification ───────────────
+// ── mode « code » (Le Coin des Copains) : code dans le salon de vérification ───────────────
 const codes = new Map(); // userId → { code, msg }  (perdu au redémarrage : un nouveau code est alors redonné)
 
 async function issueSimple(member) {
@@ -154,7 +154,7 @@ async function issueSimple(member) {
 async function onMessageSimple(message) {
   if (message.channel.id !== codeChannel(message.guild)?.id) return false;
   const { member } = message;
-  const membreId = process.env.MEMBRE_ROLE_ID || process.env.ACTIVE_ROLE_ID; // rôle « membre » : Membres (DOMINIUS) ou Membre vérifié (VANGUARD)
+  const membreId = process.env.MEMBRE_ROLE_ID || process.env.ACTIVE_ROLE_ID; // rôle « membre » : Membres (Le Coin des Copains) ou Membre vérifié (VANGUARD)
   if (member.roles.cache.has(membreId) || member.permissions.has('ManageMessages')) return false;
 
   message.delete().catch(() => {});

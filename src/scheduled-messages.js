@@ -146,7 +146,7 @@ async function sendMessage(id, client, force = false) {
       embeds: [{
         description: msg.message,
         color: parseInt(msg.color, 16) || 0x5865F2,
-        footer: { text: 'Damoclès Bot' },
+        footer: { text: 'MonCopainBot' },
         timestamp: new Date().toISOString(),
       }]
     });

@@ -1,7 +1,7 @@
 {
-  "name": "dominius-bot",
+  "name": "moncopainbot",
   "version": "1.0.0",
-  "description": "Bot Discord DOMINIUS",
+  "description": "Bot Discord MonCopainBot (Le Coin des Copains)",
   "main": "src/index.js",
   "scripts": {
     "start": "node src/index.js",
