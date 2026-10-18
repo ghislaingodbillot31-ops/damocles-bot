@@ -17,7 +17,6 @@ const FIELDS = [
     { key: 'CHAT_CHANNEL_ID',         label: 'Salon #chat' },
     { key: 'LOG_CHANNEL_ID',          label: 'Salon logs admin' },
     { key: 'STATUS_CHANNEL_ID',       label: 'Salon #status-joueurs' },
-    { key: 'DAMOCLES_LOG_CHANNEL_ID', label: 'Salon #damocles-log' },
     { key: 'ROLES_CHANNEL_ID',        label: 'Salon rôles' },
     { key: 'TICKET_CATEGORY_ID',      label: 'Catégorie tickets' },
   ]},

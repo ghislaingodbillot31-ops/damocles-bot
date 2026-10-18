@@ -64,7 +64,7 @@ function Sidebar({ user }) {
   return (
     <aside className="w-64 bg-gray-900 border-r border-gray-800 flex flex-col">
       <div className="p-6 border-b border-gray-800">
-        <div className="text-xl font-bold text-white">⚔️ DAMOCLES</div>
+        <div className="text-xl font-bold text-white">⚔️ MonCopainBot</div>
         <div className="text-sm text-gray-400 mt-1">Dashboard Admin</div>
       </div>
       <nav className="flex-1 p-4 space-y-1">

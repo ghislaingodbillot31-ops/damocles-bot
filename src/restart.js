@@ -28,7 +28,7 @@ function heureReglee() {
 
 async function prevenir(texte) {
   try {
-    const id = process.env.DAMOCLES_LOG_CHANNEL_ID;
+    const id = process.env.LOG_CHANNEL_ID;
     const ch = id && _client?.channels.cache.get(id);
     if (ch) await ch.send({ embeds: [{ description: '`▶` 🔄 ' + texte, color: 0x95A5A6 }] });
   } catch {}

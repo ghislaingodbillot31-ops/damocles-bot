@@ -35,7 +35,7 @@ module.exports = {
 
     // ── Moins de 3 avertissements ────────────────────────────────────────────
     if (warningCount < MAX_WARNINGS) {
-      // Log dans damocles-log
+      // Log dans le salon des logs
     try {
       const { log } = require('../logger');
       await log(interaction.client, 'warning_added', { userId: target.id, modId: interaction.user.id, reason: raison, count: warningCount });
