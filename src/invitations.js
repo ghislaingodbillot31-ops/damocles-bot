@@ -49,14 +49,14 @@ function panelPayload() {
   });
 }
 
-// Liste des rôles proposés, vue du joueur : vert = il a le rôle, gris = il ne l'a pas
+// Liste des rôles proposés, vue du joueur : vert = rôle possédé, rouge = rôle non possédé
 function listeRoles(member) {
   const boutons = require('./roles').listRoleButtons().filter(b => member.guild.roles.cache.has(b.roleId));
   const rows = [];
   for (let i = 0; i < boutons.length; i += 5) {
     rows.push(new ActionRowBuilder().addComponents(boutons.slice(i, i + 5).map(b => {
       const btn = new ButtonBuilder().setCustomId('hubrole_' + b.roleId).setLabel(b.label)
-        .setStyle(member.roles.cache.has(b.roleId) ? ButtonStyle.Success : ButtonStyle.Secondary);
+        .setStyle(member.roles.cache.has(b.roleId) ? ButtonStyle.Success : ButtonStyle.Danger);
       if (b.emoji) { try { btn.setEmoji(b.emoji); } catch { /* emoji invalide : ignoré */ } }
       return btn;
     })));
@@ -68,10 +68,10 @@ function payloadRoles(member) {
   const { rows, vide } = listeRoles(member);
   return {
     ...panneau({ embeds: [{
-      title: '🎭 TES RÔLES · YOUR ROLES',
+      title: '🎭 RÔLES DU SERVEUR · SERVER ROLES',
       description: vide
         ? 'Aucun rôle n\'est proposé pour le moment. · No roles available yet.'
-        : '🟢 vert = tu as le rôle · 🔘 gris = tu ne l\'as pas\nClique pour le **prendre**, reclique pour le **retirer**.\nClick to **take** it, click again to **remove** it.',
+        : '🟢 **Vert** = rôle possédé · 🔴 **Rouge** = rôle non possédé\nClique pour **prendre** un rôle, reclique pour le **retirer**.\n🟢 **Green** = you have it · 🔴 **Red** = you don\'t\nClick to **take** a role, click again to **remove** it.',
       color: 0x5865F2,
     }] }),
     components: rows,

@@ -119,15 +119,14 @@ const TABS = {
     const opts = d.roles.map(r => `<option value="${r.id}">${esc(r.name)}</option>`).join('');
     const draw = () => {
       m.innerHTML = `<h2>🎭 Rôles du HUB communautaire (${b.length}/25)</h2>
-        <p class="mut">Boutons proposés aux joueurs via « 🎭 Rôles » : un clic prend le rôle, un autre le retire. Pense à enregistrer.</p>
-        ${table(['Rôle', 'Nom du bouton', 'Emoji', 'Couleur', ''], b.map((x, i) => `<tr data-i="${i}"><td>${x.nom ? esc(x.nom) : '<span class="err">❌ rôle supprimé</span>'}</td>
+        <p class="mut">Boutons proposés aux joueurs via « 🎭 Rôles » : un clic prend le rôle, un autre le retire. La couleur est automatique : vert = rôle possédé, rouge = non possédé. Pense à enregistrer.</p>
+        ${table(['Rôle', 'Nom du bouton', 'Emoji', ''], b.map((x, i) => `<tr data-i="${i}"><td>${x.nom ? esc(x.nom) : '<span class="err">❌ rôle supprimé</span>'}</td>
           <td><input class="lb" value="${esc(x.label)}"></td><td><input class="em" value="${esc(x.emoji)}" style="width:70px"></td>
-          <td><select class="st">${[['Primary', 'Bleu'], ['Secondary', 'Gris'], ['Success', 'Vert'], ['Danger', 'Rouge']].map(([k, l]) => `<option value="${k}" ${k === x.style ? 'selected' : ''}>${l}</option>`).join('')}</select></td>
           <td><button data-a="up">▲</button> <button data-a="dn">▼</button> <button class="d" data-a="del">✕</button></td></tr>`))}
         <div class="box"><div class="row"><label>Ajouter un rôle</label><select id="nr">${opts}</select><input id="nl" placeholder="Nom du bouton" style="max-width:200px"><input id="ne" placeholder="Emoji" style="width:80px"><button id="add">＋ Ajouter</button></div></div>
         <button class="p" id="sv">Enregistrer</button>`;
     };
-    const lire = () => m.querySelectorAll('tr[data-i]').forEach(tr => { const x = b[tr.dataset.i]; x.label = tr.querySelector('.lb').value; x.emoji = tr.querySelector('.em').value; x.style = tr.querySelector('.st').value; });
+    const lire = () => m.querySelectorAll('tr[data-i]').forEach(tr => { const x = b[tr.dataset.i]; x.label = tr.querySelector('.lb').value; x.emoji = tr.querySelector('.em').value; });
     draw();
     m.onclick = async e => {
       const t = e.target.closest('button'); if (!t) return; lire();
