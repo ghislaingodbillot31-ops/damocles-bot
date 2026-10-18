@@ -78,7 +78,7 @@ function payloadRoles(member, boutons, desactive = false) {
     ],
     footer: { text: 'MonCopainBot · 🟢 vert = possédé · 🔴 rouge = non possédé' },
   } : { title: '🎭 RÔLES · ROLES', description: 'Aucun rôle n\'est proposé pour le moment. · No roles available yet.', color: 0x5865F2, footer: { text: 'MonCopainBot' } };
-  return { ...panneau({ embeds: [embed] }), components: rows };
+  return { ...panneau({ embeds: [embed] }), components: rows, natif: true }; // natif : exempté de la mise à plat en texte (simple.js)
 }
 
 async function handleRolesButton(interaction) {
