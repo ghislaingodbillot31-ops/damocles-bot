@@ -1,0 +1,20 @@
+{
+  "name": "moncopainbot",
+  "version": "1.0.0",
+  "description": "Bot Discord MonCopainBot (Le Coin des Copains)",
+  "main": "src/index.js",
+  "scripts": {
+    "start": "node src/index.js",
+    "deploy": "node src/deploy-commands.js",
+    "setup": "node setup-dominius.js"
+  },
+  "dependencies": {
+    "discord.js": "^14.15.2",
+    "dotenv": "^16.4.5",
+    "express": "^5.2.1",
+    "express-session": "^1.19.0",
+    "multer": "^1.4.5-lts.1",
+    "node-cron": "^4.2.1",
+    "node-fetch": "^3.3.2"
+  }
+}

@@ -1,0 +1,102 @@
+// Tâche quotidienne (04h00 et à chaque démarrage, donc après chaque redémarrage) :
+// rafraîchir la liste des membres, nettoyer la base, relancer l'analyse
+// actifs/inactifs, redessiner les salons Classement et Anniversaires, puis le
+// message de statut.
+const db = require('./database');
+
+// Réconcilie la base avec les membres réellement présents sur le serveur
+async function refreshMembers(guild) {
+  const membres = await guild.members.fetch();
+
+  let synced = 0;
+  for (const [, m] of membres) {
+    if (m.user.bot) continue;
+    await db.upsertMember(m.user, { joinedAt: m.joinedAt?.toISOString(), present: true });
+    synced++;
+  }
+
+  // Garde-fou : si le fetch renvoie beaucoup moins de monde que le serveur n'en
+  // compte (rate limit, cache partiel…), on ne touche à rien pour éviter de
+  // marquer par erreur des membres présents comme « partis ».
+  const attendu = guild.memberCount || membres.size;
+  if (membres.size < attendu * 0.8) {
+    console.warn('   ⚠️ Fetch incomplet (' + membres.size + '/' + attendu + ') — réconciliation des départs ignorée');
+    return { synced, left: 0 };
+  }
+
+  // Marquer « partis » ceux qui ne sont plus sur le serveur
+  const all = await db.getAllMembers();
+  let left = 0;
+  for (const rec of all) {
+    if (rec.present && !membres.has(rec.id)) {
+      await db.memberLeft({ id: rec.id, tag: rec.tag || rec.id, username: rec.username || rec.id });
+      left++;
+    }
+  }
+
+  return { synced, left };
+}
+
+async function runDaily(client) {
+  const guild = (client.guilds.cache.get(process.env.GUILD_ID) || client.guilds.cache.first());
+  if (!guild) return;
+
+  console.log('🔄 Tâche quotidienne — démarrage');
+
+  try {
+    const { synced, left } = await refreshMembers(guild);
+    console.log('   👥 ' + synced + ' membres synchronisés, ' + left + ' marqués partis');
+  } catch (e) { console.error('   ⚠️ Sync membres :', e.message); }
+
+  // VERIF_MODE=code : on garde toute la base (joueurs partis compris) et on n'analyse pas l'inactivité
+  const garderTout = process.env.VERIF_MODE === 'code';
+
+  if (!garderTout) try {
+    const { before, removed, after } = await db.cleanDatabase();
+    console.log('   🧹 Base nettoyée : ' + removed + ' fiche(s) retirée(s) (' + before + ' → ' + after + ')');
+  } catch (e) { console.error('   ⚠️ Nettoyage base :', e.message); }
+
+  if (!garderTout) try {
+    const { runAuto } = require('./commands/analyse');
+    const r = await runAuto(guild);
+    if (r) console.log('   📊 Analyse : ' + r.inactive + ' inactifs, ' + r.reactivated + ' réactivés, ' + r.toExpel + ' à expulser');
+  } catch (e) { console.error('   ⚠️ Analyse :', e.message); }
+
+  try {
+    const levels = require('./levels');
+    await levels.flush();
+    const b = await levels.checkRetention();
+    if (b) console.log('   🎚️ Bonus rétention 7 j : ' + b + ' invitation(s) créditée(s)');
+  } catch (e) { console.error('   ⚠️ Niveaux :', e.message); }
+
+  // Salons Classement et Anniversaires : redessinés APRÈS la synchro des membres
+  // et l'analyse, pour ne plus afficher les joueurs partis ou devenus inactifs.
+  try {
+    await require('./levels').refreshLeaderboard();
+    console.log('   🏆 Salon classement mis à jour');
+  } catch (e) { console.error('   ⚠️ Classement :', e.message); }
+
+  try {
+    await require('./birthday').updateBirthdayChannel(client);
+  } catch (e) { console.error('   ⚠️ Anniversaires :', e.message); }
+
+  try {
+    const { updateStatusMessage } = require('./statusbot');
+    await updateStatusMessage(client, true);
+  } catch (e) { console.error('   ⚠️ Message de statut :', e.message); }
+
+  console.log('🔄 Tâche quotidienne — terminée');
+}
+
+function startDailyTasks(client, cron) {
+  // Tous les jours à 04h00 (heure de Paris)
+  cron.schedule('0 4 * * *', () => runDaily(client), { timezone: 'Europe/Paris' });
+  console.log('🗓️ Tâche quotidienne planifiée — tous les jours à 04h00');
+
+  // Exécution au démarrage : couvre les redémarrages / déploiements qui peuvent
+  // tomber n'importe quand (node-cron ne rejoue pas les créneaux manqués).
+  // Délai court pour laisser la gateway et les autres tâches de boot se poser.
+  setTimeout(() => runDaily(client), 20000);
+}
+
+module.exports = { startDailyTasks, runDaily, refreshMembers };

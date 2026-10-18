@@ -1,0 +1,397 @@
+const ids = require('./ids');
+const { ActionRowBuilder, ButtonBuilder, ButtonStyle, PermissionFlagsBits, ChannelType } = require('discord.js');
+const db = require('./database');
+const { SEP } = require('./embed-format');
+require('dotenv').config();
+
+// Salon unifié « bot-status + vérification » : par défaut le même que le statut.
+const VERIFICATION_CHANNEL_ID = process.env.VERIFICATION_CHANNEL_ID || ids('VERIFICATION_CHANNEL_ID');
+const VERIFICATION_ROLE_ID    = process.env.VERIFICATION_ROLE_ID;
+const REGLEMENT_ROLE_ID       = process.env.REGLEMENT_ROLE_ID;
+const ATTENTE_ROLE_ID         = process.env.ATTENTE_ROLE_ID;
+const ACTIVE_ROLE_ID          = process.env.ACTIVE_ROLE_ID; // Membres validé
+const SUPPORT_CATEGORY_ID     = process.env.TICKET_CATEGORY_ID || ids('TICKET_CATEGORY_ID'); // 🎫 SUPPORT
+const MIN_ACCOUNT_AGE_DAYS    = 7;
+const CODE_COMPTE = process.env.VERIF_MODE === 'code-compte'; // compte vérifié d'abord, puis code (voir codeverif.js)
+
+const AUTO_DELETE_OK_MS = 15000; // effacement du message de vérif après un succès
+
+const sleep = ms => new Promise(r => setTimeout(r, ms));
+
+// ── Vérification principale ───────────────────────────────────────────────────
+async function verifyMember(member) {
+  const verifChannel = member.guild.channels.cache.get(VERIFICATION_CHANNEL_ID);
+  const checks = await runChecks(member);
+  const failed  = checks.filter(c => !c.passed);
+
+  // Enregistrer en DB
+  await db.upsertMember(member.user, {
+    joinedAt: member.joinedAt?.toISOString(),
+    verifiedAt: new Date().toISOString(),
+    verificationResult: failed.length === 0 ? 'ok' : 'failed',
+    verificationChecks: checks,
+  });
+
+  if (!verifChannel) return;
+
+  // Un seul embed (publiclog.panneauVerif), édité check par check (effet « console »).
+  const lignes = [], revealed = [];
+  let msg = null;
+  const render = async (verdict = null, components) => {
+    const embed = require('./publiclog').panneauVerif(member.user, revealed, member.guild.name, verdict);
+    if (lignes.length) embed.fields = [...embed.fields, { name: 'Résultat', value: lignes.join('\n').slice(0, 1024) }];
+    const payload = { embeds: [embed] };
+    if (components) payload.components = components;
+    try { if (msg) await msg.edit(payload); else msg = await verifChannel.send(payload); } catch {}
+  };
+
+  await render();
+  await sleep(800);
+
+  for (const check of checks) {
+    revealed.push(check);
+    await render();
+    await sleep(600);
+  }
+
+  await sleep(500);
+
+  if (failed.length === 0) {
+    if (CODE_COMPTE) {
+      lignes.push('✅ **Compte vérifié**');
+      const salonCode = await require('./codeverif').issue(member);
+      lignes.push(salonCode
+        ? 'Bienvenue <@' + member.id + '> ! Ton salon privé <#' + salonCode.id + '> est ouvert : ton **code** t\'a été envoyé en MP.'
+        : '⚠️ <@' + member.id + '> impossible d\'ouvrir ton salon de code, contacte le staff.');
+      await render('ok');
+    } else {
+      lignes.push('✅ **Vérification complète · Accès accordé**');
+      lignes.push('Bienvenue <@' + member.id + '> ! Rends-toi dans le salon **#règlement** pour accéder au serveur.');
+      await render('ok');
+
+      // Retirer rôle Vérification → donner En attente (accès au règlement)
+      if (VERIFICATION_ROLE_ID) await member.roles.remove(VERIFICATION_ROLE_ID).catch(() => {});
+      if (ATTENTE_ROLE_ID)      await member.roles.add(ATTENTE_ROLE_ID).catch(() => {});
+    }
+    console.log('✅ Vérification OK : ' + member.user.tag);
+
+    // Le salon est commun au statut du bot : on nettoie le message une fois lu.
+    if (msg) setTimeout(() => { msg.delete().catch(() => {}); }, AUTO_DELETE_OK_MS);
+
+  } else {
+    // ❌ ÉCHEC → rôle Attente admin + boutons (code-compte : aucun rôle, le compte reste bloqué jusqu'à la décision du staff)
+    if (ATTENTE_ROLE_ID && !CODE_COMPTE) await member.roles.add(ATTENTE_ROLE_ID).catch(() => {});
+
+    const row = new ActionRowBuilder().addComponents(
+      new ButtonBuilder().setCustomId('verify_accept_' + member.id).setLabel('✅ Accepter').setStyle(ButtonStyle.Success),
+      new ButtonBuilder().setCustomId('verify_refuse_' + member.id).setLabel('❌ Refuser').setStyle(ButtonStyle.Danger),
+    );
+
+    lignes.push('⛔ **Vérification échouée**');
+    lignes.push('<@' + member.id + '>, un administrateur va traiter ton intégration.');
+    lignes.push('**Raisons :**');
+    lignes.push(failed.map(c => '• ' + c.label + (c.detail ? ' : ' + c.detail : '')).join('\n'));
+    await render('ko', [row]);
+
+    // Enregistrer l'échec en DB
+    await db.upsertMember(member.user, { status: 'pending_admin' });
+    console.log('⛔ Vérification ÉCHOUÉE : ' + member.user.tag);
+  }
+}
+
+// ── Checks ────────────────────────────────────────────────────────────────────
+async function runChecks(member) {
+  const user    = member.user;
+  const ageDays = Math.floor((Date.now() - user.createdTimestamp) / 86400000);
+  const record  = await db.getMember(user.id);
+  const checks  = [];
+
+  // db.upsertMember() (dans le handler GuildMemberAdd) a déjà remis record.status
+  // à 'active' avant qu'on arrive ici — on ne peut donc PAS s'y fier pour détecter
+  // un passé sur le serveur. On lit à la place des signaux non écrasés par l'upsert :
+  //   - visits (incrémenté à chaque retour)
+  //   - l'historique d'événements
+  //   - kickedAt / bannedAt (jamais remis à zéro par l'upsert)
+  const hist       = Array.isArray(record?.history) ? record.history : [];
+  const hasEvent   = (...names) => hist.some(h => names.includes(h.event));
+  const lastEvent  = (name) => hist.filter(h => h.event === name).pop() || null;
+  const visits     = record?.visits || 1;
+  const fmtDate    = (d) => (d ? new Date(d).toLocaleDateString('fr-FR') : '?');
+
+  // 1. Pseudo conforme
+  // gros mots : compar\u00E9s sans accents ni ponctuation, chiffres-lettres remplac\u00E9s (4\u2192a, 3\u2192e, 0\u2192o, 1\u2192i, 5\u2192s)
+  const grosMot = /fuck|shit|bitch|nigg|salope|salaud|connard|encul|putain|merde|nazi|hitler|pedo|negro|tapette|fdp|ntm|couille|chienne|batard/
+    .test(((user.globalName || '') + ' ' + user.username).toLowerCase().normalize('NFD').replace(/[\u0300-\u036F]/g, '')
+      .replace(/4/g, 'a').replace(/3/g, 'e').replace(/0/g, 'o').replace(/1/g, 'i').replace(/5/g, 's').replace(/[^a-z]/g, ''));
+  const pseudoOk = !grosMot && /^[a-zA-Z0-9_\-\. \u00C0-\u024F]+$/.test(user.username);
+  checks.push({
+    label: '🔤 Pseudo', type: 'classic',
+    passed: pseudoOk,
+    detail: pseudoOk ? null : (grosMot ? 'Pseudo injurieux : ' : 'Pseudo suspect : ') + user.username,
+  });
+
+  // 2. Âge du compte
+  checks.push({
+    label: '📅 Âge du compte', type: 'classic',
+    passed: ageDays >= MIN_ACCOUNT_AGE_DAYS,
+    detail: 'Créé il y a ' + ageDays + ' jour(s) (minimum ' + MIN_ACCOUNT_AGE_DAYS + ' jours)',
+  });
+
+  // 3. Ancien membre : a-t-il déjà été sur le serveur ?
+  // connu de la base : déjà revenu, parti, expulsé… ou simplement enregistré avant cette arrivée (fiche importée ou plus ancienne que 10 min)
+  const dejaVenu = !!record && (visits > 1 || hasEvent('leave', 'kick', 'rejoin', 'sync_absent', 'sync_rejoin')
+    || (record.firstSeen && Date.now() - new Date(record.firstSeen).getTime() > 10 * 60 * 1000));
+  checks.push({
+    label: '🔁 Ancien membre', type: 'oui_non',
+    value: dejaVenu, passed: true,
+    detail: dejaVenu ? 'Connu en base depuis le ' + fmtDate(record.firstSeen) + ' · ' + visits + ' passage(s)' : null,
+  });
+
+  // 4. Sanctions
+  const hasWarnings = !!(record && record.warnings?.length > 0);
+  checks.push({
+    label: '⚠️ Sanctions', type: 'oui_non',
+    value: hasWarnings, passed: !hasWarnings,
+    detail: hasWarnings ? record.warnings.length + ' avertissement(s)' : null,
+  });
+
+  // 5. Expulsions : déjà expulsé du serveur ?
+  const kickEvt   = lastEvent('kick');
+  const wasKicked = !!kickEvt || !!record?.kickedAt || record?.status === 'kicked';
+  checks.push({
+    label: '👢 Expulsions', type: 'oui_non',
+    value: wasKicked, passed: !wasKicked,
+    detail: wasKicked
+      ? 'Expulsé le ' + fmtDate(kickEvt?.date || record?.kickedAt) + ' · ' + (kickEvt?.detail || 'Aucune raison')
+      : null,
+  });
+
+  // 6. Départ volontaire : déjà parti de lui-même ?
+  const leaveEvt = lastEvent('leave') || lastEvent('sync_absent');
+  const leftVol  = !!leaveEvt || record?.status === 'left';
+  checks.push({
+    label: '🚪 Départ volontaire', type: 'oui_non',
+    value: leftVol, passed: true,
+    detail: leftVol ? 'Déjà parti le ' + fmtDate(leaveEvt?.date || record?.leftAt) : null,
+  });
+
+  // 7. Banni : présent dans la liste des bannis ?
+  const banEvt   = lastEvent('ban');
+  const isBanned = !!banEvt || !!record?.bannedAt || record?.status === 'banned';
+  checks.push({
+    label: '🔨 Banni', type: 'danger',
+    value: isBanned, passed: !isBanned,
+    detail: isBanned
+      ? 'Banni le ' + fmtDate(record?.bannedAt || banEvt?.date) + ' · ' + (record?.banReason || banEvt?.detail || '?')
+      : null,
+  });
+
+  // 8. Compte suspect : ID déjà sanctionné (kick ou ban) ?
+  const isSuspect = wasKicked || isBanned;
+  checks.push({
+    label: '🕵️ Compte suspect', type: 'danger',
+    value: isSuspect, passed: !isSuspect,
+    detail: isSuspect ? 'ID déjà sanctionné sur le serveur (kick / ban)' : null,
+  });
+
+  return checks;
+}
+
+// Seuls les administrateurs peuvent trancher : les boutons sont visibles du joueur concerné, il ne doit pas pouvoir se valider.
+async function refuserSiPasAdmin(interaction) {
+  if (interaction.memberPermissions?.has(PermissionFlagsBits.Administrator)) return false;
+  await interaction.reply({ content: '❌ Réservé aux administrateurs.', flags: 64 }).catch(() => {});
+  return true;
+}
+
+// ── Handler boutons Accepter / Refuser (embed de vérification) ────────────────
+async function handleVerifyButton(interaction) {
+  if (await refuserSiPasAdmin(interaction)) return;
+  const parts    = interaction.customId.split('_');
+  const action   = parts[1];
+  const memberId = parts[2];
+  const guild    = interaction.guild;
+  const member   = await guild.members.fetch(memberId).catch(() => null);
+
+  if (action === 'accept') {
+    if (!member) {
+      await interaction.update({
+        embeds: [{ description: '❌ Membre introuvable (a peut-être quitté).', color: 0x95A5A6 }],
+        components: [],
+      });
+      return;
+    }
+
+    if (!CODE_COMPTE) {
+      // Retirer Vérification + Attente admin → donner Attente règlement
+      if (VERIFICATION_ROLE_ID) await member.roles.remove(VERIFICATION_ROLE_ID).catch(() => {});
+      if (ATTENTE_ROLE_ID)      await member.roles.remove(ATTENTE_ROLE_ID).catch(() => {});
+      if (REGLEMENT_ROLE_ID)    await member.roles.add(REGLEMENT_ROLE_ID).catch(() => {});
+    }
+
+    await db.upsertMember(member.user, { status: 'active', adminAccepted: true, adminAcceptedBy: interaction.user.tag, adminAcceptedAt: new Date().toISOString() });
+    if (CODE_COMPTE) await require('./codeverif').issue(member); // accepté par le staff : le code lui est proposé
+
+    await interaction.update({
+      embeds: [{
+        description: [
+          '✅ **Accepté par ' + interaction.user.tag + '**',
+          '<@' + memberId + '> peut maintenant accéder au règlement.',
+        ].join('\n'),
+        color: 0x2ECC71,
+        timestamp: new Date().toISOString(),
+      }],
+      components: [],
+    });
+    console.log('✅ ' + memberId + ' accepté manuellement par ' + interaction.user.tag);
+
+    // Salon commun au statut du bot : on efface le message une fois traité.
+    setTimeout(() => { interaction.message.delete().catch(() => {}); }, 10000);
+    return;
+  }
+
+  if (action === 'refuse') {
+    await interaction.deferUpdate();
+    try {
+      const refusChannel = await ouvrirSalonRefus(interaction, member, memberId);
+      if (member) {
+        await db.upsertMember(member.user, { status: 'pending_admin', refusChannelId: refusChannel?.id || null });
+      }
+      await interaction.editReply({
+        embeds: [{
+          description: [
+            '❌ **Refusé par ' + interaction.user.tag + '**',
+            refusChannel ? 'Discussion ouverte : <#' + refusChannel.id + '>' : 'Impossible de créer le salon privé.',
+          ].join('\n'),
+          color: 0xE67E22,
+          timestamp: new Date().toISOString(),
+        }],
+        components: [],
+      }).catch(() => {});
+      console.log('❌ ' + memberId + ' refusé par ' + interaction.user.tag + ' → salon de discussion');
+
+      // On efface le message de vérif du salon unifié.
+      setTimeout(() => { interaction.message.delete().catch(() => {}); }, 10000);
+    } catch (err) {
+      await interaction.followUp({ content: '❌ Erreur : ' + err.message, flags: 64 }).catch(() => {});
+    }
+  }
+}
+
+// ── Salon privé de refus : #refus-{pseudo} dans 🎫 SUPPORT ───────────────────
+async function ouvrirSalonRefus(interaction, member, memberId) {
+  const guild = interaction.guild;
+  const pseudo = member?.user?.username || memberId;
+  const slug = String(pseudo).toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '').slice(0, 20) || 'joueur';
+  const chanName = 'refus-' + slug;
+
+  // Réutiliser un salon de refus déjà ouvert pour ce joueur.
+  let refusChannel = guild.channels.cache.find(c => c.name === chanName && c.parentId === SUPPORT_CATEGORY_ID);
+
+  if (!refusChannel) {
+    const overwrites = [
+      { id: guild.id, deny: [PermissionFlagsBits.ViewChannel] },
+      { id: memberId, allow: [PermissionFlagsBits.ViewChannel, PermissionFlagsBits.SendMessages, PermissionFlagsBits.ReadMessageHistory] },
+    ];
+    const modRole = guild.roles.cache.find(r => /mod[eé]rat/i.test(r.name) && !r.managed);
+    if (modRole) overwrites.push({ id: modRole.id, allow: [PermissionFlagsBits.ViewChannel, PermissionFlagsBits.SendMessages, PermissionFlagsBits.ReadMessageHistory] });
+    const adminRole = guild.roles.cache.find(r => r.permissions.has(PermissionFlagsBits.Administrator) && !r.managed);
+    if (adminRole) overwrites.push({ id: adminRole.id, allow: [PermissionFlagsBits.ViewChannel, PermissionFlagsBits.SendMessages, PermissionFlagsBits.ReadMessageHistory] });
+
+    refusChannel = await guild.channels.create({
+      name: chanName,
+      type: ChannelType.GuildText,
+      parent: SUPPORT_CATEGORY_ID || null,
+      permissionOverwrites: overwrites,
+      reason: 'Vérification refusée : discussion avec ' + pseudo,
+    }).catch(() => null);
+  }
+  if (!refusChannel) return null;
+
+  // Raisons de l'échec (relecture fraîche des checks).
+  let raisons = '• Vérification échouée';
+  if (member) {
+    const failed = (await runChecks(member)).filter(c => !c.passed);
+    if (failed.length) raisons = failed.map(c => '• ' + c.label + (c.detail ? ' : ' + c.detail : '')).join('\n');
+  }
+
+  const modRole = guild.roles.cache.find(r => /mod[eé]rat/i.test(r.name) && !r.managed);
+  const row = new ActionRowBuilder().addComponents(
+    new ButtonBuilder().setCustomId('verifref_accept_' + memberId).setLabel('✅ Accepter finalement').setStyle(ButtonStyle.Success),
+    new ButtonBuilder().setCustomId('verifref_kick_' + memberId).setLabel('👢 Expulser').setStyle(ButtonStyle.Danger),
+    new ButtonBuilder().setCustomId('verifref_close_' + memberId).setLabel('🏁 Clôturer sans suite').setStyle(ButtonStyle.Secondary),
+  );
+
+  await refusChannel.send({
+    content: '<@' + memberId + '>' + (modRole ? ' <@&' + modRole.id + '>' : ''),
+    embeds: [{
+      title: '🚫 Vérification refusée · discussion',
+      description: [
+        SEP,
+        '**Joueur :** <@' + memberId + '> (`' + memberId + '`)',
+        '**Refusé par :** <@' + interaction.user.id + '>',
+        '**Raisons de l\'échec :**',
+        raisons,
+        SEP,
+        'Explique-toi ici avec le staff. Un membre du staff tranchera ensuite :',
+        '> ✅ **Accepter finalement** : accès au règlement, ce salon est supprimé',
+        '> 👢 **Expulser** : le joueur est kické, ce salon est supprimé',
+        '> 🏁 **Clôturer sans suite** : ce salon est supprimé, le joueur reste en attente',
+      ].join('\n'),
+      color: 0xE67E22,
+      timestamp: new Date().toISOString(),
+    }],
+    components: [row],
+    allowedMentions: { users: [memberId], roles: modRole ? [modRole.id] : [] },
+  }).catch(() => {});
+
+  return refusChannel;
+}
+
+// ── Handler des 3 boutons du salon de refus ──────────────────────────────────
+async function handleVerifRefButton(interaction) {
+  if (await refuserSiPasAdmin(interaction)) return;
+  const parts    = interaction.customId.split('_'); // verifref_<action>_<memberId>
+  const action   = parts[1];
+  const memberId = parts[2];
+  const guild    = interaction.guild;
+  const channel  = interaction.channel;
+  const member   = await guild.members.fetch(memberId).catch(() => null);
+  const par      = interaction.user.tag;
+
+  const cloture = (texte, color) => {
+    interaction.reply({ embeds: [{ description: texte, color, timestamp: new Date().toISOString() }] }).catch(() => {});
+    setTimeout(() => { channel.delete('Vérification : ' + action).catch(() => {}); }, 6000);
+  };
+
+  if (action === 'accept') {
+    if (member) {
+      if (!CODE_COMPTE) {
+        if (VERIFICATION_ROLE_ID) await member.roles.remove(VERIFICATION_ROLE_ID).catch(() => {});
+        if (ATTENTE_ROLE_ID)      await member.roles.remove(ATTENTE_ROLE_ID).catch(() => {});
+        if (REGLEMENT_ROLE_ID)    await member.roles.add(REGLEMENT_ROLE_ID).catch(() => {});
+      }
+      await db.upsertMember(member.user, { status: 'active', adminAccepted: true, adminAcceptedBy: par, adminAcceptedAt: new Date().toISOString() });
+      if (CODE_COMPTE) await require('./codeverif').issue(member);
+    }
+    console.log('✅ ' + memberId + ' accepté finalement par ' + par);
+    cloture('✅ **Accepté par ' + par + '**\n<@' + memberId + '> a maintenant accès au règlement. Ce salon va être supprimé.', 0x2ECC71);
+    return;
+  }
+
+  if (action === 'kick') {
+    if (member) {
+      try { await member.kick('Refusé par l\'administration'); } catch {}
+      await db.kickMember(member.user, 'Refusé par l\'administration', par);
+    }
+    console.log('👢 ' + memberId + ' expulsé par ' + par + ' (salon de refus)');
+    cloture('👢 **' + (member ? member.user.tag : memberId) + ' expulsé par ' + par + '**\nCe salon va être supprimé.', 0xE74C3C);
+    return;
+  }
+
+  // close
+  console.log('🏁 Salon de refus de ' + memberId + ' clôturé sans suite par ' + par);
+  cloture('🏁 **Clôturé sans suite par ' + par + '**\n<@' + memberId + '> reste en attente admin. Ce salon va être supprimé.', 0x95A5A6);
+}
+
+module.exports = { verifyMember, handleVerifyButton, handleVerifRefButton, runChecks };
