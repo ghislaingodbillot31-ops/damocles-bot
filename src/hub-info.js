@@ -62,7 +62,7 @@ function buildMessage() {
   const c = get();
   const actifs = c.boutons.filter(b => b.actif);
   return {
-    ...panneau({ embeds: [{ title: c.titre, description: c.description, color: c.couleur, footer: { text: 'EUROAGRI · MonCopainBot' } }] }),
+    ...panneau({ embeds: [{ title: c.titre, description: c.description, color: c.couleur, footer: { text: 'MonCopainBot' } }] }),
     components: actifs.length ? [new ActionRowBuilder().addComponents(
       actifs.map(b => new ButtonBuilder().setCustomId('hubinfo_' + b.key).setLabel(b.label).setStyle(STYLES[b.style])),
     )] : [],
@@ -76,7 +76,7 @@ async function handleButton(interaction) {
     await interaction.reply({ content: 'ℹ️ Cette rubrique n\'est pas encore renseignée. Reviens bientôt !', flags: 64 });
     return;
   }
-  const embed = { title: b.titre || b.label, description: b.message, color: b.couleur, footer: { text: 'EUROAGRI · MonCopainBot' } };
+  const embed = { title: b.titre || b.label, description: b.message, color: b.couleur, footer: { text: 'MonCopainBot' } };
   if (b.image) embed.image = { url: b.image };
   await interaction.reply({ ...panneau({ embeds: [embed] }), flags: 64 });
 }

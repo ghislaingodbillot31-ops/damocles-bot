@@ -289,7 +289,7 @@ async function handleContratAccepter(interaction) {
             '> 🏁 **Terminé** · l\'annonce et ce salon sont supprimés',
           ].join('\n'),
       color: 0xF39C12,
-      footer: { text: 'EUROAGRI · Salon de négociation' },
+      footer: { text: 'MonCopainBot · Négociation' },
       timestamp: new Date().toISOString(),
     }],
     components: [dealRow(mId, false)],
@@ -348,7 +348,7 @@ async function handleContratDealOk(interaction) {
       ...embed.data,
       title: '✅ ACCORD CONFIRMÉ',
       color: 0x2ECC71,
-      footer: { text: 'Accord confirmé le ' + now + ' · EUROAGRI' },
+      footer: { text: 'Accord confirmé le ' + now + ' · MonCopainBot' },
     }],
     components: [dealRow(mId, true)],
   });

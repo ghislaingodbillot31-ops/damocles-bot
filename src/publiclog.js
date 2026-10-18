@@ -74,7 +74,7 @@ async function alerteStaff(client, guild, user, checks) {
         title: '🚨  ALERTE VÉRIFICATION',
         description: '<@' + user.id + '> (`' + user.username + '`) a validé son code, vérification requise :\n\n' + motifs.join('\n'),
         color: 0xE67E22,
-        footer: { text: user.id },
+        footer: { text: 'MonCopainBot · ' + user.id },
       }],
       allowedMentions: { roles: admin ? [admin.id] : [], users: [] },
     });
@@ -105,7 +105,7 @@ function panneauVerif(user, checks, serveur = 'SERVEUR', verdict = 'auto') {
     title: '🔍 Vérification joueur · ' + serveur,
     fields,
     color: verdict === 'ko' ? 0xE74C3C : verdict === null ? 0xF1C40F : alerte ? 0xE67E22 : 0x2ECC71,
-    footer: { text: user.id },
+    footer: { text: 'MonCopainBot · ' + user.id },
     timestamp: new Date().toISOString(),
   };
 }
