@@ -57,30 +57,37 @@ async function sendWelcomeAfterReglement(member) {
 }
 
 // ── Annonce d'arrivée dans « bienvenue » (+ qui a invité le joueur) ───────────
+// Embed natif, largeur fixe commune (panneau) : titre, message bilingue, puis 3 blocs d'infos et la marche à suivre.
+function embedArrivee({ nom, serveur, num, creeLe, inviterId, avatar, date }) {
+  const fields = [
+    { name: '🔢 Membre n° · Member #', value: '**' + num + '**', inline: true },
+    { name: '📅 Compte créé · Created', value: '<t:' + creeLe + ':D>', inline: true },
+    { name: '🤝 Invité par · Invited by', value: inviterId ? '<@' + inviterId + '>' : '—', inline: true },
+  ];
+  if (REGLEMENT_CHANNEL_ID || CHAT_CHANNEL_ID) fields.push({ name: '🚀 Pour commencer · Getting started', value: [
+    REGLEMENT_CHANNEL_ID ? '1️⃣ Accepte le règlement · Accept the rules → <#' + REGLEMENT_CHANNEL_ID + '>' : '',
+    CHAT_CHANNEL_ID ? '2️⃣ Présente-toi · Introduce yourself → <#' + CHAT_CHANNEL_ID + '>' : '',
+  ].filter(Boolean).join('\n') });
+  return panneau({ embeds: [{
+    title: '👋 Bienvenue ' + nom + ' !',
+    description: '🇫🇷 Bienvenue sur **' + serveur + '**, installe-toi !\n🇬🇧 Welcome to **' + serveur + '**, make yourself at home!',
+    color: 0x2ECC71,
+    thumbnail: avatar ? { url: avatar } : undefined,
+    fields,
+    footer: { text: 'MonCopainBot' },
+    timestamp: date || new Date().toISOString(),
+  }] }).embeds;
+}
+
 async function annoncerArrivee(member, inviterId) {
   const id = ids('WELCOME_CHANNEL_ID');
   const channel = id && (member.guild.channels.cache.get(id) || await member.guild.channels.fetch(id).catch(() => null));
   if (!channel) return;
-  // Embed natif (pas de console ANSI) : avec la miniature, la console de 50 colonnes débordait et se coupait.
-  const fields = [
-    { name: '🔢 Membre n° · Member #', value: '**' + member.guild.memberCount + '**', inline: true },
-    { name: '📅 Compte créé · Created', value: '<t:' + Math.floor(member.user.createdTimestamp / 1000) + ':D>', inline: true },
-  ];
-  if (inviterId) fields.push({ name: '🤝 Invité par · Invited by', value: '<@' + inviterId + '>', inline: true });
   await channel.send({
     content: '<@' + member.id + '>',
     allowedMentions: { users: [member.id] },
-    embeds: [{
-      author: { name: 'Nouveau joueur · New player', icon_url: member.guild.iconURL() || undefined },
-      title: '👋 Bienvenue ' + member.displayName + ' !',
-      description: '🇫🇷 Bienvenue sur **' + member.guild.name + '**, installe-toi !\n'
-        + '🇬🇧 Welcome to **' + member.guild.name + '**, make yourself at home!',
-      color: 0x2ECC71,
-      thumbnail: { url: member.user.displayAvatarURL({ size: 256 }) },
-      fields,
-      footer: { text: 'MonCopainBot' },
-      timestamp: new Date().toISOString(),
-    }],
+    embeds: embedArrivee({ nom: member.displayName, serveur: member.guild.name, num: member.guild.memberCount,
+      creeLe: Math.floor(member.user.createdTimestamp / 1000), inviterId, avatar: member.user.displayAvatarURL({ size: 256 }) }),
   }).catch(err => console.error('⚠️ annoncerArrivee :', err.message));
 }
 
@@ -132,4 +139,4 @@ async function sendLeave(member) {
   })).catch(console.error);
 }
 
-module.exports = { annoncerArrivee, sendWelcomeAfterReglement, sendJoinDM, sendLeave, getWelcomeConfig, setWelcomeConfig };
+module.exports = { embedArrivee, annoncerArrivee, sendWelcomeAfterReglement, sendJoinDM, sendLeave, getWelcomeConfig, setWelcomeConfig };
