@@ -60,6 +60,7 @@ function installer() {
         const eph = m === 'update' ? (this.message?.flags?.has?.(EPHEMERE) ?? false)
           : m === 'editReply' ? !!this.ephemeral || (typeof payload === 'object' && !!(Number(payload?.flags) & EPHEMERE))
           : typeof payload === 'object' && !!(Number(payload?.flags) & EPHEMERE);
+        if (payload && payload.natif) { const { natif, ...p } = payload; return origine.call(this, p, ...suite); } // `natif: true` : l'embed est gardé tel quel
         return origine.call(this, eph ? simple(payload) : payload, ...suite);
       };
     }
