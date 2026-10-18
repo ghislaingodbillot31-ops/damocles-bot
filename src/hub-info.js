@@ -1,6 +1,6 @@
 const fs = require('fs');
 const { ActionRowBuilder, ButtonBuilder, ButtonStyle } = require('discord.js');
-const { dataPath, writeAtomic } = require('./paths');
+const { dataPath } = require('./paths');
 const { panneau } = require('./embed-format');
 
 // HUB d'information, publié AU-DESSUS du HUB des exploitants.
@@ -54,7 +54,7 @@ function set(input) {
       };
     }),
   };
-  writeAtomic(STORE, JSON.stringify(next, null, 2), 'utf-8');
+  fs.writeFileSync(STORE, JSON.stringify(next, null, 2), 'utf-8');
   return next;
 }
 
@@ -62,7 +62,7 @@ function buildMessage() {
   const c = get();
   const actifs = c.boutons.filter(b => b.actif);
   return {
-    ...panneau({ embeds: [{ title: c.titre, description: c.description, color: c.couleur, footer: { text: 'EUROAGRI · Damoclès Bot' } }] }),
+    ...panneau({ embeds: [{ title: c.titre, description: c.description, color: c.couleur, footer: { text: 'EUROAGRI · MonCopainBot' } }] }),
     components: actifs.length ? [new ActionRowBuilder().addComponents(
       actifs.map(b => new ButtonBuilder().setCustomId('hubinfo_' + b.key).setLabel(b.label).setStyle(STYLES[b.style])),
     )] : [],
@@ -76,7 +76,7 @@ async function handleButton(interaction) {
     await interaction.reply({ content: 'ℹ️ Cette rubrique n\'est pas encore renseignée. Reviens bientôt !', flags: 64 });
     return;
   }
-  const embed = { title: b.titre || b.label, description: b.message, color: b.couleur, footer: { text: 'EUROAGRI · Damoclès Bot' } };
+  const embed = { title: b.titre || b.label, description: b.message, color: b.couleur, footer: { text: 'EUROAGRI · MonCopainBot' } };
   if (b.image) embed.image = { url: b.image };
   await interaction.reply({ ...panneau({ embeds: [embed] }), flags: 64 });
 }

@@ -5,12 +5,12 @@ const { SEP } = require('./embed-format');
 require('dotenv').config();
 
 // Salon unifié « bot-status + vérification » : par défaut le même que le statut.
-const VERIFICATION_CHANNEL_ID = process.env.VERIFICATION_CHANNEL_ID || ids('VERIFICATION_CHANNEL_ID', '1538533342150918246');
+const VERIFICATION_CHANNEL_ID = process.env.VERIFICATION_CHANNEL_ID || ids('VERIFICATION_CHANNEL_ID');
 const VERIFICATION_ROLE_ID    = process.env.VERIFICATION_ROLE_ID;
 const REGLEMENT_ROLE_ID       = process.env.REGLEMENT_ROLE_ID;
 const ATTENTE_ROLE_ID         = process.env.ATTENTE_ROLE_ID;
 const ACTIVE_ROLE_ID          = process.env.ACTIVE_ROLE_ID; // Membres validé
-const SUPPORT_CATEGORY_ID     = process.env.TICKET_CATEGORY_ID || ids('TICKET_CATEGORY_ID', '1538533307690520586'); // 🎫 SUPPORT
+const SUPPORT_CATEGORY_ID     = process.env.TICKET_CATEGORY_ID || ids('TICKET_CATEGORY_ID'); // 🎫 SUPPORT
 const MIN_ACCOUNT_AGE_DAYS    = 7;
 const CODE_COMPTE = process.env.VERIF_MODE === 'code-compte'; // compte vérifié d'abord, puis code (voir codeverif.js)
 
@@ -34,51 +34,27 @@ async function verifyMember(member) {
 
   if (!verifChannel) return;
 
-  // Un seul embed à largeur fixe, édité check par check (effet « console »).
-  const lignes = [];
+  // Un seul embed (publiclog.panneauVerif), édité check par check (effet « console »).
+  const lignes = [], revealed = [];
   let msg = null;
-  const render = async (color = 0x2F3136, components) => {
-    const payload = {
-      embeds: [{
-        title: '🔍 VÉRIFICATION · ' + member.user.username,
-        description: [SEP, ...lignes].join('\n'),
-        color,
-      }],
-    };
+  const render = async (verdict = null, components) => {
+    const embed = require('./publiclog').panneauVerif(member.user, revealed, member.guild.name, verdict);
+    if (lignes.length) embed.fields = [...embed.fields, { name: 'Résultat', value: lignes.join('\n').slice(0, 1024) }];
+    const payload = { embeds: [embed] };
     if (components) payload.components = components;
     try { if (msg) await msg.edit(payload); else msg = await verifChannel.send(payload); } catch {}
   };
 
-  lignes.push('**Cible :** `' + member.user.tag + '` (`' + member.user.id + '`)');
   await render();
   await sleep(800);
 
-  // Afficher chaque check
   for (const check of checks) {
-    const label = check.label;
-    const dots  = '.'.repeat(Math.max(2, 32 - label.length));
-    let line;
-
-    if (check.type === 'oui_non') {
-      line = '`▶` ' + label + ' ' + dots + ' ' + (check.value ? '🟠 **Oui**' : '🟢 **Non**');
-      if (check.value && check.detail) line += '\n> ' + check.detail;
-    } else if (check.type === 'danger') {
-      line = '`▶` ' + label + ' ' + dots + ' ' + (check.value ? '🔴 **Oui**' : '🟢 **Non**');
-      if (check.value && check.detail) line += '\n> ' + check.detail;
-    } else {
-      const icon   = check.passed ? '✅' : '❌';
-      const status = check.passed ? 'OK' : 'ÉCHEC';
-      line = '`▶` ' + label + ' ' + dots + ' ' + icon + ' **' + status + '**';
-      if (!check.passed && check.detail) line += '\n> ⚠️ ' + check.detail;
-    }
-
-    lignes.push(line);
+    revealed.push(check);
     await render();
     await sleep(600);
   }
 
   await sleep(500);
-  lignes.push(SEP);
 
   if (failed.length === 0) {
     if (CODE_COMPTE) {
@@ -87,11 +63,11 @@ async function verifyMember(member) {
       lignes.push(salonCode
         ? 'Bienvenue <@' + member.id + '> ! Ton salon privé <#' + salonCode.id + '> est ouvert : ton **code** t\'a été envoyé en MP.'
         : '⚠️ <@' + member.id + '> impossible d\'ouvrir ton salon de code, contacte le staff.');
-      await render(0x2ECC71);
+      await render('ok');
     } else {
       lignes.push('✅ **Vérification complète · Accès accordé**');
       lignes.push('Bienvenue <@' + member.id + '> ! Rends-toi dans le salon **#règlement** pour accéder au serveur.');
-      await render(0x2ECC71);
+      await render('ok');
 
       // Retirer rôle Vérification → donner En attente (accès au règlement)
       if (VERIFICATION_ROLE_ID) await member.roles.remove(VERIFICATION_ROLE_ID).catch(() => {});
@@ -115,7 +91,7 @@ async function verifyMember(member) {
     lignes.push('<@' + member.id + '>, un administrateur va traiter ton intégration.');
     lignes.push('**Raisons :**');
     lignes.push(failed.map(c => '• ' + c.label + (c.detail ? ' : ' + c.detail : '')).join('\n'));
-    await render(0xE74C3C, [row]);
+    await render('ko', [row]);
 
     // Enregistrer l'échec en DB
     await db.upsertMember(member.user, { status: 'pending_admin' });
@@ -143,11 +119,15 @@ async function runChecks(member) {
   const fmtDate    = (d) => (d ? new Date(d).toLocaleDateString('fr-FR') : '?');
 
   // 1. Pseudo conforme
-  const pseudoOk = /^[a-zA-Z0-9_\-\. \u00C0-\u024F]+$/.test(user.username);
+  // gros mots : compar\u00E9s sans accents ni ponctuation, chiffres-lettres remplac\u00E9s (4\u2192a, 3\u2192e, 0\u2192o, 1\u2192i, 5\u2192s)
+  const grosMot = /fuck|shit|bitch|nigg|salope|salaud|connard|encul|putain|merde|nazi|hitler|pedo|negro|tapette|fdp|ntm|couille|chienne|batard/
+    .test(((user.globalName || '') + ' ' + user.username).toLowerCase().normalize('NFD').replace(/[\u0300-\u036F]/g, '')
+      .replace(/4/g, 'a').replace(/3/g, 'e').replace(/0/g, 'o').replace(/1/g, 'i').replace(/5/g, 's').replace(/[^a-z]/g, ''));
+  const pseudoOk = !grosMot && /^[a-zA-Z0-9_\-\. \u00C0-\u024F]+$/.test(user.username);
   checks.push({
     label: '🔤 Pseudo', type: 'classic',
     passed: pseudoOk,
-    detail: pseudoOk ? null : 'Pseudo suspect : ' + user.username,
+    detail: pseudoOk ? null : (grosMot ? 'Pseudo injurieux : ' : 'Pseudo suspect : ') + user.username,
   });
 
   // 2. Âge du compte
@@ -158,11 +138,13 @@ async function runChecks(member) {
   });
 
   // 3. Ancien membre : a-t-il déjà été sur le serveur ?
-  const dejaVenu = !!record && (visits > 1 || hasEvent('leave', 'kick', 'rejoin', 'sync_absent', 'sync_rejoin'));
+  // connu de la base : déjà revenu, parti, expulsé… ou simplement enregistré avant cette arrivée (fiche importée ou plus ancienne que 10 min)
+  const dejaVenu = !!record && (visits > 1 || hasEvent('leave', 'kick', 'rejoin', 'sync_absent', 'sync_rejoin')
+    || (record.firstSeen && Date.now() - new Date(record.firstSeen).getTime() > 10 * 60 * 1000));
   checks.push({
     label: '🔁 Ancien membre', type: 'oui_non',
     value: dejaVenu, passed: true,
-    detail: dejaVenu ? visits + ' passage(s) sur le serveur' : null,
+    detail: dejaVenu ? 'Connu en base depuis le ' + fmtDate(record.firstSeen) + ' · ' + visits + ' passage(s)' : null,
   });
 
   // 4. Sanctions

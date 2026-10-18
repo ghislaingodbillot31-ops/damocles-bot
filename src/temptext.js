@@ -5,12 +5,12 @@ const {
   ModalBuilder, TextInputBuilder, TextInputStyle,
 } = require('discord.js');
 const { panneau } = require('./embed-format');
-const { dataPath, writeAtomic } = require('./paths');
+const { dataPath } = require('./paths');
 
 // Salons textuels temporaires, dans la catégorie TEXTUEL.
 // Création par le bouton du salon d'accueil (lui aussi dans TEXTUEL, séparé des
 // salons vocaux), gestion par le panneau posté dans chaque salon, invitations par /invite.
-const TEXT_CATEGORY = ids('TEXT_CATEGORY_ID', '1552693042161385532');
+const TEXT_CATEGORY = ids('TEXT_CATEGORY_ID');
 const STORE_PATH    = dataPath('temptext.json');
 const ACCUEIL_NOM   = '➕-créer-un-salon';
 let accueilId = null; // salon d'accueil (mémorisé : il peut être renommé)
@@ -34,7 +34,7 @@ function load() {
   } catch {}
 }
 function save() {
-  try { writeAtomic(STORE_PATH, JSON.stringify({ accueilId, channels: Object.fromEntries(salons) }, null, 2), 'utf-8'); } catch {}
+  try { fs.writeFileSync(STORE_PATH, JSON.stringify({ accueilId, channels: Object.fromEntries(salons) }, null, 2), 'utf-8'); } catch {}
 }
 
 // ── Salon d'accueil avec le bouton de création ────────────────────────────────
@@ -79,7 +79,7 @@ async function postTextPanel(channel) {
         '> • Il est **supprimé automatiquement** après 24 h sans message.',
       ].join('\n'),
       color: 0x5865F2,
-      footer: { text: 'EUROAGRI · Damoclès Bot' },
+      footer: { text: 'EUROAGRI · MonCopainBot' },
     }],
     components: [new ActionRowBuilder().addComponents(
       new ButtonBuilder().setCustomId('text_create').setLabel('💬 Créer mon salon textuel').setStyle(ButtonStyle.Success),

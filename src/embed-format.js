@@ -37,11 +37,11 @@ function wrap(txt, max = LINE_MAX) {
   }).join('\n');
 }
 
-// Encadre UN embed (objet brut) : ligne SEP en tête de description + texte
-// coupé à LINE_MAX.
-function panneauEmbed(e) {
-  return { ...e, description: e && e.description ? SEP + '\n' + wrap(e.description) : SEP };
-}
+// Design Discord natif : l'embed est publié tel quel (titre, description, champs).
+// Les anciens panneaux « console ANSI » ont été retirés ; panneau()/panneauEmbed() restent
+// pour ne pas toucher aux ~90 appels existants.
+const panneauEmbed = e => e;
+function setClient() {}
 
 // Applique la largeur fixe à chaque embed d'un payload de message.
 function panneau(payload) {
@@ -49,4 +49,4 @@ function panneau(payload) {
   return { ...payload, embeds: payload.embeds.map(panneauEmbed) };
 }
 
-module.exports = { SEP, LINE_MAX, wrap, panneau, panneauEmbed };
+module.exports = { SEP, LINE_MAX, wrap, panneau, panneauEmbed, setClient };

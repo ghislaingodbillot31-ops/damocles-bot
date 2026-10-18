@@ -89,7 +89,7 @@ async function createTicket(interaction) {
         (cfg.TICKET_WELCOME || 'Merci pour ton ticket ! Un responsable s\'occupera de toi.') +
         '\n\n📌 Merci de clore ton ticket une fois ta demande traitée.',
       color: 0x5865F2,
-      footer: { text: 'Damoclès Security Bot' },
+      footer: { text: 'MonCopainBot' },
       timestamp: new Date().toISOString(),
     }],
     components: [row],
@@ -120,7 +120,7 @@ async function takeTicket(interaction, memberId) {
       title: '🎫 Ticket pris en charge',
       description: '<@' + memberId + '>, ton ticket a été pris en charge par <@' + interaction.user.id + '> !\n\n> Un responsable s\'occupe de ta demande.\n\n📌 Merci de clore ton ticket une fois ta demande traitée.',
       color: 0x2ECC71,
-      footer: { text: 'Damoclès Security Bot' },
+      footer: { text: 'MonCopainBot' },
       timestamp: new Date().toISOString(),
     }] }),
     components: [new ActionRowBuilder().addComponents(

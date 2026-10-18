@@ -45,12 +45,4 @@ try {
 
 function dataPath(name) { return path.join(DATA_DIR, name); }
 
-// Écriture atomique : on écrit un .tmp puis on le renomme. Un arrêt en pleine
-// écriture (redéploiement Render) laisse l'ancien fichier intact au lieu d'un JSON tronqué.
-function writeAtomic(file, data, enc) {
-  const tmp = file + '.tmp';
-  fs.writeFileSync(tmp, data, enc);
-  fs.renameSync(tmp, file);
-}
-
-module.exports = { DATA_DIR, REPO_DATA, dataPath, writeAtomic };
+module.exports = { DATA_DIR, REPO_DATA, dataPath };

@@ -2,7 +2,7 @@ const fs   = require('fs');
 const path = require('path');
 const crypto = require('crypto');
 
-const { dataPath, writeAtomic } = require('./paths');
+const { dataPath } = require('./paths');
 const DATA_PATH = dataPath('scheduled-messages.json');
 
 function newId() {
@@ -22,7 +22,7 @@ function load() {
 function save(messages) {
   const dir = path.dirname(DATA_PATH);
   if (!fs.existsSync(dir)) fs.mkdirSync(dir, { recursive: true });
-  writeAtomic(DATA_PATH, JSON.stringify(messages, null, 2), 'utf-8');
+  fs.writeFileSync(DATA_PATH, JSON.stringify(messages, null, 2), 'utf-8');
 }
 
 // ── CRUD ──────────────────────────────────────────────────────────────────────
@@ -146,7 +146,7 @@ async function sendMessage(id, client, force = false) {
       embeds: [{
         description: msg.message,
         color: parseInt(msg.color, 16) || 0x5865F2,
-        footer: { text: 'Damoclès Bot' },
+        footer: { text: 'MonCopainBot' },
         timestamp: new Date().toISOString(),
       }]
     });

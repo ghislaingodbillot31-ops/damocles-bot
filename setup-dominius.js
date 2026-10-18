@@ -28,6 +28,7 @@ const ROLES = [
 // ── Salons. acces : public (lecture seule pour tous) | membre | lecture (membres, lecture seule) | staff
 const CATS = [
   { n: '🔐 ACCUEIL', acces: 'verif', salons: [
+    { n: '⛔・ne-pas-écrire', t: 'ANTI-SPAM : tout message ici = bannissement automatique', key: 'ANTISPAM_CHANNEL_ID', piege: true },
     { n: '🔍・vérification', t: 'Tape le code affiché pour accéder au serveur', key: 'VERIFICATION_CHANNEL_ID' },
   ]},
   { n: '📌 INFOS', acces: 'lecture', salons: [
@@ -57,6 +58,7 @@ const CATS = [
     { n: '🎵・musique' },
     { n: '🤖・commandes-bot' },
     { n: '🎂・anniversaires', key: 'BIRTHDAY_CHANNEL_ID' },
+    { n: '🔗・invitations', t: 'Génère ton lien d\'invitation (7 jours)', lecture: true, key: 'INVITE_HUB_CHANNEL_ID' },
     { n: '🏆・classements', key: 'LEVELUP_CHANNEL_ID' },
     { n: '👹・roles', key: 'ROLES_CHANNEL_ID' },
   ]},
@@ -87,6 +89,7 @@ const CATS = [
     { n: '📩・ouvrir-ticket', key: ['TICKET_CHANNEL_ID', 'TICKET_LOG_CHANNEL_ID'] },
   ]},
   { n: '📊 STAFF', acces: 'staff', salons: [
+    { n: '🔑・staff-info', t: 'Liens utiles et accès (staff uniquement)' },
     { n: '💬・staff-général' },
     { n: '📋・staff-logs', key: ['DAMOCLES_LOG_CHANNEL_ID', 'LOG_CHANNEL_ID'] },
     { n: '🖥️・bot-status', t: 'État du bot', key: 'STATUS_CHANNEL_ID' },
@@ -157,7 +160,7 @@ const keys = k => [].concat(k || []);
       const lecture = c.acces === 'public' || c.acces === 'lecture' || s.lecture;
       const ch = await D.channels.create({
         name: s.n, type: s.voice ? T.GuildVoice : (s.type || T.GuildText), topic: s.t, parent: cat.id,
-        permissionOverwrites: s.voice ? ow('membre').map(o => ({ ...o, allow: [...(o.allow || []), P.Connect] })) : ow(c.acces, lecture),
+        permissionOverwrites: s.piege ? ow('verif').filter(o => !membres.includes(o.id)) : s.voice ? ow('membre').map(o => ({ ...o, allow: [...(o.allow || []), P.Connect] })) : ow(c.acces, lecture),
         reason: 'setup',
       });
       keys(s.key).forEach(k => out[k] = ch.id); await sleep(400);

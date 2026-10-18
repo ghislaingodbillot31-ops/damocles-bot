@@ -10,7 +10,7 @@ process.on('uncaughtException', err => {
 
 const { Client, GatewayIntentBits, Partials, Events } = require('discord.js');
 const { verifyMember, handleVerifyButton, handleVerifRefButton } = require('./verification');
-const { sendWelcomeAfterReglement, sendJoinDM, sendLeave } = require('./welcome');
+const { annoncerArrivee, sendWelcomeAfterReglement, sendJoinDM, sendLeave } = require('./welcome');
 const { createTicket, takeTicket, closeTicket }        = require('./tickets');
 const { checkSpam, checkLinks }                        = require('./antiraid');
 const { checkNewMember }                               = require('./antidoublecompte');
@@ -33,7 +33,7 @@ const VERIFICATION_ROLE_ID = process.env.VERIFICATION_ROLE_ID;
 const ATTENTE_ROLE_ID      = process.env.ATTENTE_ROLE_ID;
 const REGLEMENT_ROLE_ID    = process.env.REGLEMENT_ROLE_ID;
 const ACTIVE_ROLE_ID       = process.env.ACTIVE_ROLE_ID;
-const GENERAL_CHANNEL_ID   = ids('CHAT_CHANNEL_ID', '1538533261314236527');
+const GENERAL_CHANNEL_ID   = ids('CHAT_CHANNEL_ID');
 
 const firstMessageDone = new Set();
 
@@ -59,10 +59,14 @@ client.on = (ev, fn) => _on(ev, (...a) => {
 });
 
 // ── Ready ─────────────────────────────────────────────────────────────────────
+// Réponses visibles par le joueur seul (clics, formulaires) : texte simple, sans cadre ni icône
+require('./simple').installer();
+
 client.once(Events.ClientReady, async () => {
   console.log('✅ Bot connecté : ' + client.user.tag);
   console.log('📡 Serveurs : ' + client.guilds.cache.size);
   setClient(client);
+  require('./embed-format').setClient(client);
   const members = await db.getAllMembers();
   console.log('💾 DB : ' + members.length + ' membres');
 
@@ -75,10 +79,14 @@ client.once(Events.ClientReady, async () => {
   require('./temptext').startTempText(client);
   require('./suggestions').startSuggestions(client);
   require('./bugs').startBugs(client);
+  require('./invitations').startInvitations(client);
   require('./antispam').startAntiSpam(client);
+  if (process.env.VERIF_MODE === 'code') require('./codeverif').publierPanneau(client).catch(() => {});
   require('./publiclog').demarrer(client).catch(() => {});
   levels.startLevels(client);
   boutique.startBoutique(client);
+  // une seule version de chaque panneau : une fois les panneaux republiés, on supprime les anciens
+  setTimeout(() => require('./nettoyage').nettoyerTout(client).catch(() => {}), 60_000);
 
   // En-tête explicatif du salon des rôles
   try {
@@ -122,7 +130,8 @@ client.on(Events.GuildMemberAdd, async member => {
   console.log('👋 Nouveau membre : ' + member.user.tag);
 
   await db.upsertMember(member.user, { joinedAt: member.joinedAt?.toISOString() });
-  await levels.onMemberAdd(member);
+  const inviterId = await levels.onMemberAdd(member);
+  await annoncerArrivee(member, inviterId);
   if (process.env.VERIF_MODE === 'code-compte') {
     // aucun rôle : le membre ne voit que le salon de vérification ; compte vérifié d'abord, code ensuite
     await checkNewMember(member);
@@ -134,6 +143,8 @@ client.on(Events.GuildMemberAdd, async member => {
     if (VERIFICATION_ROLE_ID) await member.roles.add(VERIFICATION_ROLE_ID).catch(() => {});
     await checkNewMember(member);
     await log(client, 'member_join', { userId: member.id });
+    // vérification complète de chaque arrivant (âge, pseudo, base de données : connu, expulsé, banni…) dans les logs publics
+    await log(client, 'verification_ok', { userId: member.id });
     await require('./codeverif').issue(member);
     return;
   }
@@ -278,6 +289,8 @@ client.on(Events.InteractionCreate, async interaction => {
   if (interaction.isModalSubmit()) {
     const cid = interaction.customId;
     try {
+      if (cid === 'verif_modal')                { await require('./codeverif').handleModal(interaction); return; }
+      if (cid === 'anniv_modal')                { await require('./birthday').handleModal(interaction); return; }
       if (cid === 'hub_expl_creer_modal')       { await hub.handleHubExplCreerModal(interaction); return; }
       if (cid.startsWith('hub_expl_nom_'))      { await hub.handleHubExplNom(interaction);        return; }
       if (cid.startsWith('hub_expl_prodmodal_')) { await hub.handleHubExplProdModal(interaction); return; }
@@ -285,8 +298,8 @@ client.on(Events.InteractionCreate, async interaction => {
       if (cid.startsWith('besoin_modal_'))      { await contrat.handleBesoinModal(interaction);   return; }
       if (cid.startsWith('voice_rename_modal_') || cid.startsWith('voice_limit_modal_')) { await tempvoice.handleVoiceModal(interaction); return; }
       if (cid === 'text_create_modal' || cid.startsWith('text_rename_modal_')) { await require('./temptext').handleTextModal(interaction); return; }
-      if (cid === 'sugg_modal')                 { await require('./suggestions').handleSuggModal(interaction); return; }
-      if (/^sugg_(ok|no)modal_\d+$/.test(cid))  { await require('./suggestions').handleSuggDecisionModal(interaction); return; }
+      if (cid === 'sugg_modal' || cid === 'modprop_modal') { await require('./suggestions')[cid.split('_')[0] === 'sugg' ? 'jeu' : 'mods'].handleSuggModal(interaction); return; }
+      if (/^(sugg|modprop)_(ok|no)modal_\d+$/.test(cid)) { await require('./suggestions')[cid.startsWith('sugg') ? 'jeu' : 'mods'].handleSuggDecisionModal(interaction); return; }
       if (/^bug_modal(_en)?$/.test(cid))        { await require('./bugs').handleBugModal(interaction); return; }
       if (/^bug_nomodal_\d+$/.test(cid))        { await require('./bugs').handleBugRefus(interaction); return; }
       if (cid === 'hub_boutique_modal')         { await boutique.handleModal(interaction);         return; }
@@ -300,6 +313,8 @@ client.on(Events.InteractionCreate, async interaction => {
 
   // Boutons HUB des exploitants
   try {
+    if (id === 'verif_code' || id === 'verif_saisir') { await require('./codeverif').handleButton(interaction); return; }
+    if (id === 'anniv_btn')                   { await require('./birthday').handleButton(interaction); return; }
     if (id === 'hub_expl')                    { await hub.handleHubExpl(interaction);        return; }
     if (id === 'hub_expl_creer')              { await hub.handleHubExplCreer(interaction);   return; }
     if (id === 'hub_contrat')                 { await contrat.startContratFlow(interaction); return; }
@@ -347,9 +362,16 @@ client.on(Events.InteractionCreate, async interaction => {
 
   // Boîte à idées
   try {
-    if (id === 'sugg_new')                    { await require('./suggestions').handleSuggNew(interaction); return; }
-    if (/^sugg_(ok|no)_\d+$/.test(id))        { await require('./suggestions').handleSuggDecision(interaction); return; }
+    if (id === 'sugg_new' || id === 'modprop_new') { await require('./suggestions')[id.startsWith('sugg') ? 'jeu' : 'mods'].handleSuggNew(interaction); return; }
+    if (/^(sugg|modprop)_(ok|no)_\d+$/.test(id)) { await require('./suggestions')[id.startsWith('sugg') ? 'jeu' : 'mods'].handleSuggDecision(interaction); return; }
   } catch (err) { console.error('Erreur bouton suggestions :', err.stack || err.message); }
+
+  // Lien d'invitation (7 jours)
+  try {
+    if (id === 'lien_invite') { await require('./invitations').handleInviteButton(interaction); return; }
+    if (id === 'hub_roles')   { await require('./invitations').handleRolesButton(interaction); return; }
+    if (id.startsWith('hubrole_')) { await require('./invitations').handleRoleToggle(interaction); return; }
+  } catch (err) { console.error('Erreur bouton invitation :', err.stack || err.message); }
 
   // Signalement de bugs
   try {
@@ -374,7 +396,7 @@ client.on(Events.InteractionCreate, async interaction => {
       embeds: [{
         description: '✅ **Règlement accepté !**\nRends-toi dans le salon général pour la suite.',
         color: 0x2ECC71,
-        footer: { text: 'Damoclès Security Bot' },
+        footer: { text: 'MonCopainBot' },
       }],
       flags: 64,
     }).catch(err => console.error('⚠️ accept_reglement reply :', err.message));

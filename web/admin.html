@@ -1,0 +1,250 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Le Coin des Copains · Administration</title>
+<style>
+  :root { --bg:#1e1f22; --panel:#2b2d31; --panel2:#313338; --txt:#dbdee1; --mut:#949ba4; --acc:#5865f2; --ok:#23a55a; --err:#f23f43; --line:#3f4147; }
+  * { box-sizing:border-box; }
+  body { margin:0; background:var(--bg); color:var(--txt); font:14px/1.4 system-ui,"Segoe UI",sans-serif; display:grid; grid-template-columns:210px 1fr; min-height:100vh; }
+  nav { background:var(--panel); padding:14px 10px; position:sticky; top:0; height:100vh; overflow:auto; }
+  nav h1 { font-size:15px; margin:0 6px 12px; }
+  nav a { display:block; padding:8px 10px; border-radius:6px; color:var(--txt); text-decoration:none; cursor:pointer; }
+  nav a:hover, nav a.sel { background:var(--panel2); } nav a.sel { box-shadow:inset 3px 0 var(--acc); }
+  main { padding:18px; min-width:0; }
+  h2 { margin:0 0 14px; font-size:18px; } h3 { font-size:13px; color:var(--mut); text-transform:uppercase; margin:20px 0 8px; }
+  button, input, select, textarea { font:inherit; color:var(--txt); background:var(--bg); border:1px solid var(--line); border-radius:6px; padding:6px 9px; }
+  button { cursor:pointer; background:var(--panel2); } button:hover { filter:brightness(1.25); }
+  button.p { background:var(--acc); border-color:var(--acc); color:#fff; } button.d { border-color:var(--err); color:var(--err); background:transparent; }
+  textarea { width:100%; min-height:90px; } input[type=text], input[type=number], input:not([type]) { width:100%; }
+  table { width:100%; border-collapse:collapse; background:var(--panel); border-radius:8px; overflow:hidden; }
+  th, td { text-align:left; padding:7px 10px; border-bottom:1px solid var(--line); vertical-align:top; } th { color:var(--mut); font-size:12px; text-transform:uppercase; }
+  .cards { display:grid; grid-template-columns:repeat(auto-fill,minmax(150px,1fr)); gap:10px; }
+  .card { background:var(--panel); border-radius:8px; padding:12px; } .card b { display:block; font-size:22px; } .card span { color:var(--mut); font-size:12px; }
+  .box { background:var(--panel); border-radius:8px; padding:14px; margin-bottom:12px; }
+  .row { display:flex; gap:8px; align-items:center; flex-wrap:wrap; margin:6px 0; } .row > label { min-width:150px; color:var(--mut); }
+  .tag { padding:1px 7px; border-radius:10px; background:var(--panel2); font-size:12px; } .ok { color:var(--ok); } .err { color:var(--err); } .mut { color:var(--mut); }
+  #toast { position:fixed; bottom:16px; right:16px; background:var(--panel2); border:1px solid var(--line); padding:10px 14px; border-radius:8px; display:none; max-width:420px; }
+  @media (max-width:800px) { body { grid-template-columns:1fr; } nav { position:static; height:auto; display:flex; flex-wrap:wrap; } }
+</style>
+</head>
+<body>
+<nav id="nav"><h1>🛠️ Administration</h1></nav>
+<main id="main">Chargement…</main>
+<div id="toast"></div>
+<script>
+const $ = s => document.querySelector(s);
+const esc = v => String(v ?? '').replace(/[&<>"]/g, c => ({ '&':'&amp;', '<':'&lt;', '>':'&gt;', '"':'&quot;' }[c]));
+const date = d => d ? new Date(d).toLocaleString('fr-FR') : '—';
+function toast(t, bad) { const e = $('#toast'); e.textContent = t; e.style.color = bad ? 'var(--err)' : 'var(--ok)'; e.style.display = 'block'; clearTimeout(toast.t); toast.t = setTimeout(() => e.style.display = 'none', 4000); }
+async function api(path, method = 'GET', body) {
+  const r = await fetch('/api/admin' + path, { method, headers: { 'Content-Type': 'application/json' }, body: body ? JSON.stringify(body) : undefined });
+  if (r.status === 401) { location.href = '/'; throw new Error('Non connecté'); }
+  const j = await r.json(); if (!r.ok) throw new Error(j.error || r.status); return j;
+}
+// Lance une action avec retour visuel puis recharge l'onglet
+const run = (fn, ok = 'Fait ✔', reload = true) => async () => { try { await fn(); toast(ok); if (reload) show(cur); } catch (e) { toast(e.message, true); } };
+const table = (cols, rows) => '<table><tr>' + cols.map(c => '<th>' + c + '</th>').join('') + '</tr>' + (rows.join('') || '<tr><td colspan="' + cols.length + '" class="mut">Aucun élément</td></tr>') + '</table>';
+const fmtUp = s => Math.floor(s / 3600) + 'h ' + Math.floor(s % 3600 / 60) + 'min';
+
+// ── Onglets ──
+const TABS = {
+  async apercu(m) {
+    const o = await api('/overview'), s = o.stats, a = o.enAttente;
+    const c = (v, l) => `<div class="card"><b>${esc(v)}</b><span>${l}</span></div>`;
+    m.innerHTML = `<h2>📊 Aperçu</h2><div class="cards">${c(o.bot, 'Bot')}${c(o.ping + ' ms', 'Ping')}${c(fmtUp(o.uptime), 'En ligne depuis')}
+      ${c(o.membresDiscord, 'Membres Discord')}${c(s.present, 'Présents (base)')}${c(s.left, 'Partis')}${c(s.banned, 'Bannis')}${c(s.warned, 'Avertis')}
+      ${c(o.xpMembres, 'Membres avec XP')}${c(o.exploitations, 'Exploitations')}</div>
+      <h3>En attente de décision (à traiter dans Discord)</h3><div class="cards">${c(a.bugs, '🐞 Bugs')}${c(a.suggestions, '💡 Idées du jeu')}${c(a.mods, '🛠️ Mods')}${c(a.boutique, '🛒 Échanges boutique')}</div>`;
+  },
+
+  async membres(m) {
+    let page = 0;
+    m.innerHTML = `<h2>👥 Gestion · Membres <span class="mut" id="tot"></span></h2><div class="row"><input id="q" placeholder="Pseudo ou ID…" style="max-width:280px"><select id="f">${
+      [['tous', 'Tous'], ['presents', 'Présents'], ['absents', 'Absents'], ['partis', 'Partis'], ['expulses', 'Expulsés'], ['bannis', 'Bannis'], ['avertis', 'Avertis']].map(([k, l]) => `<option value="${k}">${l}</option>`).join('')
+    }</select><button class="p" id="go">Rechercher</button><button id="pr">◀</button><span id="pg"></span><button id="nx">▶</button></div><div id="res"></div><div id="det"></div>`;
+    const load = async () => {
+      const r = await api('/members?q=' + encodeURIComponent($('#q').value) + '&filtre=' + $('#f').value + '&page=' + page), pages = Math.max(1, Math.ceil(r.total / 50));
+      $('#tot').textContent = '(' + r.total + ')'; $('#pg').textContent = (page + 1) + ' / ' + pages;
+      $('#res').innerHTML = table(['Membre', 'Statut', 'Niveau', 'XP', 'Avert.', 'Arrivée', ''], r.items.map(x => `<tr><td><a href="#" data-a="det" data-id="${x.id}" style="color:var(--acc)">${esc(x.tag)}</a><br><span class="mut">${x.id}</span></td>
+        <td><span class="tag">${x.present ? '' : '✖ '}${esc(x.status)}</span></td><td>${x.level}</td><td>${x.xp}</td><td>${x.warnings}</td><td>${date(x.joinedAt)}</td>
+        <td><button data-a="xp" data-id="${x.id}">± XP</button> <button data-a="warn" data-id="${x.id}">⚠️</button>${x.present ? ` <button class="d" data-a="kick" data-id="${x.id}">Expulser</button>` : ''} <button class="d" data-a="ban" data-id="${x.id}">Bannir</button></td></tr>`));
+    };
+    $('#go').onclick = () => { page = 0; load(); }; $('#f').onchange = $('#go').onclick; $('#q').onkeydown = e => e.key === 'Enter' && $('#go').onclick();
+    $('#pr').onclick = () => { if (page > 0) { page--; load(); } }; $('#nx').onclick = () => { page++; load(); };
+    m.onclick = async e => {
+      const b = e.target.closest('[data-a]'); if (!b) return; e.preventDefault(); const id = b.dataset.id, a = b.dataset.a;
+      try {
+        if (a === 'det') {
+          const d = await api('/members/' + id);
+          $('#det').innerHTML = `<h3>${esc(d.tag || d.username)} · historique</h3>` + table(['Date', 'Événement', 'Détail', 'Par'], (d.history || []).slice().reverse().map(h => `<tr><td>${date(h.date)}</td><td><span class="tag">${esc(h.event)}</span></td><td>${esc(h.detail)}</td><td>${esc(h.moderator)}</td></tr>`));
+          $('#det').scrollIntoView(); return;
+        }
+        if (a === 'xp') { const d = prompt('Points à ajouter (négatif pour retirer) :'); if (!d) return; const r = await api(`/members/${id}/xp`, 'POST', { delta: +d }); toast(`XP : ${r.xp} (niveau ${r.level})`); }
+        else if (a === 'warn') { const r = prompt("Raison de l'avertissement :"); if (r === null) return; const x = await api(`/members/${id}/warn`, 'POST', { reason: r }); toast(`Avertissement enregistré (${x.warnings} au total)`); }
+        else { const r = prompt(`Raison (${a === 'ban' ? 'BANNISSEMENT' : 'expulsion'}) :`); if (r === null) return; await api(`/members/${id}/${a}`, 'POST', { reason: r }); toast('Fait ✔'); }
+        load();
+      } catch (er) { toast(er.message, true); }
+    };
+    load();
+  },
+
+  async logs(m) {
+    let page = 0;
+    m.innerHTML = `<h2>📋 Gestion · Logs <span class="mut" id="tot"></span></h2><div class="row"><input id="q" placeholder="Pseudo ou ID…" style="max-width:240px"><select id="ev"><option value="">Tous les événements</option></select><button class="p" id="go">Filtrer</button><button id="pr">◀</button><span id="pg"></span><button id="nx">▶</button></div><div id="res"></div>`;
+    const load = async () => {
+      const r = await api('/logs?q=' + encodeURIComponent($('#q').value) + '&event=' + encodeURIComponent($('#ev').value) + '&page=' + page), pages = Math.max(1, Math.ceil(r.total / 100));
+      if ($('#ev').options.length === 1) $('#ev').insertAdjacentHTML('beforeend', r.types.map(t => `<option>${esc(t)}</option>`).join(''));
+      $('#tot').textContent = '(' + r.total + ')'; $('#pg').textContent = (page + 1) + ' / ' + pages;
+      $('#res').innerHTML = table(['Date', 'Événement', 'Membre', 'Détail', 'Par'], r.items.map(h => `<tr><td>${date(h.date)}</td><td><span class="tag">${esc(h.event)}</span></td><td>${esc(h.tag)}<br><span class="mut">${h.id}</span></td><td>${esc(h.detail)}</td><td>${esc(h.moderator)}</td></tr>`));
+    };
+    $('#go').onclick = () => { page = 0; load(); }; $('#ev').onchange = $('#go').onclick; $('#q').onkeydown = e => e.key === 'Enter' && $('#go').onclick();
+    $('#pr').onclick = () => { if (page > 0) { page--; load(); } }; $('#nx').onclick = () => { page++; load(); };
+    load();
+  },
+
+  async fs25(m) {
+    const d = await api('/fs25'), t = d.totaux, c = (v, l) => `<div class="card"><b>${v}</b><span>${l}</span></div>`;
+    m.innerHTML = `<h2>🚜 FS25 · Exploitations</h2><div class="cards">${c(t.exploitations, 'Exploitations')}${c(t.ouvriers, 'Ouvriers')}${c(t.coExploitants, 'Co-exploitants')}${c(t.produits, 'Produits en vente')}</div>
+      <h3>Activités</h3>${table(['Activité', 'Exploitations'], d.activites.map(([a, n]) => `<tr><td>${esc(a)}</td><td>${n}</td></tr>`))}
+      <h3>Détail</h3>${table(['Exploitation', 'Activités', 'Équipe', 'Produits', 'Créée'], d.exploitations.map(e => `<tr><td><b>${esc(e.nom)}</b><br><span class="mut">${esc(e.ownerTag)}</span></td>
+        <td>${[e.activitePrincipale, e.activiteSecondaire, e.activiteSupplementaire].filter(Boolean).map(esc).join('<br>')}</td>
+        <td>${(e.ouvrierTags || []).length ? 'Ouvriers : ' + e.ouvrierTags.map(esc).join(', ') + '<br>' : ''}${(e.coExploitantTags || []).length ? 'Co : ' + e.coExploitantTags.map(esc).join(', ') : ''}</td>
+        <td>${(e.produits || []).map(esc).join('<br>') || '<span class="mut">—</span>'}</td><td>${date(e.createdAt)}</td></tr>`))}`;
+  },
+
+  async roles(m) {
+    const d = await api('/roles'), b = d.boutons.slice();
+    const opts = d.roles.map(r => `<option value="${r.id}">${esc(r.name)}</option>`).join('');
+    const draw = () => {
+      m.innerHTML = `<h2>🎭 Rôles du HUB communautaire (${b.length}/25)</h2>
+        <p class="mut">Boutons proposés aux joueurs via « 🎭 Rôles » : un clic prend le rôle, un autre le retire. Pense à enregistrer.</p>
+        ${table(['Rôle', 'Nom du bouton', 'Emoji', 'Couleur', ''], b.map((x, i) => `<tr data-i="${i}"><td>${x.nom ? esc(x.nom) : '<span class="err">❌ rôle supprimé</span>'}</td>
+          <td><input class="lb" value="${esc(x.label)}"></td><td><input class="em" value="${esc(x.emoji)}" style="width:70px"></td>
+          <td><select class="st">${[['Primary', 'Bleu'], ['Secondary', 'Gris'], ['Success', 'Vert'], ['Danger', 'Rouge']].map(([k, l]) => `<option value="${k}" ${k === x.style ? 'selected' : ''}>${l}</option>`).join('')}</select></td>
+          <td><button data-a="up">▲</button> <button data-a="dn">▼</button> <button class="d" data-a="del">✕</button></td></tr>`))}
+        <div class="box"><div class="row"><label>Ajouter un rôle</label><select id="nr">${opts}</select><input id="nl" placeholder="Nom du bouton" style="max-width:200px"><input id="ne" placeholder="Emoji" style="width:80px"><button id="add">＋ Ajouter</button></div></div>
+        <button class="p" id="sv">Enregistrer</button>`;
+    };
+    const lire = () => m.querySelectorAll('tr[data-i]').forEach(tr => { const x = b[tr.dataset.i]; x.label = tr.querySelector('.lb').value; x.emoji = tr.querySelector('.em').value; x.style = tr.querySelector('.st').value; });
+    draw();
+    m.onclick = async e => {
+      const t = e.target.closest('button'); if (!t) return; lire();
+      const tr = t.closest('tr'), i = tr && +tr.dataset.i;
+      if (t.dataset.a === 'del') b.splice(i, 1);
+      else if (t.dataset.a === 'up' && i > 0) b.splice(i - 1, 0, b.splice(i, 1)[0]);
+      else if (t.dataset.a === 'dn' && i < b.length - 1) b.splice(i + 1, 0, b.splice(i, 1)[0]);
+      else if (t.id === 'add') {
+        const sel = $('#nr'), id = sel.value, nom = sel.selectedOptions[0]?.textContent;
+        if (!id) return; if (b.some(x => x.roleId === id)) return toast('Ce rôle a déjà un bouton', true);
+        b.push({ roleId: id, nom, label: $('#nl').value.trim() || nom, emoji: $('#ne').value.trim(), style: 'Secondary' });
+      } else if (t.id === 'sv') return run(() => api('/roles', 'PUT', { boutons: b.map(({ roleId, label, emoji, style }) => ({ roleId, label, emoji, style })) }), 'Rôles enregistrés', false)();
+      else return;
+      draw();
+    };
+  },
+
+  async xp(m) {
+    const x = await api('/xp'), cles = Object.keys(x.bareme);
+    m.innerHTML = `<h2>🎚️ Niveaux & XP</h2><div class="box"><h3 style="margin-top:0">Barème</h3>${cles.map(k => `<div class="row"><label>${k} <span class="mut">(défaut ${x.defaut[k]})</span></label><input type="number" min="0" data-k="${k}" value="${x.bareme[k]}" style="max-width:140px"></div>`).join('')}
+      <div class="row"><button class="p" id="sv">Enregistrer le barème</button><button id="rf">Rafraîchir le classement Discord</button></div></div>
+      <h3>Top 15</h3>${table(['#', 'Membre', 'Niveau', 'XP'], x.classement.map(c => `<tr><td>${c.rang}</td><td>${c.id}</td><td>${c.level}</td><td>${c.xp}</td></tr>`))}`;
+    $('#sv').onclick = run(() => api('/xp/bareme', 'PUT', Object.fromEntries([...m.querySelectorAll('[data-k]')].map(i => [i.dataset.k, i.value]))), 'Barème enregistré');
+    $('#rf').onclick = run(() => api('/xp/refresh', 'POST'), 'Classement mis à jour', false);
+  },
+
+  async boutique(m) {
+    const l = await api('/boutique');
+    m.innerHTML = `<h2>🛒 Boutique</h2><div class="row"><button id="cd">Réinitialiser les délais de demande</button></div>
+      <p class="mut">Les validations/refus se font avec les boutons dans le salon staff Discord.</p>
+      ${table(['Date', 'Membre', 'Exploitation', 'Points', 'Statut'], l.map(r => `<tr><td>${date(r.createdAt)}</td><td>${r.userId}</td><td>${esc(r.exploitNom)}</td><td>${r.points}</td><td><span class="tag">${r.status}</span></td></tr>`))}`;
+    $('#cd').onclick = run(async () => { const r = await api('/boutique/cooldowns', 'POST'); toast(r.reset + ' délai(s) remis à zéro'); }, 'Fait ✔', false);
+  },
+
+  async bugs(m) { await listeDecisions(m, '🐞 Bugs', '/bugs', ['Type', 'Texte']); },
+  async suggestions(m) { await listeDecisions(m, '💡 Idées pour le jeu', '/suggestions', ['Titre', 'Texte']); },
+  async mods(m) { await listeDecisions(m, '🛠️ Propositions de mods', '/mods', ['Titre', 'Texte']); },
+
+  async exploitations(m) {
+    const l = await api('/exploitations');
+    m.innerHTML = `<h2>🌾 Exploitations (${l.length})</h2>` + table(['Nom', 'Propriétaire', 'Activités', 'Équipe', ''], l.map(e => `<tr><td>${esc(e.nom)}</td><td>${esc(e.ownerTag)}</td>
+      <td>${[e.activitePrincipale, e.activiteSecondaire, e.activiteSupplementaire].filter(Boolean).map(esc).join('<br>')}</td>
+      <td>${(e.ouvriers || []).length} ouvrier(s), ${(e.coExploitants || []).length} co-exploitant(s)</td><td><button class="d" data-id="${e.id}">Supprimer</button></td></tr>`));
+    m.onclick = async e => { const b = e.target.closest('button[data-id]'); if (b && confirm('Supprimer cette exploitation ?')) run(() => api('/exploitations/' + b.dataset.id, 'DELETE'), 'Supprimée')(); };
+  },
+
+  async hub(m) {
+    const h = await api('/hubinfo');
+    const f = (id, l, v, ta) => `<div class="row"><label>${l}</label>${ta ? `<textarea id="${id}">${esc(v)}</textarea>` : `<input id="${id}" value="${esc(v)}">`}</div>`;
+    const hex = n => '#' + (n || 0).toString(16).padStart(6, '0');
+    m.innerHTML = `<h2>📌 HUB d'information</h2><div class="box">${f('t', 'Titre', h.titre)}${f('d', 'Description', h.description, 1)}<div class="row"><label>Couleur</label><input type="color" id="c" value="${hex(h.couleur)}" style="width:50px"></div></div>
+      ${h.boutons.map((b, i) => `<div class="box" data-i="${i}"><b>${esc(b.key)}</b> <label style="display:inline"><input type="checkbox" class="actif" ${b.actif ? 'checked' : ''}> actif</label>
+        <div class="row"><label>Bouton</label><input class="label" value="${esc(b.label)}"><select class="style">${['Primary', 'Secondary', 'Success', 'Danger'].map(s => `<option ${s === b.style ? 'selected' : ''}>${s}</option>`).join('')}</select></div>
+        <div class="row"><label>Titre du message</label><input class="titre" value="${esc(b.titre)}"></div>
+        <div class="row"><label>Message</label><textarea class="msg">${esc(b.message)}</textarea></div>
+        <div class="row"><label>Image (https)</label><input class="img" value="${esc(b.image)}"></div></div>`).join('')}
+      <div class="row"><button class="p" id="sv">Enregistrer</button><button id="pub">Republier le HUB dans Discord</button></div>
+      <p class="mut">Les textes s'appliquent tout de suite ; le libellé/style des boutons nécessite « Republier ».</p>`;
+    const val = () => ({ titre: $('#t').value, description: $('#d').value, couleur: parseInt($('#c').value.slice(1), 16),
+      boutons: [...m.querySelectorAll('[data-i]')].map(e => ({ key: h.boutons[e.dataset.i].key, actif: e.querySelector('.actif').checked, label: e.querySelector('.label').value,
+        style: e.querySelector('.style').value, titre: e.querySelector('.titre').value, message: e.querySelector('.msg').value, image: e.querySelector('.img').value,
+        couleur: h.boutons[e.dataset.i].couleur })) });
+    $('#sv').onclick = run(() => api('/hubinfo', 'PUT', val()), 'HUB enregistré', false);
+    $('#pub').onclick = run(() => api('/hubinfo/publier', 'POST'), 'HUB republié', false);
+  },
+
+  async messages(m) {
+    const l = await api('/scheduled');
+    m.innerHTML = `<h2>📢 Messages récurrents</h2><div class="box"><div class="row"><label>Nom</label><input id="n"></div><div class="row"><label>ID du salon</label><input id="ch"></div>
+      <div class="row"><label>Intervalle (min)</label><input id="iv" type="number" value="60" style="max-width:120px"></div><div class="row"><label>Message</label><textarea id="ms"></textarea></div>
+      <button class="p" id="add">Créer</button></div>` + table(['Nom', 'Salon', 'Toutes les', 'Prochain', 'État', ''], l.map(x => `<tr><td>${esc(x.name)}<br><span class="mut">${esc(x.message.slice(0, 80))}</span></td><td>${x.channelId}</td><td>${x.intervalMinutes} min</td><td>${date(x.nextSend)}</td>
+      <td>${x.enabled ? '<span class="ok">actif</span>' : 'pause'}</td><td><button data-a="send" data-id="${x.id}">Envoyer</button> <button data-a="tog" data-id="${x.id}" data-on="${x.enabled}">${x.enabled ? 'Pause' : 'Activer'}</button> <button class="d" data-a="del" data-id="${x.id}">✕</button></td></tr>`));
+    $('#add').onclick = run(() => api('/scheduled', 'POST', { name: $('#n').value, channelId: $('#ch').value.trim(), intervalMinutes: $('#iv').value, message: $('#ms').value }), 'Créé');
+    m.onclick = e => { const b = e.target.closest('button[data-a]'); if (!b) return; const id = b.dataset.id;
+      if (b.dataset.a === 'send') run(() => api(`/scheduled/${id}/send`, 'POST'), 'Envoyé', false)();
+      if (b.dataset.a === 'tog') run(() => api('/scheduled/' + id, 'PUT', { enabled: b.dataset.on !== 'true' }))();
+      if (b.dataset.a === 'del' && confirm('Supprimer ?')) run(() => api('/scheduled/' + id, 'DELETE'))(); };
+  },
+
+  async reglages(m) {
+    const [s, ids] = await Promise.all([api('/settings'), api('/ids')]);
+    m.innerHTML = `<h2>⚙️ Réglages</h2><div class="box">
+      <div class="row"><label>Redémarrage quotidien (heure, vide = off)</label><input data-k="RESTART_HOUR" type="number" min="0" max="23" value="${esc(s.RESTART_HOUR)}" style="max-width:100px"></div>
+      <div class="row"><label>Jours avant inactif</label><input data-k="INACTIVE_DAYS" type="number" value="${esc(s.INACTIVE_DAYS)}" style="max-width:100px"></div>
+      <div class="row"><label>Jours avant expulsion</label><input data-k="EXPEL_DAYS" type="number" value="${esc(s.EXPEL_DAYS)}" style="max-width:100px"></div>
+      <button class="p" id="sv">Enregistrer</button> <span class="mut">Les jours d'inactivité s'appliquent au prochain redémarrage.</span></div>
+      <h3>Salons & rôles configurés (.env)</h3>${table(['Clé', 'ID', 'Résolu'], ids.map(i => `<tr><td>${i.cle}</td><td>${esc(i.id)}</td><td>${i.nom ? esc(i.nom) : '<span class="err">❌ introuvable</span>'}</td></tr>`))}`;
+    $('#sv').onclick = run(() => api('/settings', 'PUT', Object.fromEntries([...m.querySelectorAll('[data-k]')].map(i => [i.dataset.k, i.value]))), 'Réglages enregistrés', false);
+  },
+
+  async actions(m) {
+    const A = (nom, l, conf) => `<button data-n="${nom}" data-c="${conf || ''}" class="${nom === 'redemarrer' ? 'd' : ''}">${l}</button>`;
+    m.innerHTML = `<h2>🔧 Actions</h2><div class="box row">${A('maintenance', '🔧 Maintenance complète')}${A('anniversaires', '🎂 Salon anniversaires')}${A('nettoyage', '🧹 Nettoyer les doublons de panneaux')}${A('redemarrer', '🔄 Redémarrer le bot', 'Redémarrer le bot maintenant ?')}</div>
+      <p class="mut">La maintenance synchronise les membres, nettoie la base, met à jour le classement et le statut.</p>`;
+    m.onclick = e => { const b = e.target.closest('button[data-n]'); if (!b || (b.dataset.c && !confirm(b.dataset.c))) return; run(() => api('/action/' + b.dataset.n, 'POST'), 'Lancé ✔', false)(); };
+  },
+};
+
+// Bugs / idées / mods : liste en lecture seule (la décision se prend avec les boutons dans Discord)
+async function listeDecisions(m, titre, path) {
+  const l = await api(path);
+  m.innerHTML = `<h2>${titre} (${l.length})</h2><p class="mut">Les décisions se prennent avec les boutons dans les salons Discord.</p>` +
+    table(['N°', 'Date', 'Auteur', 'Contenu', 'Statut'], l.map(i => `<tr><td>${i.n}</td><td>${date(i.createdAt)}</td><td>${i.userId}</td><td><b>${esc(i.titre || i.type || '')}</b><br>${esc((i.texte || '').slice(0, 300))}${i.commentaire || i.motif ? '<br><span class="mut">💬 ' + esc(i.commentaire || i.motif) + '</span>' : ''}</td><td><span class="tag">${i.status}</span></td></tr>`));
+}
+
+const NAV = [['apercu', '📊 Aperçu'], ['_Gestion'], ['membres', '👥 Membres'], ['logs', '📋 Logs'], ['_FS25'], ['fs25', '🚜 Exploitations FS25'], ['exploitations', '🌾 Gérer exploitations'], ['_Communauté'],
+  ['xp', '🎚️ Niveaux & XP'], ['boutique', '🛒 Boutique'], ['bugs', '🐞 Bugs'], ['suggestions', '💡 Idées'], ['mods', '🛠️ Mods'], ['_Système'], ['roles', '🎭 Rôles HUB'], ['hub', '📌 HUB info'], ['messages', '📢 Messages récurrents'], ['reglages', '⚙️ Réglages'], ['actions', '🔧 Actions']];
+let cur = location.hash.slice(1) in TABS ? location.hash.slice(1) : 'apercu';
+async function show(t) {
+  cur = t; location.hash = t;
+  document.querySelectorAll('nav a').forEach(a => a.classList.toggle('sel', a.dataset.t === t));
+  const m = $('#main'); m.onclick = null; m.innerHTML = 'Chargement…';
+  try { await TABS[t](m); } catch (e) { m.innerHTML = `<p class="err">${esc(e.message)}</p>`; }
+}
+$('#nav').insertAdjacentHTML('beforeend', NAV.map(([k, l]) => l ? `<a data-t="${k}">${l}</a>` : `<div class="mut" style="margin:12px 10px 4px;font-size:11px;text-transform:uppercase">${k.slice(1)}</div>`).join('') + '<a href="/" style="margin-top:12px;color:var(--mut)">← Éditeur d\'embeds</a>');
+$('#nav').onclick = e => { const a = e.target.closest('a[data-t]'); if (a) show(a.dataset.t); };
+fetch('/api/me').then(r => r.json()).then(j => j.ok ? show(cur) : (location.href = '/'));
+</script>
+</body>
+</html>

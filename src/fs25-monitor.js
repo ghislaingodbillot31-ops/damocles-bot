@@ -3,10 +3,12 @@ const http = require('http');
 require('dotenv').config();
 const { panneauEmbed } = require('./embed-format');
 
-const FS25_IP       = '195.179.229.190';
-const FS25_PORT     = 9220;
-const FS25_CODE     = '5dWzqhCHJmcLqADn';
-const NOTIF_CHANNEL = ids('FS25_CHANNEL_ID', '1541422309619802153');
+// Serveur FS25 surveillé : variables d'environnement (FS25_IP, FS25_PORT, FS25_CODE) et salon de notifications (FS25_CHANNEL_ID).
+// Sans elles le moniteur reste éteint, ce qui permet de partager le même code entre les serveurs Discord.
+const FS25_IP       = process.env.FS25_IP;
+const FS25_PORT     = parseInt(process.env.FS25_PORT || '9220');
+const FS25_CODE     = process.env.FS25_CODE;
+const NOTIF_CHANNEL = ids('FS25_CHANNEL_ID');
 const POLL_INTERVAL = 30000;
 
 let previousPlayers = new Map(); // name -> { uptime, x, y, z }
@@ -124,7 +126,7 @@ async function poll(client) {
           playerList,
         ].join('\n'),
         color: 0x2ECC71,
-        footer: { text: 'FS25 Monitor · Damoclès Bot' },
+        footer: { text: 'FS25 Monitor · MonCopainBot' },
         timestamp: new Date().toISOString(),
       });
       return;
@@ -154,6 +156,7 @@ async function poll(client) {
 }
 
 function startFS25Monitor(client) {
+  if (!FS25_IP || !FS25_CODE || !NOTIF_CHANNEL) { console.log('🎮 FS25 Monitor désactivé (FS25_IP / FS25_CODE / FS25_CHANNEL_ID non définis)'); return; }
   console.log('🎮 Démarrage FS25 Monitor...');
   poll(client);
   setInterval(() => poll(client), POLL_INTERVAL);

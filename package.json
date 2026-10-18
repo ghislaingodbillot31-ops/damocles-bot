@@ -1,13 +1,12 @@
 {
-  "name": "damocles-bot",
-  "version": "2.0.0",
-  "description": "Bot Discord Damoclès — Gestion des membres",
+  "name": "moncopainbot",
+  "version": "1.0.0",
+  "description": "Bot Discord MonCopainBot (Le Coin des Copains)",
   "main": "src/index.js",
   "scripts": {
     "start": "node src/index.js",
     "deploy": "node src/deploy-commands.js",
-    "dominius": "node --env-file=serveurs/dominius/.env src/index.js",
-    "deploy:dominius": "node --env-file=serveurs/dominius/.env src/deploy-commands.js"
+    "setup": "node setup-dominius.js"
   },
   "dependencies": {
     "discord.js": "^14.15.2",

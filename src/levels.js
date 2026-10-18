@@ -4,7 +4,7 @@ const path = require('path');
 const db   = require('./database');
 const { panneauEmbed } = require('./embed-format');
 
-const { dataPath, writeAtomic } = require('./paths');
+const { dataPath } = require('./paths');
 const STATE_PATH   = dataPath('levels.json'); // ids des messages du salon
 const XP_PATH      = dataPath('xp.json');     // LES POINTS (source de vérité)
 const MEMBERS_PATH = dataPath('members.json');
@@ -37,7 +37,7 @@ function loadBareme() {
 function saveBareme() {
   try {
     fs.mkdirSync(path.dirname(BAREME_PATH), { recursive: true });
-    writeAtomic(BAREME_PATH, JSON.stringify(XP, null, 2), 'utf-8');
+    fs.writeFileSync(BAREME_PATH, JSON.stringify(XP, null, 2), 'utf-8');
   } catch (err) {
     console.error('⚠️ xp-config.json — sauvegarde impossible :', err.message);
   }
@@ -52,8 +52,8 @@ function setBaremeValeur(cle, valeur) {
   saveBareme();
   return { ...XP };
 }
-const LEVELUP_CHANNEL     = ids('LEVELUP_CHANNEL_ID', '1538533319430373516'); // annonces de montée de niveau
-const LEADERBOARD_CHANNEL = ids('LEVELUP_CHANNEL_ID', '1538533319430373516'); // message de classement permanent
+const LEVELUP_CHANNEL     = ids('LEVELUP_CHANNEL_ID'); // annonces de montée de niveau
+const LEADERBOARD_CHANNEL = ids('LEVELUP_CHANNEL_ID'); // message de classement permanent
 
 // ── Courbe de niveaux ────────────────────────────────────────────────────────
 function xpToNext(level)      { return 5 * level * level + 50 * level + 100; }
@@ -110,7 +110,7 @@ function saveXpNow() {
   _xpDirty = false;
   try {
     fs.mkdirSync(path.dirname(XP_PATH), { recursive: true });
-    writeAtomic(XP_PATH, JSON.stringify(_xp, null, 2), 'utf-8');
+    fs.writeFileSync(XP_PATH, JSON.stringify(_xp, null, 2), 'utf-8');
   } catch (err) {
     console.error('⚠️ xp.json — sauvegarde impossible :', err.message);
   }
@@ -138,7 +138,7 @@ function loadState() {
 function saveState() {
   try {
     if (!fs.existsSync(path.dirname(STATE_PATH))) fs.mkdirSync(path.dirname(STATE_PATH), { recursive: true });
-    writeAtomic(STATE_PATH, JSON.stringify({ leaderboardMsgId: _leaderboardMsgId, baremeMsgId: _baremeMsgId }, null, 2), 'utf-8');
+    fs.writeFileSync(STATE_PATH, JSON.stringify({ leaderboardMsgId: _leaderboardMsgId, baremeMsgId: _baremeMsgId }, null, 2), 'utf-8');
   } catch {}
 }
 
@@ -349,14 +349,19 @@ async function cacheInvites(guild) {
   } catch {}
 }
 
+// Retourne l'ID de l'invitant (ou null).
 async function onMemberAdd(member) {
-  if (member.user.bot) return;
+  if (member.user.bot) return null;
   try {
     const invs = await member.guild.invites.fetch();
     let inviter = null;
     for (const [, inv] of invs) {
       const avant = inviteCache.get(inv.code) ?? 0;
-      if ((inv.uses || 0) > avant) { inviter = inv.inviter; }
+      if ((inv.uses || 0) > avant) {
+        // les liens du HUB sont créés par le bot : on remonte au joueur qui l'a généré
+        const owner = require('./invitations').createur(inv.code);
+        inviter = (owner && await member.client.users.fetch(owner).catch(() => null)) || inv.inviter;
+      }
       inviteCache.set(inv.code, inv.uses || 0);
     }
 
@@ -368,8 +373,10 @@ async function onMemberAdd(member) {
         inviteBonusDone: false,
       });
       console.log('📥 ' + member.user.tag + ' invité par ' + inviter.tag + ' (+' + XP.INVITE + ' XP)');
+      return inviter.id;
     }
   } catch (e) { console.error('⚠️ invite tracking :', e.message); }
+  return null;
 }
 
 // Bonus rétention 7 jours — appelé par la tâche quotidienne

@@ -3,7 +3,7 @@ require('dotenv').config();
 const DAMOCLES_LOG_CHANNEL_ID = process.env.DAMOCLES_LOG_CHANNEL_ID;
 
 async function log(client, type, data) {
-  try { if (!data?.noStatus) require('./statusbot').pushEvent(type, data); } catch {} // journal en direct du salon bot-status
+  try { if (!data?.noStatus) require('./statusbot').pushEvent(type); } catch {} // compteurs du salon bot-status
   try { require('./publiclog').publier(client, type, data).catch(() => {}); } catch {} // journal public
   if (data?.publicOnly) return; // événement réservé au statut et au journal public (pas de doublon dans les logs staff)
   if (!DAMOCLES_LOG_CHANNEL_ID) return;
@@ -118,7 +118,7 @@ async function log(client, type, data) {
     embeds: [{
       description: text,
       color,
-      footer: { text: 'Damoclès Log' },
+      footer: { text: 'MonCopainBot · Log' },
       timestamp: new Date().toISOString(),
     }]
   }).catch(err => console.error('Erreur log :', err.message));

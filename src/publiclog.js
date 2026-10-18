@@ -2,43 +2,29 @@ const { AuditLogEvent } = require('discord.js');
 
 // Journal PUBLIC (salon PUBLIC_LOG_CHANNEL_ID) : arrivées, joueurs validés, tickets, choix de rôle, bannissements et expulsions
 // (avec la raison et l'auteur). Les départs de joueurs ne sont JAMAIS affichés, ni les avertissements ni les alertes du staff.
-// Style identique au centre de contrôle (statusbot) : console ANSI de même largeur, 1 ligne (2 pour un ban / une expulsion), sans image.
+// Design Discord natif : un petit embed par événement (+ raison et auteur pour un ban / une expulsion).
 const SALON = () => process.env.PUBLIC_LOG_CHANNEL_ID;
-const sb = () => require('./statusbot');
 const motif = r => (r || 'aucune raison précisée').replace(/\s*\(par [^)]*\)\s*$/i, '').replace(/\s+/g, ' ');
 
-// type → [couleur de la barre, étiquette (7 car.), couleur de l'étiquette, verbe] ; r = ligne de détail (ban / expulsion)
+// type → [couleur de la barre, icône, verbe] ; 4e valeur true = ban / expulsion (raison + auteur)
 const MODELES = {
-  member_join:        [0x3498DB, 'JOIN   ', 'cyan',  () => 'rejoint le serveur'],
-  verification_ok:    [0x2ECC71, 'ARRIVÉ ', 'vert',  () => 'a validé son compte'],
-  member_activated:   [0x2ECC71, 'ARRIVÉ ', 'vert',  () => 'a rejoint la communauté'],
-  reglement_accepted: [0x3498DB, 'RÈGLE ✔', 'bleu',  () => 'a accepté le règlement'],
-  ticket_created:     [0x5865F2, 'TICKET ', 'bleu',  () => 'ouvre un ticket'],
-  ticket_taken:       [0x2ECC71, 'TICKET ', 'vert',  (d, m) => 'pris par ' + m],
-  ticket_closed:      [0x95A5A6, 'TICKET ', 'gris',  (d, m) => 'clôturé par ' + m],
-  role_added:         [0x9B59B6, 'RÔLE + ', 'violet', d => d.roleName],
-  role_removed:       [0x95A5A6, 'RÔLE − ', 'gris',  d => d.roleName],
-  member_banned:      [0xE74C3C, 'BAN    ', 'rouge', () => 'banni', true],
-  member_kicked:      [0xE67E22, 'KICK   ', 'jaune', () => 'expulsé', true],
+  member_join:        [0x3498DB, '📥', () => 'rejoint le serveur'],
+  verification_ok:    [0x2ECC71, '✅', () => 'a validé son compte'],
+  member_activated:   [0x2ECC71, '✅', () => 'a rejoint la communauté'],
+  reglement_accepted: [0x3498DB, '📜', () => 'a accepté le règlement'],
+  ticket_created:     [0x5865F2, '🎫', () => 'ouvre un ticket'],
+  ticket_taken:       [0x2ECC71, '🎫', (d, m) => 'ticket pris par ' + m],
+  ticket_closed:      [0x95A5A6, '🎫', (d, m) => 'ticket clôturé par ' + m],
+  role_added:         [0x9B59B6, '➕', d => 'a pris le rôle **' + d.roleName + '**'],
+  role_removed:       [0x95A5A6, '➖', d => 'a retiré le rôle **' + d.roleName + '**'],
+  member_banned:      [0xE74C3C, '🔨', () => 'a été banni', true],
+  member_kicked:      [0xE67E22, '👢', () => 'a été expulsé', true],
 };
 
 async function nom(client, id) {
   if (!id) return '?';
   const u = client.users.cache.get(id) || await client.users.fetch(id).catch(() => null);
   return u ? (u.globalName || u.username) : String(id).slice(-6);
-}
-
-// Une ligne de la console : segments [couleur, texte], complétée à la largeur du centre de contrôle ;
-// si elle dépasse, on raccourcit le segment « souple » (le dernier par défaut)
-function ligne(segs, souple = segs.length - 1) {
-  const { W } = sb();
-  let total = segs.reduce((n, s) => n + s[1].length, 0);
-  if (total > W) {
-    const seg = segs[souple];
-    seg[1] = seg[1].slice(0, Math.max(0, seg[1].length - (total - W) - 1)) + '…';
-    total = segs.reduce((n, s) => n + s[1].length, 0);
-  }
-  return segs.map(([f, t]) => f(t)).join('') + ' '.repeat(Math.max(0, W - total));
 }
 
 async function publier(client, type, data = {}) {
@@ -48,39 +34,80 @@ async function publier(client, type, data = {}) {
   const channel = client.channels.cache.get(id) || await client.channels.fetch(id).catch(() => null);
   if (!channel) return;
 
-  const { ansi, hhmmss } = sb();
-  const joueur = (await nom(client, data.userId)).slice(0, 16), mod = (await nom(client, data.modId)).slice(0, 16);
-  const [couleur, tag, teinte, verbe, detail] = modele;
-  const heure = hhmmss(Date.now());
-  const lignes = [ligne([[ansi.gris, heure + ' '], [ansi[teinte], tag + ' '], [ansi.blanc, joueur + ' '], [ansi.gris, verbe(data, mod)]])];
-  if (detail) {
-    lignes.push(ligne([[ansi.gris, ' '.repeat(heure.length + 1)], [ansi.gris, 'raison '], [ansi.blanc, motif(data.reason)], [ansi.gris, ' · par '], [ansi.cyan, mod]], 2));
-  }
-  let barre = couleur;
+  const joueur = (await nom(client, data.userId)).slice(0, 32), mod = (await nom(client, data.modId)).slice(0, 32);
+  const [couleur, icone, verbe, detail] = modele;
+  const embed = { description: icone + ' **' + joueur + '** ' + verbe(data, mod), color: couleur, timestamp: new Date().toISOString() };
+  if (detail) embed.fields = [{ name: 'Raison', value: motif(data.reason).slice(0, 1024), inline: true }, { name: 'Par', value: mod, inline: true }];
   if (type === 'verification_ok') {
-    const c = await controles(client, data.userId);
-    if (c) { lignes.push(c.l1, c.l2); if (c.alerte) barre = 0xE67E22; }
+    const user = client.users.cache.get(data.userId) || await client.users.fetch(data.userId).catch(() => null);
+    const checks = user && await require('./verification').runChecks({ user }).catch(() => null);
+    if (checks) {
+      Object.assign(embed, panneauVerif(user, checks, channel.guild?.name));
+      await alerteStaff(client, channel.guild, user, checks);
+    }
   }
   await channel.send({
-    embeds: [{ description: '```ansi\n' + lignes.join('\n') + '\n```', color: barre }],
+    embeds: [embed],
     allowedMentions: { parse: [] },
   }).catch(err => console.error('⚠️ journal public :', err.message));
 }
 
-// Contrôles d'un joueur qui valide son compte : âge, déjà venu, expulsé, banni (mêmes règles que la vérification)
-async function controles(client, userId) {
+// Alerte dans le salon STAFF ALERTE (ping du rôle admin) quand un contrôle est orange : compte < 7 jours, pseudo anormal
+// ou injurieux, déjà expulsé, départ volontaire
+async function alerteStaff(client, guild, user, checks) {
   try {
-    const user = client.users.cache.get(userId) || await client.users.fetch(userId);
-    const checks = await require('./verification').runChecks({ user });
-    const v = label => checks.find(c => c.label.includes(label));
-    const age = Math.floor((Date.now() - user.createdTimestamp) / 86400000);
-    const { ansi } = sb(), pad = ' '.repeat(9);
-    const oui = (c, bad) => [c.value ? (bad ? ansi.rouge : ansi.jaune) : ansi.vert, c.value ? 'oui' : 'non'];
-    const jeune = !v('Âge').passed, venu = v('Ancien'), exp = v('Expulsions'), ban = v('Banni');
-    const l1 = ligne([[ansi.gris, pad + 'âge '], [jeune ? ansi.rouge : ansi.vert, age + ' j'], [ansi.gris, ' · déjà venu '], oui(venu), [ansi.gris, venu.value ? ' (' + venu.detail.split(' ')[0] + 'x)' : '']]);
-    const l2 = ligne([[ansi.gris, pad + 'expulsé '], oui(exp, true), [ansi.gris, ' · banni '], oui(ban, true)]);
-    return { l1, l2, alerte: jeune || exp.value || ban.value };
-  } catch (err) { console.error('⚠️ contrôles journal public :', err.message); return null; }
+    const par = label => checks.find(c => c.label.includes(label));
+    const motifs = [
+      ['Âge', c => !c.passed, 'Compte de moins de 7 jours'],
+      ['Pseudo', c => !c.passed, 'Pseudo anormal ou injurieux'],
+      ['Expulsions', c => c.value, 'Déjà expulsé du serveur'],
+      ['Départ', c => c.value, 'Départ volontaire précédent'],
+    ].filter(([l, test]) => par(l) && test(par(l))).map(([l, , txt]) => '• **' + txt + '**' + (par(l).detail ? ' · ' + par(l).detail : ''));
+    if (!motifs.length) return;
+    const id = process.env.STAFF_ALERT_CHANNEL_ID || '1559691536021856346';
+    const salon = client.channels.cache.get(id) || await client.channels.fetch(id).catch(() => null);
+    if (!salon) return;
+    const admin = guild?.roles.cache.find(r => /admin/i.test(r.name) && !r.managed);
+    await salon.send({
+      content: admin ? '<@&' + admin.id + '>' : undefined,
+      embeds: [{
+        title: '🚨  ALERTE VÉRIFICATION',
+        description: '<@' + user.id + '> (`' + user.username + '`) a validé son code, vérification requise :\n\n' + motifs.join('\n'),
+        color: 0xE67E22,
+        footer: { text: user.id },
+      }],
+      allowedMentions: { roles: admin ? [admin.id] : [], users: [] },
+    });
+  } catch (err) { console.error('⚠️ alerte staff :', err.message); }
+}
+
+// Panneau de vérification : embed Discord natif (champs). checks = résultats de verification.runChecks (peut être partiel
+// pendant l'animation) ; verdict : null (en cours) | 'ok' | 'ko' | 'auto'. Retourne { title, color, fields, footer } prêt pour un embed.
+function panneauVerif(user, checks, serveur = 'SERVEUR', verdict = 'auto') {
+  const age = Math.floor((Date.now() - user.createdTimestamp) / 86400000);
+  const echecs = checks.filter(c => !c.passed);
+  if (verdict === 'auto') verdict = echecs.length ? 'ko' : 'ok';
+  const alerte = checks.some(c => c.value && c.type !== 'oui_non') || echecs.length > 0 || checks.some(c => c.label.includes('Sanctions') && c.value);
+
+  const lignes = checks.map(c => {
+    const nom = c.label.replace(/^\S+\s+/, '');
+    if (c.label.includes('Âge')) return (c.passed ? '✅' : '❌') + ' **' + nom + '** · ' + age + ' j (min. 7)';
+    if (c.type === 'classic') return (c.passed ? '✅' : '❌') + ' **' + nom + '** · ' + (c.passed ? 'conforme' : 'ÉCHEC');
+    return (c.value ? (c.type === 'danger' ? '❌' : '⚠️') : '✅') + ' **' + nom + '** · ' + (c.value ? 'OUI' : 'non');
+  });
+  const fields = [{
+    name: 'Joueur',
+    value: (user.globalName ? user.globalName + ' (' + user.username + ')' : user.username) + '\nID : `' + user.id + '`\nCompte créé le ' + new Date(user.createdTimestamp).toLocaleDateString('fr-FR', { timeZone: 'Europe/Paris' }),
+  }];
+  if (lignes.length) fields.push({ name: 'Contrôles', value: lignes.join('\n').slice(0, 1024) });
+  fields.push({ name: 'Verdict', value: verdict === 'ok' ? '✅ Compte validé · accès accordé' : verdict === 'ko' ? '❌ Refusé · décision du staff' + echecs.filter(c => c.detail).map(c => '\n' + c.detail.slice(0, 200)).join('') : '⏳ Analyse en cours' });
+  return {
+    title: '🔍 Vérification joueur · ' + serveur,
+    fields,
+    color: verdict === 'ko' ? 0xE74C3C : verdict === null ? 0xF1C40F : alerte ? 0xE67E22 : 0x2ECC71,
+    footer: { text: user.id },
+    timestamp: new Date().toISOString(),
+  };
 }
 
 // À chaque démarrage : une ligne « En attente de logs » à la suite de l'historique (rien n'est jamais supprimé)
@@ -88,9 +115,7 @@ async function demarrer(client) {
   const id = SALON();
   const channel = id && (client.channels.cache.get(id) || await client.channels.fetch(id).catch(() => null));
   if (!channel) return;
-  const { ansi, hhmmss } = sb();
-  const l = ligne([[ansi.gris, hhmmss(Date.now()) + ' '], [ansi.jaune, 'SYSTÈME '], [ansi.blanc, 'En attente de logs'], [ansi.jaune, ' ▓░░']]);
-  await channel.send({ embeds: [{ description: '```ansi\n' + l + '\n```', color: 0xF1C40F }], allowedMentions: { parse: [] } })
+  await channel.send({ embeds: [{ description: '⏳ En attente de logs', color: 0xF1C40F, timestamp: new Date().toISOString() }], allowedMentions: { parse: [] } })
     .catch(err => console.error('⚠️ journal public :', err.message));
   console.log('📰 Journal public · prêt (#' + channel.name + ')');
 }
@@ -107,4 +132,4 @@ async function auditRecent(guild, type, targetId) {
   return null;
 }
 
-module.exports = { publier, demarrer, auditRecent };
+module.exports = { publier, demarrer, auditRecent, panneauVerif, alerteStaff };

@@ -120,7 +120,7 @@ module.exports = {
                 { name: '🟡 Liste inactifs (' + inactiveList.length + ')', value: inactivePreview + inactiveExtra },
                 { name: '⚠️ Liste expulsion (' + expelList.length + ')',   value: expelPreview + expelExtra },
               ],
-              footer: { text: 'Damoclès Security Bot' },
+              footer: { text: 'MonCopainBot' },
               timestamp: new Date().toISOString(),
             }]
           })).catch(() => {});

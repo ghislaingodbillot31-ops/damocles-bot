@@ -45,7 +45,7 @@ module.exports = {
           { name: '📥 Invitations', value: String(r.invites), inline: true },
         ],
         color: 0xF1C40F,
-        footer: { text: 'EUROAGRI · Damoclès Bot' },
+        footer: { text: 'EUROAGRI · MonCopainBot' },
       }],
     }));
   },

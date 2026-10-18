@@ -2,7 +2,7 @@ const ids = require('./ids');
 const fs = require('fs');
 const { PermissionFlagsBits } = require('discord.js');
 const { panneau } = require('./embed-format');
-const { dataPath, writeAtomic } = require('./paths');
+const { dataPath } = require('./paths');
 
 // Salon-piège (honeypot), en tête du serveur avec l'accueil : visible et ouvert à tous. Les robots de spam y écrivent
 // partout où ils le peuvent → tout message d'un non-staff dans ce salon = bannissement automatique.
@@ -10,7 +10,7 @@ const TRAP = ids('ANTISPAM_CHANNEL_ID');
 const STORE_PATH = dataPath('antispam.json');
 let store = { panelMsgId: null, bans: 0 };
 try { store = { ...store, ...JSON.parse(fs.readFileSync(STORE_PATH, 'utf-8')) }; } catch {}
-const save = () => { try { writeAtomic(STORE_PATH, JSON.stringify(store, null, 2), 'utf-8'); } catch {} };
+const save = () => { try { fs.writeFileSync(STORE_PATH, JSON.stringify(store, null, 2), 'utf-8'); } catch {} };
 
 const STAFF = PermissionFlagsBits.ManageMessages;
 
@@ -39,7 +39,7 @@ async function onMessage(message) {
   try {
     await message.guild.members.ban(message.author, { reason: raison, deleteMessageSeconds: 24 * 3600 });
     store.bans++; save();
-    try { require('./statusbot').pushEvent('antispam_ban', { userId: message.author.id, tag: message.author.username }); } catch {}
+    try { require('./statusbot').pushEvent('antispam_ban'); } catch {}
     console.log('🚫 Anti-spam : ' + message.author.tag + ' banni');
   } catch (err) {
     console.error('⚠️ Anti-spam : ban impossible (' + message.author.tag + ') :', err.message);
@@ -63,6 +63,7 @@ async function startAntiSpam(client) {
     if (ancien) await ancien.delete().catch(() => {});
     store.panelMsgId = (await ch.send(panelPayload()).catch(() => null))?.id || null;
     save();
+    await require('./nettoyage').epurer(client, ch.id);
     console.log('🚫 Anti-spam · prêt (salon-piège : #' + ch.name + ')');
   } catch (err) { console.error('⚠️ Anti-spam :', err.message); }
 }

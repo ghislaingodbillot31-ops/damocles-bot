@@ -11,9 +11,9 @@ const { panneau } = require('./embed-format');
 // « Visible par tous les membres » : en mode code-compte, seuls les membres activés voient ces salons (pas les nouveaux arrivants).
 const visiblePar = guild => process.env.VERIF_MODE === 'code-compte' && process.env.ACTIVE_ROLE_ID ? process.env.ACTIVE_ROLE_ID : guild.id;
 const cacherAuxAutres = guild => visiblePar(guild) !== guild.id ? [{ id: guild.id, deny: [PermissionFlagsBits.ViewChannel] }] : [];
-const PANEL_CHANNEL   = ids('TEMPVOICE_PANEL_CHANNEL_ID', '1544898451706482728'); // salon texte où se trouve le bouton
-const VOICE_CATEGORY  = ids('VOICE_CATEGORY_ID', '1345486205810118806'); // catégorie des salons vocaux temporaires
-const { dataPath, writeAtomic }    = require('./paths');
+const PANEL_CHANNEL   = ids('TEMPVOICE_PANEL_CHANNEL_ID'); // salon texte où se trouve le bouton
+const VOICE_CATEGORY  = ids('VOICE_CATEGORY_ID'); // catégorie des salons vocaux temporaires
+const { dataPath }    = require('./paths');
 const STORE_PATH      = dataPath('tempvoice.json');
 const SWEEP_MS        = 60_000; // vérification des salons vides
 const GRACE_MS        = 90_000; // délai avant de supprimer un salon jamais rejoint
@@ -31,7 +31,7 @@ function load() {
 function save() {
   try {
     if (!fs.existsSync(path.dirname(STORE_PATH))) fs.mkdirSync(path.dirname(STORE_PATH), { recursive: true });
-    writeAtomic(STORE_PATH, JSON.stringify({ channels: Object.fromEntries(salons) }, null, 2), 'utf-8');
+    fs.writeFileSync(STORE_PATH, JSON.stringify({ channels: Object.fromEntries(salons) }, null, 2), 'utf-8');
   } catch {}
 }
 
@@ -53,7 +53,7 @@ async function postVoicePanel(channel) {
         '> • Il est **supprimé automatiquement** dès qu\'il est vide.',
       ].join('\n'),
       color: 0x5865F2,
-      footer: { text: 'EUROAGRI · Damoclès Bot' },
+      footer: { text: 'EUROAGRI · MonCopainBot' },
     }],
     components: [new ActionRowBuilder().addComponents(
       new ButtonBuilder().setCustomId('voice_create').setLabel('➕ Créer mon salon vocal').setStyle(ButtonStyle.Success),

@@ -95,7 +95,7 @@ module.exports = {
           embeds: [{
             description: '👢 **Expulsé** par ' + interaction.user.tag,
             color: 0xE74C3C,
-            footer: { text: 'Damoclès Security Bot' },
+            footer: { text: 'MonCopainBot' },
           }],
           components: [],
         }).catch(() => {});
@@ -111,7 +111,7 @@ module.exports = {
         embeds: [{
           description: '✅ **Gardé** par ' + interaction.user.tag,
           color: 0x2ECC71,
-          footer: { text: 'Damoclès Security Bot' },
+          footer: { text: 'MonCopainBot' },
         }],
         components: [],
       }).catch(() => {});
@@ -164,7 +164,7 @@ async function sendNext(guild, channel) {
         { name: 'Dernière activité',  value: lastStr, inline: true },
         { name: 'Inactif depuis',     value: '**' + daysInactive + ' jours**', inline: true },
       ],
-      footer: { text: 'Damoclès Security Bot · Choisissez une action pour continuer' },
+      footer: { text: 'MonCopainBot · Choisissez une action pour continuer' },
     }],
     components: [row],
   }));

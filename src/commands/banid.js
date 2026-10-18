@@ -46,7 +46,7 @@ module.exports = {
                 { name: 'Raison',     value: raison },
                 { name: 'Date',       value: new Date().toLocaleString('fr-FR', { timeZone: 'Europe/Paris' }) },
               ],
-              footer: { text: 'Damoclès Security Bot' },
+              footer: { text: 'MonCopainBot' },
               timestamp: new Date().toISOString(),
             }]
           }));

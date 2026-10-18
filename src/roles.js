@@ -7,8 +7,8 @@ const { panneauEmbed } = require('./embed-format');
 // Salon des rôles. Le bot y maintient UN SEUL message :
 //   [ embed d'explication ]  +  [ boutons de rôle ]
 // Les boutons sont ajoutés/retirés via /bouton et le message se re-rend.
-const ROLES_CHANNEL = ids('ROLES_CHANNEL_ID', '1538537709633802270');
-const { dataPath, writeAtomic } = require('./paths');
+const ROLES_CHANNEL = ids('ROLES_CHANNEL_ID');
+const { dataPath } = require('./paths');
 const STORE_PATH   = dataPath('roles-panel.json');
 const MAX_BOUTONS   = 25; // 5 rangées de 5
 
@@ -31,7 +31,7 @@ function loadStore() {
 function saveStore(store) {
   try {
     fs.mkdirSync(path.dirname(STORE_PATH), { recursive: true });
-    writeAtomic(STORE_PATH, JSON.stringify(store, null, 2), 'utf-8');
+    fs.writeFileSync(STORE_PATH, JSON.stringify(store, null, 2), 'utf-8');
   } catch (err) {
     console.error('⚠️ roles.js — sauvegarde impossible :', err.message);
   }
@@ -148,6 +148,13 @@ async function removeRoleButton(client, roleId) {
   return { ok: true, count: store.buttons.length };
 }
 
+// Remplace la liste (dashboard) sans toucher au salon des rôles : le HUB communautaire la lit en direct.
+function setRoleButtons(buttons) {
+  const store = loadStore();
+  store.buttons = buttons.slice(0, MAX_BOUTONS);
+  saveStore(store);
+}
+
 function listRoleButtons() {
   return loadStore().buttons;
 }
@@ -159,4 +166,5 @@ module.exports = {
   addRoleButton,
   removeRoleButton,
   listRoleButtons,
+  setRoleButtons,
 };
