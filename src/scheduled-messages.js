@@ -31,6 +31,9 @@ function getAll() {
 }
 
 function create(data) {
+  if (!/^d{17,20}$/.test(String(data.channelId))) throw new Error('ID de salon invalide');
+  if (typeof data.message !== 'string' || !data.message.trim() || data.message.length > 4000) throw new Error('Message vide ou trop long (4000 max)');
+  data.intervalMinutes = Math.max(5, parseInt(data.intervalMinutes) || 60); // 5 min minimum : évite le flood
   const messages = load();
   const msg = {
     id:              newId(),

@@ -7,9 +7,11 @@
 <style>
   :root { --bg:#1e1f22; --panel:#2b2d31; --panel2:#313338; --txt:#dbdee1; --mut:#949ba4; --acc:#5865f2; --ok:#23a55a; --err:#f23f43; --line:#3f4147; }
   * { box-sizing:border-box; }
-  body { margin:0; background:var(--bg); color:var(--txt); font:14px/1.4 system-ui,"Segoe UI",sans-serif; display:grid; grid-template-columns:210px 1fr; min-height:100vh; }
+  body { margin:0;  background:var(--bg); color:var(--txt); font:14px/1.4 system-ui,"Segoe UI",sans-serif; display:grid; grid-template-columns:210px 1fr; min-height:100vh; }
   nav { background:var(--panel); padding:14px 10px; position:sticky; top:0; height:100vh; overflow:auto; }
-  nav h1 { font-size:15px; margin:0 6px 12px; }
+  nav h1 { font-size:15px; margin:0 6px 16px; } nav .g { color:var(--mut); font-size:11px; font-weight:600; letter-spacing:.05em; text-transform:uppercase; margin:16px 10px 4px; }
+  .pills { display:flex; gap:6px; margin-bottom:14px; flex-wrap:wrap; } .pills button { border-radius:20px; } .pills button.on { background:var(--acc); border-color:var(--acc); color:#fff; }
+  .sub { color:var(--mut); margin:-8px 0 16px; } main > h2 { padding-bottom:10px; border-bottom:1px solid var(--line); } tr:hover td { background:var(--panel2); } .scroll { overflow:auto; max-height:70vh; border-radius:8px; }
   nav a { display:block; padding:8px 10px; border-radius:6px; color:var(--txt); text-decoration:none; cursor:pointer; }
   nav a:hover, nav a.sel { background:var(--panel2); } nav a.sel { box-shadow:inset 3px 0 var(--acc); }
   main { padding:18px; min-width:0; }
@@ -119,15 +121,14 @@ const TABS = {
     const opts = d.roles.map(r => `<option value="${r.id}">${esc(r.name)}</option>`).join('');
     const draw = () => {
       m.innerHTML = `<h2>🎭 Rôles du HUB communautaire (${b.length}/25)</h2>
-        <p class="mut">Boutons proposés aux joueurs via « 🎭 Rôles » : un clic prend le rôle, un autre le retire. Pense à enregistrer.</p>
-        ${table(['Rôle', 'Nom du bouton', 'Emoji', 'Couleur', ''], b.map((x, i) => `<tr data-i="${i}"><td>${x.nom ? esc(x.nom) : '<span class="err">❌ rôle supprimé</span>'}</td>
+        <p class="mut">Boutons proposés aux joueurs via « 🎭 Rôles » : un clic prend le rôle, un autre le retire. La couleur est automatique : vert = rôle possédé, rouge = non possédé. Pense à enregistrer.</p>
+        ${table(['Rôle', 'Nom du bouton', 'Emoji', ''], b.map((x, i) => `<tr data-i="${i}"><td>${x.nom ? esc(x.nom) : '<span class="err">❌ rôle supprimé</span>'}</td>
           <td><input class="lb" value="${esc(x.label)}"></td><td><input class="em" value="${esc(x.emoji)}" style="width:70px"></td>
-          <td><select class="st">${[['Primary', 'Bleu'], ['Secondary', 'Gris'], ['Success', 'Vert'], ['Danger', 'Rouge']].map(([k, l]) => `<option value="${k}" ${k === x.style ? 'selected' : ''}>${l}</option>`).join('')}</select></td>
           <td><button data-a="up">▲</button> <button data-a="dn">▼</button> <button class="d" data-a="del">✕</button></td></tr>`))}
         <div class="box"><div class="row"><label>Ajouter un rôle</label><select id="nr">${opts}</select><input id="nl" placeholder="Nom du bouton" style="max-width:200px"><input id="ne" placeholder="Emoji" style="width:80px"><button id="add">＋ Ajouter</button></div></div>
         <button class="p" id="sv">Enregistrer</button>`;
     };
-    const lire = () => m.querySelectorAll('tr[data-i]').forEach(tr => { const x = b[tr.dataset.i]; x.label = tr.querySelector('.lb').value; x.emoji = tr.querySelector('.em').value; x.style = tr.querySelector('.st').value; });
+    const lire = () => m.querySelectorAll('tr[data-i]').forEach(tr => { const x = b[tr.dataset.i]; x.label = tr.querySelector('.lb').value; x.emoji = tr.querySelector('.em').value; });
     draw();
     m.onclick = async e => {
       const t = e.target.closest('button'); if (!t) return; lire();
@@ -162,13 +163,34 @@ const TABS = {
     $('#cd').onclick = run(async () => { const r = await api('/boutique/cooldowns', 'POST'); toast(r.reset + ' délai(s) remis à zéro'); }, 'Fait ✔', false);
   },
 
+  async retours(m) {
+    const t = TABS.retours.t || 'bugs', P = [['bugs', '🐞 Bugs'], ['suggestions', '💡 Idées'], ['mods', '🛠️ Mods']];
+    const z = document.createElement('div'); await TABS[t](z);
+    m.innerHTML = '<h2>💬 Retours des joueurs</h2><div class="pills">' + P.map(([k, l]) => `<button data-p="${k}" class="${k === t ? 'on' : ''}">${l}</button>`).join('') + '</div>' + z.innerHTML.replace(/<h2>.*?<\/h2>/, '');
+    const del = z.onclick; m.onclick = e => { const p = e.target.closest('[data-p]'); if (p) { TABS.retours.t = p.dataset.p; return show('retours'); } const b = e.target.closest('button[data-n]'); if (b && confirm('Supprimer définitivement la proposition n°' + b.dataset.n + ' (message Discord + enregistrement) ?')) run(() => api('/' + t + '/' + b.dataset.n, 'DELETE'), 'Supprimée')(); };
+  },
+
+  async donnees(m) {
+    const T = await api('/db'); let k = TABS.donnees.k || T[0].k;
+    const rows = await api('/db/' + k);
+    const cols = [...new Set(rows.flatMap(r => Object.keys(r)))].filter(c => c !== '_id').slice(0, 9);
+    const cell = v => v == null ? '<span class="mut">—</span>' : typeof v === 'object' ? '<span class="mut">' + esc(JSON.stringify(v).slice(0, 60)) + '</span>' : esc(String(v).slice(0, 80));
+    m.innerHTML = `<h2>🗄️ Base de données</h2><p class="sub">Toutes les données du bot, table par table (lecture seule).</p>
+      <div class="pills">${T.map(t => `<button data-t="${t.k}" class="${t.k === k ? 'on' : ''}">${t.nom} <span class="tag">${t.n}</span></button>`).join('')}</div>
+      <div class="row"><input id="q" placeholder="Rechercher dans ${rows.length} lignes…" style="max-width:320px"><a id="dl" class="mut" style="cursor:pointer">⬇ Exporter JSON</a></div>
+      <div class="scroll"><table id="tb"><tr><th>ID</th>${cols.map(c => '<th>' + esc(c) + '</th>').join('')}</tr>${rows.map(r => `<tr data-s="${esc(JSON.stringify(r).toLowerCase())}"><td>${esc(r._id)}</td>${cols.map(c => '<td>' + cell(r[c]) + '</td>').join('')}</tr>`).join('')}</table></div>`;
+    $('#q').oninput = e => { const v = e.target.value.toLowerCase(); m.querySelectorAll('tr[data-s]').forEach(tr => tr.hidden = !tr.dataset.s.includes(v)); };
+    $('#dl').onclick = () => { const a = document.createElement('a'); a.href = URL.createObjectURL(new Blob([JSON.stringify(rows, null, 2)], { type: 'application/json' })); a.download = k + '.json'; a.click(); };
+    m.onclick = e => { const b = e.target.closest('[data-t]'); if (b) { TABS.donnees.k = b.dataset.t; show('donnees'); } };
+  },
+
   async bugs(m) { await listeDecisions(m, '🐞 Bugs', '/bugs', ['Type', 'Texte']); },
   async suggestions(m) { await listeDecisions(m, '💡 Idées pour le jeu', '/suggestions', ['Titre', 'Texte']); },
   async mods(m) { await listeDecisions(m, '🛠️ Propositions de mods', '/mods', ['Titre', 'Texte']); },
 
   async exploitations(m) {
-    const l = await api('/exploitations');
-    m.innerHTML = `<h2>🌾 Exploitations (${l.length})</h2>` + table(['Nom', 'Propriétaire', 'Activités', 'Équipe', ''], l.map(e => `<tr><td>${esc(e.nom)}</td><td>${esc(e.ownerTag)}</td>
+    const l = await api('/exploitations'), f = document.createElement('div'); await TABS.fs25(f);
+    m.innerHTML = f.innerHTML.replace(/<h2>.*?<\/h2>/, '<h2>🚜 Exploitations FS25 (' + l.length + ')</h2>') + '<h3>Gérer</h3>' + table(['Nom', 'Propriétaire', 'Activités', 'Équipe', ''], l.map(e => `<tr><td>${esc(e.nom)}</td><td>${esc(e.ownerTag)}</td>
       <td>${[e.activitePrincipale, e.activiteSecondaire, e.activiteSupplementaire].filter(Boolean).map(esc).join('<br>')}</td>
       <td>${(e.ouvriers || []).length} ouvrier(s), ${(e.coExploitants || []).length} co-exploitant(s)</td><td><button class="d" data-id="${e.id}">Supprimer</button></td></tr>`));
     m.onclick = async e => { const b = e.target.closest('button[data-id]'); if (b && confirm('Supprimer cette exploitation ?')) run(() => api('/exploitations/' + b.dataset.id, 'DELETE'), 'Supprimée')(); };
@@ -234,8 +256,8 @@ async function listeDecisions(m, titre, path) {
   m.onclick = e => { const b = e.target.closest('button[data-n]'); if (b && confirm('Supprimer définitivement la proposition n°' + b.dataset.n + ' (message Discord + enregistrement) ?')) run(() => api(path + '/' + b.dataset.n, 'DELETE'), 'Supprimée')(); };
 }
 
-const NAV = [['apercu', '📊 Aperçu'], ['_Gestion'], ['membres', '👥 Membres'], ['logs', '📋 Logs'], ['_FS25'], ['fs25', '🚜 Exploitations FS25'], ['exploitations', '🌾 Gérer exploitations'], ['_Communauté'],
-  ['xp', '🎚️ Niveaux & XP'], ['boutique', '🛒 Boutique'], ['bugs', '🐞 Bugs'], ['suggestions', '💡 Idées'], ['mods', '🛠️ Mods'], ['_Système'], ['roles', '🎭 Rôles HUB'], ['hub', '📌 HUB info'], ['messages', '📢 Messages récurrents'], ['reglages', '⚙️ Réglages'], ['actions', '🔧 Actions']];
+const NAV = [['apercu', '🏠 Accueil'], ['_Membres'], ['membres', '👥 Membres'], ['logs', '📋 Historique'], ['_FS25'], ['exploitations', '🚜 Exploitations'], ['_Communauté'],
+  ['xp', '🎚️ Niveaux & XP'], ['boutique', '🛒 Boutique'], ['retours', '💬 Retours joueurs'], ['_Discord'], ['roles', '🎭 Rôles HUB'], ['hub', '📌 HUB info'], ['messages', '📢 Messages récurrents'], ['_Système'], ['donnees', '🗄️ Base de données'], ['reglages', '⚙️ Réglages'], ['actions', '🔧 Actions']];
 let cur = location.hash.slice(1) in TABS ? location.hash.slice(1) : 'apercu';
 async function show(t) {
   cur = t; location.hash = t;
@@ -243,7 +265,7 @@ async function show(t) {
   const m = $('#main'); m.onclick = null; m.innerHTML = 'Chargement…';
   try { await TABS[t](m); } catch (e) { m.innerHTML = `<p class="err">${esc(e.message)}</p>`; }
 }
-$('#nav').insertAdjacentHTML('beforeend', NAV.map(([k, l]) => l ? `<a data-t="${k}">${l}</a>` : `<div class="mut" style="margin:12px 10px 4px;font-size:11px;text-transform:uppercase">${k.slice(1)}</div>`).join('') + '<a href="/" style="margin-top:12px;color:var(--mut)">← Éditeur d\'embeds</a>');
+$('#nav').insertAdjacentHTML('beforeend', NAV.map(([k, l]) => l ? `<a data-t="${k}">${l}</a>` : `<div class="g">${k.slice(1)}</div>`).join('') + '<a href="/" style="margin-top:16px;color:var(--mut)">← Éditeur d\'embeds</a>');
 $('#nav').onclick = e => { const a = e.target.closest('a[data-t]'); if (a) show(a.dataset.t); };
 fetch('/api/me').then(r => r.json()).then(j => j.ok ? show(cur) : (location.href = '/'));
 </script>
