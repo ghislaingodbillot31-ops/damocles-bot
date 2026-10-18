@@ -25,7 +25,7 @@ const DEFAULT_CONFIG = {
   LOG_CHANNEL_ID: '',
   STATUS_CHANNEL_ID: '',
   ROLES_CHANNEL_ID: '',
-  DAMOCLES_LOG_CHANNEL_ID: '',
+  
   TICKET_CATEGORY_ID: '',
 
   // Rôles exclus
@@ -69,7 +69,7 @@ function get() {
     CLIENT_ID:     process.env.CLIENT_ID,
     GUILD_ID:      process.env.GUILD_ID,
     OWNER_ID:      process.env.OWNER_ID || '231500104844967937',
-    DASHBOARD_SECRET: process.env.DASHBOARD_SECRET || 'damocles-secret-key',
+    DASHBOARD_SECRET: process.env.DASHBOARD_SECRET || '',
     DISCORD_CLIENT_SECRET: process.env.DISCORD_CLIENT_SECRET,
   };
 }

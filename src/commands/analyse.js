@@ -131,7 +131,7 @@ module.exports = {
       const { updateStatusMessage } = require('../statusbot');
       await updateStatusMessage(interaction.client, true);
 
-      // Log dans damocles-log
+      // Log dans le salon des logs
       const { log } = require('../logger');
       await log(interaction.client, 'analyse_done', { inactive: newInactive, reactivated: newActive, toExpel });
 

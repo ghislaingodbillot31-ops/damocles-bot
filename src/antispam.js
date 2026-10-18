@@ -44,7 +44,7 @@ async function onMessage(message) {
   } catch (err) {
     console.error('⚠️ Anti-spam : ban impossible (' + message.author.tag + ') :', err.message);
   }
-  const logId = process.env.DAMOCLES_LOG_CHANNEL_ID || process.env.LOG_CHANNEL_ID;
+  const logId = process.env.LOG_CHANNEL_ID;
   const log = logId && (message.client.channels.cache.get(logId) || await message.client.channels.fetch(logId).catch(() => null));
   await log?.send({ embeds: [{
     title: '🚫 Anti-spam · bannissement automatique',

@@ -116,7 +116,7 @@ async function sendJoinDM(member) {
 
 // ── Message de départ ─────────────────────────────────────────────────────────
 async function sendLeave(member) {
-  const leaveChannelId = process.env.DAMOCLES_LOG_CHANNEL_ID || process.env.LOG_CHANNEL_ID;
+  const leaveChannelId = process.env.LOG_CHANNEL_ID;
   if (!leaveChannelId) return;
   const channel = member.guild.channels.cache.get(leaveChannelId);
   if (!channel) return;

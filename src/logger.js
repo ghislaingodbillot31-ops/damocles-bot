@@ -1,13 +1,13 @@
 require('dotenv').config();
 
-const DAMOCLES_LOG_CHANNEL_ID = process.env.DAMOCLES_LOG_CHANNEL_ID;
+const LOG_CHANNEL_ID = process.env.LOG_CHANNEL_ID;
 
 async function log(client, type, data) {
   try { if (!data?.noStatus) require('./statusbot').pushEvent(type); } catch {} // compteurs du salon bot-status
   try { require('./publiclog').publier(client, type, data).catch(() => {}); } catch {} // journal public
   if (data?.publicOnly) return; // événement réservé au statut et au journal public (pas de doublon dans les logs staff)
-  if (!DAMOCLES_LOG_CHANNEL_ID) return;
-  const channel = client.channels.cache.get(DAMOCLES_LOG_CHANNEL_ID);
+  if (!LOG_CHANNEL_ID) return;
+  const channel = client.channels.cache.get(LOG_CHANNEL_ID);
   if (!channel) return;
 
   const now = new Date().toLocaleString('fr-FR', { timeZone: 'Europe/Paris' });

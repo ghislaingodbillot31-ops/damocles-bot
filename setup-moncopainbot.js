@@ -1,9 +1,9 @@
 // Crée la structure du serveur de jeu (rôles, catégories, salons) et écrit nouveau-serveur.env
 // (+ VERIF_MODE=code) (ID à coller dans Render > Environment de la 2e instance).
-//   node serveurs/dominius/setup-dominius.js          → aperçu, ne crée rien
-//   node serveurs/dominius/setup-dominius.js --go     → crée tout (refuse si le serveur contient déjà des salons)
-//   node serveurs/dominius/setup-dominius.js --go --force → supprime d'abord les salons existants
-//   node serveurs/dominius/setup-dominius.js --go --en    → ajoute seulement la catégorie ENGLISH (n'efface rien)
+//   node setup-moncopainbot.js          → aperçu, ne crée rien
+//   node setup-moncopainbot.js --go     → crée tout (refuse si le serveur contient déjà des salons)
+//   node setup-moncopainbot.js --go --force → supprime d'abord les salons existants
+//   node setup-moncopainbot.js --go --en    → ajoute seulement la catégorie ENGLISH (n'efface rien)
 // Lit .env.nouveau : DISCORD_TOKEN, GUILD_ID, NOUVEAU_NOM
 const fs = require('fs');
 const path = require('path');
@@ -91,7 +91,7 @@ const CATS = [
   { n: '📊 STAFF', acces: 'staff', salons: [
     { n: '🔑・staff-info', t: 'Liens utiles et accès (staff uniquement)' },
     { n: '💬・staff-général' },
-    { n: '📋・staff-logs', key: ['DAMOCLES_LOG_CHANNEL_ID', 'LOG_CHANNEL_ID'] },
+    { n: '📋・staff-logs', key: ['LOG_CHANNEL_ID'] },
     { n: '🖥️・bot-status', t: 'État du bot', key: 'STATUS_CHANNEL_ID' },
     { n: '⚠️・staff-alertes' },
     { n: '🛠️・staff-commandes' },

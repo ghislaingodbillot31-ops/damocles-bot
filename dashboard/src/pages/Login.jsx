@@ -7,7 +7,7 @@ export default function Login() {
     <div className="flex items-center justify-center h-screen">
       <div className="bg-gray-900 border border-gray-800 rounded-2xl p-10 text-center max-w-md w-full">
         <div className="text-5xl mb-4">⚔️</div>
-        <h1 className="text-2xl font-bold text-white mb-2">DAMOCLES</h1>
+        <h1 className="text-2xl font-bold text-white mb-2">MonCopainBot</h1>
         <p className="text-gray-400 mb-8">Panneau d'administration sécurisé</p>
         {error && (
           <div className="bg-red-900/30 border border-red-800 text-red-400 rounded-lg p-3 mb-6 text-sm">
