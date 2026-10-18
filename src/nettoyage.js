@@ -5,14 +5,12 @@
 const STRICTS = ['ANTISPAM_CHANNEL_ID', 'INVITE_HUB_CHANNEL_ID', 'HUB_CHANNEL_ID', 'REGLEMENT_CHANNEL_ID', 'BIRTHDAY_CHANNEL_ID', 'TEMPVOICE_PANEL_CHANNEL_ID', 'ROLES_CHANNEL_ID'];
 const SOUPLES = ['SUGG_CHANNEL_ID', 'MODS_CHANNEL_ID', 'BUG_HUB_CHANNEL_ID', 'TICKET_CHANNEL_ID'];
 
-// Signature d'un panneau : ses boutons (sans numéro), ou le titre de l'embed pour le centre de contrôle
+// Signature d'un panneau : ses boutons (sans numéro), ou le titre de l'embed
 function signature(m, parTitre) {
   const ids = m.components.flatMap(r => r.components.map(b => b.customId)).filter(Boolean);
   if (ids.length) return ids.some(i => /\d/.test(i)) ? null : ids.join(',');
-  if (parTitre && m.embeds[0]?.title) return m.embeds[0].title;
-  // panneau sans bouton (anti-spam, centre de contrôle) : reconnu à l'en-tête de son cadre
-  const d = m.embeds[0]?.description || '';
-  return d.startsWith('```') ? d.split('\n').slice(0, 4).join('|') : null;
+  // panneau sans bouton (anti-spam, centre de contrôle) : reconnu à son titre
+  return m.embeds[0]?.title || null;
 }
 
 // strict : les messages du bot sans signature de panneau sont supprimés aussi

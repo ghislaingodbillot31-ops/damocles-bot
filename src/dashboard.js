@@ -68,6 +68,8 @@ function createDashboard() {
 
   app.use('/api', (req, res, next) => req.session.ok ? next() : res.status(401).json({ error: 'Non connecté' }));
 
+  require('./admin-api').mount(app, { get client() { return _client; }, guild, salon });
+
   app.get('/api/channels', (req, res) => {
     const g = guild(); if (!g) return res.status(503).json({ error: 'Bot pas prêt' });
     const cats = g.channels.cache.filter(c => c.type === ChannelType.GuildCategory);

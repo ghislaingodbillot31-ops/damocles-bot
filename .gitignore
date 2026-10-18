@@ -2,3 +2,6 @@ node_modules
 .env
 .env.nouveau
 data
+Image
+backups
+.env.render

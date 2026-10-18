@@ -148,6 +148,13 @@ async function removeRoleButton(client, roleId) {
   return { ok: true, count: store.buttons.length };
 }
 
+// Remplace la liste (dashboard) sans toucher au salon des rôles : le HUB communautaire la lit en direct.
+function setRoleButtons(buttons) {
+  const store = loadStore();
+  store.buttons = buttons.slice(0, MAX_BOUTONS);
+  saveStore(store);
+}
+
 function listRoleButtons() {
   return loadStore().buttons;
 }
@@ -159,4 +166,5 @@ module.exports = {
   addRoleButton,
   removeRoleButton,
   listRoleButtons,
+  setRoleButtons,
 };

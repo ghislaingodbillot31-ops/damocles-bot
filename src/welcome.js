@@ -61,28 +61,26 @@ async function annoncerArrivee(member, inviterId) {
   const id = ids('WELCOME_CHANNEL_ID');
   const channel = id && (member.guild.channels.cache.get(id) || await member.guild.channels.fetch(id).catch(() => null));
   if (!channel) return;
-  const lignes = [
-    '🇫🇷 Bienvenue **' + member.displayName + '** sur **' + member.guild.name + '** !',
-    '🇬🇧 Welcome **' + member.displayName + '** to **' + member.guild.name + '**!',
-    '',
-    '## Nouveau joueur · New player',
-    'Membre n° · Member # :: ' + member.guild.memberCount,
-    'Compte créé · Created :: ' + member.user.createdAt.toLocaleDateString('fr-FR', { timeZone: 'Europe/Paris' }),
+  // Embed natif (pas de console ANSI) : avec la miniature, la console de 50 colonnes débordait et se coupait.
+  const fields = [
+    { name: '🔢 Membre n° · Member #', value: '**' + member.guild.memberCount + '**', inline: true },
+    { name: '📅 Compte créé · Created', value: '<t:' + Math.floor(member.user.createdTimestamp / 1000) + ':D>', inline: true },
   ];
-  if (inviterId) {
-    const inviter = member.guild.members.cache.get(inviterId);
-    lignes.push('Invité par · Invited by :: ' + (inviter?.displayName || 'un joueur'));
-  }
+  if (inviterId) fields.push({ name: '🤝 Invité par · Invited by', value: '<@' + inviterId + '>', inline: true });
   await channel.send({
     content: '<@' + member.id + '>',
-    ...panneau({ embeds: [{
-      title: '👋 BIENVENUE · WELCOME',
-      description: lignes.join('\n'),
+    allowedMentions: { users: [member.id] },
+    embeds: [{
+      author: { name: 'Nouveau joueur · New player', icon_url: member.guild.iconURL() || undefined },
+      title: '👋 Bienvenue ' + member.displayName + ' !',
+      description: '🇫🇷 Bienvenue sur **' + member.guild.name + '**, installe-toi !\n'
+        + '🇬🇧 Welcome to **' + member.guild.name + '**, make yourself at home!',
       color: 0x2ECC71,
-      thumbnail: { url: member.user.displayAvatarURL() },
+      thumbnail: { url: member.user.displayAvatarURL({ size: 256 }) },
+      fields,
       footer: { text: member.guild.name },
       timestamp: new Date().toISOString(),
-    }] }),
+    }],
   }).catch(err => console.error('⚠️ annoncerArrivee :', err.message));
 }
 

@@ -39,7 +39,7 @@ async function onMessage(message) {
   try {
     await message.guild.members.ban(message.author, { reason: raison, deleteMessageSeconds: 24 * 3600 });
     store.bans++; save();
-    try { require('./statusbot').pushEvent('antispam_ban', { userId: message.author.id, tag: message.author.username }); } catch {}
+    try { require('./statusbot').pushEvent('antispam_ban'); } catch {}
     console.log('🚫 Anti-spam : ' + message.author.tag + ' banni');
   } catch (err) {
     console.error('⚠️ Anti-spam : ban impossible (' + message.author.tag + ') :', err.message);

@@ -34,12 +34,12 @@ async function verifyMember(member) {
 
   if (!verifChannel) return;
 
-  // Un seul embed au style du centre de contrôle (publiclog.panneauVerif), édité check par check (effet « console »).
+  // Un seul embed (publiclog.panneauVerif), édité check par check (effet « console »).
   const lignes = [], revealed = [];
   let msg = null;
   const render = async (verdict = null, components) => {
     const embed = require('./publiclog').panneauVerif(member.user, revealed, member.guild.name, verdict);
-    if (lignes.length) embed.fields = [{ name: '​', value: lignes.join('\n').slice(0, 1024) }];
+    if (lignes.length) embed.fields = [...embed.fields, { name: 'Résultat', value: lignes.join('\n').slice(0, 1024) }];
     const payload = { embeds: [embed] };
     if (components) payload.components = components;
     try { if (msg) await msg.edit(payload); else msg = await verifChannel.send(payload); } catch {}
