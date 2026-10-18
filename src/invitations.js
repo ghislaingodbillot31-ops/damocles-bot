@@ -49,33 +49,36 @@ function panelPayload() {
   });
 }
 
-// Liste des rôles proposés, vue du joueur : vert = rôle possédé, rouge = rôle non possédé
-function listeRoles(member) {
-  const boutons = require('./roles').listRoleButtons().filter(b => member.guild.roles.cache.has(b.roleId));
+// Rôles proposés, vus par le joueur : boutons verts = rôles possédés, rouges = rôles non possédés
+function listeRoles(member, boutons = require('./roles').listRoleButtons().filter(b => member.guild.roles.cache.has(b.roleId)), desactive = false) {
   const rows = [];
   for (let i = 0; i < boutons.length; i += 5) {
     rows.push(new ActionRowBuilder().addComponents(boutons.slice(i, i + 5).map(b => {
-      const btn = new ButtonBuilder().setCustomId('hubrole_' + b.roleId).setLabel(b.label)
+      const btn = new ButtonBuilder().setCustomId('hubrole_' + b.roleId).setLabel(b.label).setDisabled(desactive)
         .setStyle(member.roles.cache.has(b.roleId) ? ButtonStyle.Success : ButtonStyle.Danger);
       if (b.emoji) { try { btn.setEmoji(b.emoji); } catch { /* emoji invalide : ignoré */ } }
       return btn;
     })));
   }
-  return { rows, vide: !boutons.length };
+  return { rows, boutons };
 }
 
-function payloadRoles(member) {
-  const { rows, vide } = listeRoles(member);
-  return {
-    ...panneau({ embeds: [{
-      title: '🎭 RÔLES DU SERVEUR · SERVER ROLES',
-      description: vide
-        ? 'Aucun rôle n\'est proposé pour le moment. · No roles available yet.'
-        : '🟢 **Vert** = rôle possédé · 🔴 **Rouge** = rôle non possédé\nClique pour **prendre** un rôle, reclique pour le **retirer**.\n🟢 **Green** = you have it · 🔴 **Red** = you don\'t\nClick to **take** a role, click again to **remove** it.',
-      color: 0x5865F2,
-    }] }),
-    components: rows,
-  };
+// Embed de sélection (réponse privée au clic sur « 🎭 Rôles »)
+function payloadRoles(member, boutons, desactive = false) {
+  const { rows, boutons: l } = listeRoles(member, boutons, desactive);
+  const nom = b => (b.emoji ? b.emoji + ' ' : '') + '**' + b.label + '**';
+  const aEux = l.filter(b => member.roles.cache.has(b.roleId)), pas = l.filter(b => !member.roles.cache.has(b.roleId));
+  const embed = l.length ? {
+    title: '🎭 TES RÔLES · YOUR ROLES',
+    description: 'Clique sur un bouton pour **prendre** un rôle, reclique pour le **retirer**.\nClick a button to **take** a role, click again to **remove** it.',
+    color: 0x5865F2,
+    fields: [
+      { name: '🟢 Tes rôles · You have (' + aEux.length + ')', value: aEux.map(nom).join('\n') || '*Aucun · None*', inline: true },
+      { name: '🔴 Disponibles · Available (' + pas.length + ')', value: pas.map(nom).join('\n') || '*Tu as tout · You have them all*', inline: true },
+    ],
+    footer: { text: 'MonCopainBot · 🟢 vert = possédé · 🔴 rouge = non possédé' },
+  } : { title: '🎭 RÔLES · ROLES', description: 'Aucun rôle n\'est proposé pour le moment. · No roles available yet.', color: 0x5865F2, footer: { text: 'MonCopainBot' } };
+  return { ...panneau({ embeds: [embed] }), components: rows };
 }
 
 async function handleRolesButton(interaction) {
@@ -153,4 +156,4 @@ async function handleInviteButton(interaction) {
     : { ...lien, content: 'Tes MP sont fermés, voici ton lien. / Your DMs are closed, here is your link.\n' + lien.content });
 }
 
-module.exports = { startInvitations, handleInviteButton, handleRolesButton, handleRoleToggle, createur };
+module.exports = { payloadRoles, startInvitations, handleInviteButton, handleRolesButton, handleRoleToggle, createur };
