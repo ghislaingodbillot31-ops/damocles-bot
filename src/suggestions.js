@@ -313,7 +313,18 @@ async function startSuggestions(client) {
   }
 }
 
-return { startSuggestions, handleSuggNew, handleSuggModal, handleSuggDecision, handleSuggDecisionModal };
+// Suppression définitive (dashboard) : message du salon + enregistrement, pour qu'elle ne soit pas republiée au redémarrage
+async function supprimer(client, num) {
+  const s = store.items[num];
+  if (!s) throw new Error('Proposition introuvable');
+  const channel = s.msgId && await salon(client);
+  const msg = channel && await channel.messages.fetch(s.msgId).catch(() => null);
+  if (msg) await msg.delete().catch(() => {});
+  delete store.items[num];
+  save();
+}
+
+return { supprimer, startSuggestions, handleSuggNew, handleSuggModal, handleSuggDecision, handleSuggDecisionModal };
 }
 
 const jeu  = creer({ JEU: true, SUGG_CHANNEL: ids('SUGG_CHANNEL_ID'), P: 'sugg', fichier: 'suggestions.json' });

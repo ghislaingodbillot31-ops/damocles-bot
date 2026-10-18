@@ -101,6 +101,9 @@ function mount(app, ctx) {
   app.get(A + '/bugs', liste('bugs.json'));
   app.get(A + '/suggestions', liste('suggestions.json'));
   app.get(A + '/mods', liste('mods-propositions.json'));
+  const sugg = require('./suggestions');
+  app.delete(A + '/suggestions/:n', wrap(req => sugg.jeu.supprimer(ctx.client, req.params.n)));
+  app.delete(A + '/mods/:n', wrap(req => sugg.mods.supprimer(ctx.client, req.params.n)));
 
   // ── FS25 : données des exploitations (activités, équipe, produits) ──
   app.get(A + '/fs25', wrap(() => {
