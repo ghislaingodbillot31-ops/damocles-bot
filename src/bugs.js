@@ -120,7 +120,7 @@ function panelPayload() {
         'Le staff les traite un par un · The staff handles them one by one. 📩 MP / DM',
       ].join('\n'),
       color: 0xE74C3C,
-      footer: { text: 'Bug reports' },
+      footer: { text: 'MonCopainBot · Bugs' },
     }],
     components: [new ActionRowBuilder().addComponents(
       new ButtonBuilder().setCustomId('bug_new').setLabel('🇫🇷 Signaler un bug').setStyle(ButtonStyle.Danger),

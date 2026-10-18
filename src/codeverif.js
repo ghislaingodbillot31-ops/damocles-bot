@@ -151,7 +151,7 @@ function panelPayload(nomServeur) {
         '🔒 Your code and your entry stay private: nobody else can see them.',
       ].join('\n'),
       color: 0x3498DB,
-      footer: { text: nomServeur },
+      footer: { text: 'MonCopainBot' },
     }] }),
     components: [new ActionRowBuilder().addComponents(
       new ButtonBuilder().setCustomId('verif_code').setLabel('🔑 Obtenir mon code · Get my code').setStyle(ButtonStyle.Primary),

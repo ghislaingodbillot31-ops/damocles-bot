@@ -22,7 +22,7 @@ function panelPayload() {
       '🇬🇧 This channel is an **anti-spam trap**. **Any message sent here results in an immediate, automatic ban.**',
     ].join('\n\n'),
     color: 0xE74C3C,
-    footer: { text: 'Anti-spam · salon-piège' },
+    footer: { text: 'MonCopainBot · Anti-spam' },
   }] });
 }
 

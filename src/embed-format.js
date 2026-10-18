@@ -37,10 +37,8 @@ function wrap(txt, max = LINE_MAX) {
   }).join('\n');
 }
 
-// Design Discord natif : l'embed est publié tel quel (titre, description, champs).
-// Les anciens panneaux « console ANSI » ont été retirés ; panneau()/panneauEmbed() restent
-// pour ne pas toucher aux ~90 appels existants.
-const panneauEmbed = e => e;
+// Embed Discord natif + largeur fixe : la ligne SEP en tête de description donne la même largeur à tous les embeds « panneau ».
+const panneauEmbed = e => ({ ...e, description: (SEP + '\n' + (e.description || '')).slice(0, 4096) });
 function setClient() {}
 
 // Applique la largeur fixe à chaque embed d'un payload de message.

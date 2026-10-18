@@ -78,7 +78,7 @@ async function annoncerArrivee(member, inviterId) {
       color: 0x2ECC71,
       thumbnail: { url: member.user.displayAvatarURL({ size: 256 }) },
       fields,
-      footer: { text: member.guild.name },
+      footer: { text: 'MonCopainBot' },
       timestamp: new Date().toISOString(),
     }],
   }).catch(err => console.error('⚠️ annoncerArrivee :', err.message));
@@ -105,7 +105,7 @@ async function sendJoinDM(member) {
         ].join('\n'),
         color: 0x2ECC71,
         thumbnail: { url: member.user.displayAvatarURL() },
-        footer: { text: member.guild.name + ' · MonCopainBot' },
+        footer: { text: 'MonCopainBot' },
         timestamp: new Date().toISOString(),
       }],
     }));
@@ -126,7 +126,7 @@ async function sendLeave(member) {
       title: '👋 DÉPART',
       description: '👋 **' + member.user.username + '** a quitté le serveur.',
       color: 0x95A5A6,
-      footer: { text: member.guild.name },
+      footer: { text: 'MonCopainBot' },
       timestamp: new Date().toISOString(),
     }]
   })).catch(console.error);

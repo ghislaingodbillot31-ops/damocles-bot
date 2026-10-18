@@ -230,7 +230,7 @@ function classementEmbed() {
     title: '🏆  CLASSEMENT XP',
     description: lignes,
     color: 0xF1C40F,
-    footer: { text: 'EUROAGRI · Mis à jour' },
+    footer: { text: 'MonCopainBot · Mis à jour' },
     timestamp: new Date().toISOString(),
   });
 }

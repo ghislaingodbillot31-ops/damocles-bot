@@ -26,7 +26,7 @@ function payload(nomServeur) {
         'https://discord.com/terms',
       ].join('\n'),
       color: 0x00E5FF,
-      footer: { text: nomServeur },
+      footer: { text: 'MonCopainBot' },
     }] }),
     components: [new ActionRowBuilder().addComponents(
       new ButtonBuilder().setCustomId('accept_reglement').setLabel('✅ J\'accepte le règlement · I accept the rules').setStyle(ButtonStyle.Success))],

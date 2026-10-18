@@ -105,7 +105,7 @@ async function postHub(channel) {
         '> Le staff valide, puis crédite l\'argent dans Farming Simulator.',
       ].join('\n'),
       color: 0x2ECC71,
-      footer: { text: 'EUROAGRI · MonCopainBot' },
+      footer: { text: 'MonCopainBot' },
     }],
     components: [
       new ActionRowBuilder().addComponents(

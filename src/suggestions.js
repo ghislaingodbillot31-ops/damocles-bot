@@ -65,7 +65,7 @@ function panelPayload() {
         '📩 Le staff valide ou refuse, tu reçois la décision en MP · The staff accepts or declines, you get the decision by DM.',
       ].join('\n'),
       color: 0xF1C40F,
-      footer: { text: 'Le Coin des Copains · MonCopainBot' },
+      footer: { text: 'MonCopainBot' },
     }],
     components: [new ActionRowBuilder().addComponents(
       new ButtonBuilder().setCustomId(P + '_new').setLabel('💡 Faire une proposition · Make a suggestion').setStyle(ButtonStyle.Primary),
@@ -89,7 +89,7 @@ function panelPayload() {
         '(facultatif). Le staff la valide ou la refuse, tu reçois la décision en MP.',
       ].join('\n'),
       color: 0xF1C40F,
-      footer: { text: 'Le Coin des Copains · MonCopainBot' },
+      footer: { text: 'MonCopainBot' },
     }],
     components: [new ActionRowBuilder().addComponents(
       new ButtonBuilder().setCustomId(P + '_new').setLabel('💡 Faire une proposition').setStyle(ButtonStyle.Primary),
@@ -280,7 +280,7 @@ async function handleSuggDecisionModal(interaction) {
         ...(s.commentaire ? ['', '💬 **Réponse du staff :**', s.commentaire] : []),
       ].join('\n'),
       color: valide ? 0x2ECC71 : 0xE74C3C,
-      footer: { text: 'Le Coin des Copains' + ' · MonCopainBot' },
+      footer: { text: 'MonCopainBot' },
     }] }));
   } catch { mp = false; /* MP fermés */ }
 
