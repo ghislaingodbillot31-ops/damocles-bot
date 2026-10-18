@@ -230,7 +230,8 @@ const TABS = {
 async function listeDecisions(m, titre, path) {
   const l = await api(path);
   m.innerHTML = `<h2>${titre} (${l.length})</h2><p class="mut">Les décisions se prennent avec les boutons dans les salons Discord.</p>` +
-    table(['N°', 'Date', 'Auteur', 'Contenu', 'Statut'], l.map(i => `<tr><td>${i.n}</td><td>${date(i.createdAt)}</td><td>${i.userId}</td><td><b>${esc(i.titre || i.type || '')}</b><br>${esc((i.texte || '').slice(0, 300))}${i.commentaire || i.motif ? '<br><span class="mut">💬 ' + esc(i.commentaire || i.motif) + '</span>' : ''}</td><td><span class="tag">${i.status}</span></td></tr>`));
+    table(['N°', 'Date', 'Auteur', 'Contenu', 'Statut', ''], l.map(i => `<tr><td>${i.n}</td><td>${date(i.createdAt)}</td><td>${i.userId}</td><td><b>${esc(i.titre || i.type || '')}</b><br>${esc((i.texte || '').slice(0, 300))}${i.commentaire || i.motif ? '<br><span class="mut">💬 ' + esc(i.commentaire || i.motif) + '</span>' : ''}</td><td><span class="tag">${i.status}</span></td>${path === '/bugs' ? '<td></td>' : `<td><button class="d" data-n="${i.n}">Supprimer</button></td>`}</tr>`));
+  m.onclick = e => { const b = e.target.closest('button[data-n]'); if (b && confirm('Supprimer définitivement la proposition n°' + b.dataset.n + ' (message Discord + enregistrement) ?')) run(() => api(path + '/' + b.dataset.n, 'DELETE'), 'Supprimée')(); };
 }
 
 const NAV = [['apercu', '📊 Aperçu'], ['_Gestion'], ['membres', '👥 Membres'], ['logs', '📋 Logs'], ['_FS25'], ['fs25', '🚜 Exploitations FS25'], ['exploitations', '🌾 Gérer exploitations'], ['_Communauté'],

@@ -17,7 +17,7 @@ const sleep = ms => new Promise(r => setTimeout(r, ms));
 // ── Centre de contrôle : UN message (embed natif), remplacé à chaque actualisation (l'ancien est supprimé) ──
 const MSG_FILE    = dataPath('status-msg.json');
 const EVENTS_FILE = dataPath('status-events.json');
-const LIVE_MS     = 60_000;
+const LIVE_MS     = 5 * 60_000;
 const MAX_EVENTS  = 300;
 
 function loadJson(file, def) { try { return JSON.parse(fs.readFileSync(file, 'utf8')); } catch { return def; } }
@@ -26,16 +26,15 @@ function saveJson(file, data) { try { fs.writeFileSync(file, JSON.stringify(data
 // Type d'événement : alimente les compteurs « vérification 24 h »
 const TYPES = new Set(['member_join', 'member_left', 'verification_ok', 'verification_failed', 'member_activated', 'member_banned', 'raid_detected', 'antispam_ban']);
 
-let _client = null, _events = null, _msg = null, _channel = null, _timer = null, _debounce = null;
+let _client = null, _events = null, _msg = null, _channel = null, _timer = null;
 const events = () => _events || (_events = loadJson(EVENTS_FILE, []));
 
-// Appelé par logger.log() et antispam : enregistre l'événement et rafraîchit le message (au plus 1 fois / 4 s)
+// Appelé par logger.log() et antispam : enregistre l'événement (compteurs 24 h) ; le message est actualisé toutes les 5 minutes
 function pushEvent(type) {
   if (!TYPES.has(type)) return;
   events().push({ t: Date.now(), type });
   if (events().length > MAX_EVENTS) events().splice(0, events().length - MAX_EVENTS);
   saveJson(EVENTS_FILE, events());
-  if (_channel && !_debounce) _debounce = setTimeout(() => { _debounce = null; refresh().catch(() => {}); }, 4000);
 }
 
 const duree = s => { const j = Math.floor(s / 86400), h = Math.floor(s % 86400 / 3600), m = Math.floor(s % 3600 / 60); return (j ? j + 'j ' : '') + h + 'h' + String(m).padStart(2, '0'); };
@@ -75,7 +74,7 @@ async function construire() {
         '❌ ' + n('verification_failed') + ' refusés · ☠️ ' + n('antispam_ban') + ' pièges · ↩️ ' + n('member_left') + ' départs',
       ].join('\n') },
     ],
-    footer: { text: 'MonCopainBot · actualisé toutes les 60 s' },
+    footer: { text: 'MonCopainBot · actualisé toutes les 5 min' },
     timestamp: new Date().toISOString(),
   }] });
 }
