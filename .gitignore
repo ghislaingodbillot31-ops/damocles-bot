@@ -2,5 +2,6 @@ node_modules
 .env
 .env.nouveau
 data
-dashboard
 Image
+backups
+.env.render
