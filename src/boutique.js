@@ -21,7 +21,7 @@ const TAUX         = 5;                     // 1 point = 5 € en jeu
 const MIN          = 10;                    // points mini par échange
 const COOLDOWN_MS  = 24 * 60 * 60 * 1000;   // délai entre deux demandes
 
-const { dataPath } = require('./paths');
+const { dataPath, writeAtomic } = require('./paths');
 const STORE_PATH   = dataPath('boutique.json');
 
 // ── Persistance ───────────────────────────────────────────────────────────────
@@ -41,7 +41,7 @@ function load() {
 function save(state) {
   try {
     if (!fs.existsSync(path.dirname(STORE_PATH))) fs.mkdirSync(path.dirname(STORE_PATH), { recursive: true });
-    fs.writeFileSync(STORE_PATH, JSON.stringify(state, null, 2), 'utf-8');
+    writeAtomic(STORE_PATH, JSON.stringify(state, null, 2), 'utf-8');
   } catch (err) {
     console.error('⚠️ boutique.json — sauvegarde impossible :', err.message);
   }

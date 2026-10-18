@@ -4,7 +4,7 @@ const path = require('path');
 const db   = require('./database');
 const { panneauEmbed } = require('./embed-format');
 
-const { dataPath } = require('./paths');
+const { dataPath, writeAtomic } = require('./paths');
 const STATE_PATH   = dataPath('levels.json'); // ids des messages du salon
 const XP_PATH      = dataPath('xp.json');     // LES POINTS (source de vérité)
 const MEMBERS_PATH = dataPath('members.json');
@@ -37,7 +37,7 @@ function loadBareme() {
 function saveBareme() {
   try {
     fs.mkdirSync(path.dirname(BAREME_PATH), { recursive: true });
-    fs.writeFileSync(BAREME_PATH, JSON.stringify(XP, null, 2), 'utf-8');
+    writeAtomic(BAREME_PATH, JSON.stringify(XP, null, 2), 'utf-8');
   } catch (err) {
     console.error('⚠️ xp-config.json — sauvegarde impossible :', err.message);
   }
@@ -110,7 +110,7 @@ function saveXpNow() {
   _xpDirty = false;
   try {
     fs.mkdirSync(path.dirname(XP_PATH), { recursive: true });
-    fs.writeFileSync(XP_PATH, JSON.stringify(_xp, null, 2), 'utf-8');
+    writeAtomic(XP_PATH, JSON.stringify(_xp, null, 2), 'utf-8');
   } catch (err) {
     console.error('⚠️ xp.json — sauvegarde impossible :', err.message);
   }
@@ -138,7 +138,7 @@ function loadState() {
 function saveState() {
   try {
     if (!fs.existsSync(path.dirname(STATE_PATH))) fs.mkdirSync(path.dirname(STATE_PATH), { recursive: true });
-    fs.writeFileSync(STATE_PATH, JSON.stringify({ leaderboardMsgId: _leaderboardMsgId, baremeMsgId: _baremeMsgId }, null, 2), 'utf-8');
+    writeAtomic(STATE_PATH, JSON.stringify({ leaderboardMsgId: _leaderboardMsgId, baremeMsgId: _baremeMsgId }, null, 2), 'utf-8');
   } catch {}
 }
 

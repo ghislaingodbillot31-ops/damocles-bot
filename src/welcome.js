@@ -3,7 +3,7 @@ const fs   = require('fs');
 const path = require('path');
 require('dotenv').config();
 
-const { dataPath }       = require('./paths');
+const { dataPath, writeAtomic }       = require('./paths');
 const CONFIG_PATH        = dataPath('welcome-config.json');
 const LOG_CHANNEL_ID     = process.env.LOG_CHANNEL_ID;
 const REGLEMENT_CHANNEL_ID = process.env.REGLEMENT_CHANNEL_ID;
@@ -23,7 +23,7 @@ function loadWelcomeConfig() {
 function saveWelcomeConfig(cfg) {
   const dir = path.dirname(CONFIG_PATH);
   if (!fs.existsSync(dir)) fs.mkdirSync(dir, { recursive: true });
-  fs.writeFileSync(CONFIG_PATH, JSON.stringify(cfg, null, 2), 'utf-8');
+  writeAtomic(CONFIG_PATH, JSON.stringify(cfg, null, 2), 'utf-8');
 }
 
 function getWelcomeConfig()      { return loadWelcomeConfig(); }

@@ -2,7 +2,7 @@ const fs   = require('fs');
 const path = require('path');
 const crypto = require('crypto');
 
-const { dataPath } = require('./paths');
+const { dataPath, writeAtomic } = require('./paths');
 const DATA_PATH = dataPath('scheduled-messages.json');
 
 function newId() {
@@ -22,7 +22,7 @@ function load() {
 function save(messages) {
   const dir = path.dirname(DATA_PATH);
   if (!fs.existsSync(dir)) fs.mkdirSync(dir, { recursive: true });
-  fs.writeFileSync(DATA_PATH, JSON.stringify(messages, null, 2), 'utf-8');
+  writeAtomic(DATA_PATH, JSON.stringify(messages, null, 2), 'utf-8');
 }
 
 // ── CRUD ──────────────────────────────────────────────────────────────────────

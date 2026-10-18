@@ -9,7 +9,7 @@ const exp = require('../exploitation');
 const { agrilog } = require('../agrilog');
 const { SEP, wrap } = require('../embed-format');
 
-const { dataPath }    = require('../paths');
+const { dataPath, writeAtomic }    = require('../paths');
 const CONTRAT_CHANNEL = ids('CONTRAT_CHANNEL_ID', '1544735442589450270');
 const SESSION_PATH    = dataPath('contrat-sessions.json');
 
@@ -67,7 +67,7 @@ function loadSessions() {
 function saveSessions() {
   try {
     fs.mkdirSync(path.dirname(SESSION_PATH), { recursive: true });
-    fs.writeFileSync(SESSION_PATH, JSON.stringify(Object.fromEntries(contratSession), null, 2), 'utf-8');
+    writeAtomic(SESSION_PATH, JSON.stringify(Object.fromEntries(contratSession), null, 2), 'utf-8');
   } catch (err) {
     console.error('⚠️ contrat — sauvegarde sessions :', err.message);
   }

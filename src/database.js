@@ -1,7 +1,7 @@
 const fs   = require('fs');
 const path = require('path');
 
-const { dataPath, REPO_DATA } = require('./paths');
+const { dataPath, REPO_DATA, writeAtomic } = require('./paths');
 const DB_PATH = dataPath('members.json');
 
 // ── Stockage JSON ─────────────────────────────────────────────────────────────
@@ -11,14 +11,20 @@ function loadDB() {
   }
   if (!fs.existsSync(DB_PATH)) return {};
   try { return JSON.parse(fs.readFileSync(DB_PATH, 'utf-8')); }
-  catch { return {}; }
+  catch (err) {
+    // Garder une copie du fichier illisible : le save suivant l'écraserait avec une base vide.
+    const backup = DB_PATH + '.corrompu-' + Date.now();
+    try { fs.copyFileSync(DB_PATH, backup); } catch {}
+    console.error('⚠️ members.json illisible (' + err.message + '), copie dans ' + backup);
+    return {};
+  }
 }
 
 function saveDB(db) {
   if (!fs.existsSync(path.dirname(DB_PATH))) {
     fs.mkdirSync(path.dirname(DB_PATH), { recursive: true });
   }
-  fs.writeFileSync(DB_PATH, JSON.stringify(db, null, 2), 'utf-8');
+  writeAtomic(DB_PATH, JSON.stringify(db, null, 2), 'utf-8');
 }
 
 // ── Reprise unique des données de l'ancienne base MongoDB ────────────────────
@@ -33,7 +39,7 @@ function saveDB(db) {
     const exportMongo = JSON.parse(fs.readFileSync(src, 'utf-8'));
     const fusion = { ...loadDB(), ...exportMongo };
     saveDB(fusion);
-    fs.writeFileSync(marque, new Date().toISOString(), 'utf-8');
+    writeAtomic(marque, new Date().toISOString(), 'utf-8');
     console.log('📥 Reprise MongoDB : ' + Object.keys(exportMongo).length + ' fiches reprises (' + Object.keys(fusion).length + ' au total)');
   } catch (err) {
     console.error('⚠️ Reprise MongoDB :', err.message);

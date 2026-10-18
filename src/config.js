@@ -1,7 +1,7 @@
 const fs   = require('fs');
 const path = require('path');
 
-const { dataPath } = require('./paths');
+const { dataPath, writeAtomic } = require('./paths');
 const CONFIG_PATH = dataPath('config.json');
 
 // Config par défaut
@@ -87,7 +87,7 @@ function set(newConfig) {
   delete toSave.DASHBOARD_SECRET;
   delete toSave.DISCORD_CLIENT_SECRET;
 
-  fs.writeFileSync(CONFIG_PATH, JSON.stringify(toSave, null, 2), 'utf-8');
+  writeAtomic(CONFIG_PATH, JSON.stringify(toSave, null, 2), 'utf-8');
   return get();
 }
 

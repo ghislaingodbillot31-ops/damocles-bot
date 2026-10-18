@@ -12,7 +12,7 @@ const fs = require('fs');
 const { PermissionFlagsBits: P, ChannelType } = require('discord.js');
 const db = require('./database');
 const { log } = require('./logger');
-const { dataPath } = require('./paths');
+const { dataPath, writeAtomic } = require('./paths');
 
 // Salon où se tape le code : un salon nommé « code-de-validation » s'il existe (VANGUARD), sinon VERIFICATION_CHANNEL_ID (DOMINIUS)
 const codeChannel = guild => guild.channels.cache.find(c => c.name.includes('code-de-validation')) || guild.channels.cache.get(process.env.VERIFICATION_CHANNEL_ID);
@@ -32,7 +32,7 @@ const flash = async (channel, text, ms = 6000) => {
 const STORE_PATH = dataPath('codeverif.json');
 let store = {};
 try { store = JSON.parse(fs.readFileSync(STORE_PATH, 'utf-8')); } catch {}
-const save = () => { try { fs.writeFileSync(STORE_PATH, JSON.stringify(store, null, 2), 'utf-8'); } catch {} };
+const save = () => { try { writeAtomic(STORE_PATH, JSON.stringify(store, null, 2), 'utf-8'); } catch {} };
 
 const slug = member => 'code-' + (String(member.user.username).toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '').slice(0, 20) || member.id);
 

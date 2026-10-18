@@ -8,7 +8,7 @@ const { panneauEmbed } = require('./embed-format');
 //   [ embed d'explication ]  +  [ boutons de rôle ]
 // Les boutons sont ajoutés/retirés via /bouton et le message se re-rend.
 const ROLES_CHANNEL = ids('ROLES_CHANNEL_ID', '1538537709633802270');
-const { dataPath } = require('./paths');
+const { dataPath, writeAtomic } = require('./paths');
 const STORE_PATH   = dataPath('roles-panel.json');
 const MAX_BOUTONS   = 25; // 5 rangées de 5
 
@@ -31,7 +31,7 @@ function loadStore() {
 function saveStore(store) {
   try {
     fs.mkdirSync(path.dirname(STORE_PATH), { recursive: true });
-    fs.writeFileSync(STORE_PATH, JSON.stringify(store, null, 2), 'utf-8');
+    writeAtomic(STORE_PATH, JSON.stringify(store, null, 2), 'utf-8');
   } catch (err) {
     console.error('⚠️ roles.js — sauvegarde impossible :', err.message);
   }

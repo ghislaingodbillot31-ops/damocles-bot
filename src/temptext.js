@@ -5,7 +5,7 @@ const {
   ModalBuilder, TextInputBuilder, TextInputStyle,
 } = require('discord.js');
 const { panneau } = require('./embed-format');
-const { dataPath } = require('./paths');
+const { dataPath, writeAtomic } = require('./paths');
 
 // Salons textuels temporaires, dans la catégorie TEXTUEL.
 // Création par le bouton du salon d'accueil (lui aussi dans TEXTUEL, séparé des
@@ -34,7 +34,7 @@ function load() {
   } catch {}
 }
 function save() {
-  try { fs.writeFileSync(STORE_PATH, JSON.stringify({ accueilId, channels: Object.fromEntries(salons) }, null, 2), 'utf-8'); } catch {}
+  try { writeAtomic(STORE_PATH, JSON.stringify({ accueilId, channels: Object.fromEntries(salons) }, null, 2), 'utf-8'); } catch {}
 }
 
 // ── Salon d'accueil avec le bouton de création ────────────────────────────────

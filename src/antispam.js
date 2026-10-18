@@ -2,7 +2,7 @@ const ids = require('./ids');
 const fs = require('fs');
 const { PermissionFlagsBits } = require('discord.js');
 const { panneau } = require('./embed-format');
-const { dataPath } = require('./paths');
+const { dataPath, writeAtomic } = require('./paths');
 
 // Salon-piège (honeypot), en tête du serveur avec l'accueil : visible et ouvert à tous. Les robots de spam y écrivent
 // partout où ils le peuvent → tout message d'un non-staff dans ce salon = bannissement automatique.
@@ -10,7 +10,7 @@ const TRAP = ids('ANTISPAM_CHANNEL_ID');
 const STORE_PATH = dataPath('antispam.json');
 let store = { panelMsgId: null, bans: 0 };
 try { store = { ...store, ...JSON.parse(fs.readFileSync(STORE_PATH, 'utf-8')) }; } catch {}
-const save = () => { try { fs.writeFileSync(STORE_PATH, JSON.stringify(store, null, 2), 'utf-8'); } catch {} };
+const save = () => { try { writeAtomic(STORE_PATH, JSON.stringify(store, null, 2), 'utf-8'); } catch {} };
 
 const STAFF = PermissionFlagsBits.ManageMessages;
 

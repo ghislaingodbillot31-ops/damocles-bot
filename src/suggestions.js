@@ -5,7 +5,7 @@ const {
   ModalBuilder, TextInputBuilder, TextInputStyle,
 } = require('discord.js');
 const { panneau } = require('./embed-format');
-const { dataPath } = require('./paths');
+const { dataPath, writeAtomic } = require('./paths');
 const { agrilog } = require('./agrilog');
 
 // Propositions de mods : panneau (règlement des mods) avec le bouton « Faire une proposition » dans le salon
@@ -25,7 +25,7 @@ function load() {
   try { store = { next: 1, panelMsgId: null, items: {}, ...JSON.parse(fs.readFileSync(STORE_PATH, 'utf-8')) }; } catch {}
 }
 function save() {
-  try { fs.writeFileSync(STORE_PATH, JSON.stringify(store, null, 2), 'utf-8'); } catch {}
+  try { writeAtomic(STORE_PATH, JSON.stringify(store, null, 2), 'utf-8'); } catch {}
 }
 
 function estAdmin(interaction) {

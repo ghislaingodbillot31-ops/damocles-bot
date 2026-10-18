@@ -1,6 +1,6 @@
 const fs = require('fs');
 const { ActionRowBuilder, ButtonBuilder, ButtonStyle } = require('discord.js');
-const { dataPath } = require('./paths');
+const { dataPath, writeAtomic } = require('./paths');
 const { panneau } = require('./embed-format');
 
 // HUB d'information, publié AU-DESSUS du HUB des exploitants.
@@ -54,7 +54,7 @@ function set(input) {
       };
     }),
   };
-  fs.writeFileSync(STORE, JSON.stringify(next, null, 2), 'utf-8');
+  writeAtomic(STORE, JSON.stringify(next, null, 2), 'utf-8');
   return next;
 }
 

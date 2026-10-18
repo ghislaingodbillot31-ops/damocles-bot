@@ -5,7 +5,7 @@ const {
   ModalBuilder, TextInputBuilder, TextInputStyle, LabelBuilder, FileUploadBuilder, StringSelectMenuBuilder,
 } = require('discord.js');
 const { panneau } = require('./embed-format');
-const { dataPath } = require('./paths');
+const { dataPath, writeAtomic } = require('./paths');
 
 // Signalement de bugs : le joueur remplit un formulaire dans le HUB, le signalement est publié
 // dans « liste-de-bugs » (en attente). Un admin l'accepte (→ traitement en cours), puis le marque
@@ -42,7 +42,7 @@ function load() {
   try { store = { next: 1, panelMsgId: null, items: {}, ...JSON.parse(fs.readFileSync(STORE_PATH, 'utf-8')) }; } catch {}
 }
 function save() {
-  try { fs.writeFileSync(STORE_PATH, JSON.stringify(store, null, 2), 'utf-8'); } catch {}
+  try { writeAtomic(STORE_PATH, JSON.stringify(store, null, 2), 'utf-8'); } catch {}
 }
 
 const estAdmin = i => !!i.member?.permissions?.has(PermissionFlagsBits.Administrator);

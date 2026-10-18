@@ -2,7 +2,7 @@ const ids = require('./ids');
 require('dotenv').config();
 const fs = require('fs');
 const db = require('./database');
-const { dataPath } = require('./paths');
+const { dataPath, writeAtomic } = require('./paths');
 
 let _cfgStatus = '';
 try { _cfgStatus = require('./config').get().STATUS_CHANNEL_ID || ''; } catch {}
@@ -29,7 +29,7 @@ const gris = s => c('0;37', s), cyan = s => c('1;36', s), vert = s => c('1;32', 
 const jaune = s => c('1;33', s), blanc = s => c('1;37', s), violet = s => c('1;35', s), bleu = s => c('1;34', s);
 
 function loadJson(file, def) { try { return JSON.parse(fs.readFileSync(file, 'utf8')); } catch { return def; } }
-function saveJson(file, data) { try { fs.writeFileSync(file, JSON.stringify(data)); } catch {} }
+function saveJson(file, data) { try { writeAtomic(file, JSON.stringify(data)); } catch {} }
 
 // Type d'événement → [étiquette 7 car., couleur, verbe]
 const TYPES = {
