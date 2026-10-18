@@ -18,6 +18,7 @@ function mount(app, ctx) {
     catch (err) { res.status(400).json({ error: err.message }); }
   };
   const A = '/api/admin';
+  app.param('id', (req, res, next, id) => /^[w-]{1,64}$/.test(id) ? next() : res.status(400).json({ error: 'Identifiant invalide' }));
 
   // ── Aperçu ──
   app.get(A + '/overview', wrap(async () => {
@@ -82,6 +83,7 @@ function mount(app, ctx) {
   // Kick / ban : action Discord réelle + historique en base
   for (const type of ['kick', 'ban']) app.post(A + `/members/:id/${type}`, wrap(async req => {
     const raison = String(req.body.reason || 'Dashboard').slice(0, 400), g = guild(), id = req.params.id;
+    if (!/^d{17,20}$/.test(id)) throw new Error('Identifiant Discord invalide');
     const user = await ctx.client.users.fetch(id);
     if (type === 'kick') await g.members.kick(id, raison); else await g.bans.create(id, { reason: raison });
     await (type === 'kick' ? db.kickMember : db.banMember)(user, raison, 'dashboard');
@@ -95,6 +97,20 @@ function mount(app, ctx) {
   // ── Boutique ──
   app.get(A + '/boutique', wrap(() => Object.entries(lire('boutique.json', {}).requests || {}).map(([reqId, r]) => ({ reqId, ...r })).reverse().slice(0, 100)));
   app.post(A + '/boutique/cooldowns', wrap(() => ({ reset: require('./boutique').resetCooldowns() })));
+
+
+  // ── Base de données : tables en lecture seule (chaque fichier JSON de data/ vu comme un tableau) ──
+  const TABLES = {
+    membres: ['👥 Membres', 'members.json'], xp: ['🎚️ XP & niveaux', 'xp.json'], exploitations: ['🌾 Exploitations', 'exploitations.json'],
+    boutique: ['🛒 Demandes boutique', 'boutique.json', 'requests'], bugs: ['🐞 Bugs', 'bugs.json', 'items'], idees: ['💡 Idées', 'suggestions.json', 'items'],
+    mods: ['🛠️ Mods', 'mods-propositions.json', 'items'], invitations: ['🔗 Invitations', 'invitations.json', 'links'], vocaux: ['🔊 Salons vocaux', 'tempvoice.json', 'channels'],
+  };
+  const lignes = k => {
+    const [, f, sous] = TABLES[k]; let d = lire(f, {}); if (sous) d = d[sous] || {};
+    return Object.entries(d).map(([cle, v]) => (v && typeof v === 'object' && !Array.isArray(v)) ? { _id: cle, ...v } : { _id: cle, valeur: v });
+  };
+  app.get(A + '/db', wrap(() => Object.entries(TABLES).map(([k, [nom]]) => ({ k, nom, n: lignes(k).length }))));
+  app.get(A + '/db/:t', wrap(req => { if (!Object.hasOwn(TABLES, req.params.t)) throw new Error('Table inconnue'); return lignes(req.params.t); }));
 
   // ── Bugs / propositions (lecture : les décisions se prennent par boutons dans Discord) ──
   const liste = f => wrap(() => Object.entries(lire(f, {}).items || {}).map(([n, i]) => ({ n, ...i })).reverse());

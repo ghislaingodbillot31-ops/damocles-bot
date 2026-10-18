@@ -85,7 +85,7 @@ async function handleRolesButton(interaction) {
 // Prend ou retire le rôle, puis rafraîchit la liste sur place
 async function handleRoleToggle(interaction) {
   const roleId = interaction.customId.replace('hubrole_', '');
-  const role = interaction.guild.roles.cache.get(roleId);
+  const role = require('./roles').listRoleButtons().some(b => b.roleId === roleId) && interaction.guild.roles.cache.get(roleId);
   if (!role) return interaction.reply({ content: '❌ Rôle introuvable · Role not found.', flags: 64 });
   const member = interaction.member;
   const avait = member.roles.cache.has(roleId);

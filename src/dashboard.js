@@ -48,20 +48,37 @@ async function salon(id) {
 
 function createDashboard() {
   const app = express();
+  app.disable('x-powered-by');
+  app.set('trust proxy', 1); // derrière le proxy Render : vraie IP du client + cookie « secure »
+  app.use((req, res, next) => {
+    res.set({ 'X-Content-Type-Options': 'nosniff', 'X-Frame-Options': 'DENY', 'Referrer-Policy': 'no-referrer',
+      'Content-Security-Policy': "frame-ancestors 'none'; object-src 'none'; base-uri 'self'; form-action 'self'" });
+    if (req.path.startsWith('/api')) res.set('Cache-Control', 'no-store');
+    next();
+  });
   app.use(express.json({ limit: '1mb' }));
   app.use(session({
     secret: process.env.DASHBOARD_SECRET || crypto.randomBytes(16).toString('hex'),
-    resave: false, saveUninitialized: false, cookie: { maxAge: 24 * 3600 * 1000 },
+    resave: false, saveUninitialized: false, name: 'sid',
+    cookie: { maxAge: 24 * 3600 * 1000, httpOnly: true, sameSite: 'strict', secure: !!process.env.RENDER },
   }));
   app.use(express.static(path.join(__dirname, '..', 'web')));
 
+  // Anti-brute-force : 5 échecs par IP => blocage 15 min (en mémoire)
+  const essais = new Map(), MAX_ESSAIS = 5, BLOCAGE_MS = 15 * 60 * 1000;
+  const sha = v => crypto.createHash('sha256').update(String(v)).digest();
   app.post('/api/login', (req, res) => {
     const mdp = process.env.DASHBOARD_PASSWORD;
     if (!mdp) return res.status(500).json({ error: 'DASHBOARD_PASSWORD absent du .env' });
-    const ok = typeof req.body.password === 'string' && req.body.password.length === mdp.length
-      && crypto.timingSafeEqual(Buffer.from(req.body.password), Buffer.from(mdp));
-    if (!ok) return res.status(401).json({ error: 'Mot de passe incorrect' });
-    req.session.ok = true; res.json({ ok: true });
+    const e = essais.get(req.ip) || { n: 0, jusqua: 0 };
+    if (e.jusqua > Date.now()) return res.status(429).json({ error: 'Trop d’essais, réessaie dans ' + Math.ceil((e.jusqua - Date.now()) / 60000) + ' min' });
+    const ok = typeof req.body?.password === 'string' && crypto.timingSafeEqual(sha(req.body.password), sha(mdp));
+    if (!ok) {
+      e.n++; if (e.n >= MAX_ESSAIS) { e.n = 0; e.jusqua = Date.now() + BLOCAGE_MS; }
+      essais.set(req.ip, e); return res.status(401).json({ error: 'Mot de passe incorrect' });
+    }
+    essais.delete(req.ip);
+    req.session.regenerate(() => { req.session.ok = true; res.json({ ok: true }); }); // nouvel identifiant de session à la connexion
   });
   app.get('/api/me', (req, res) => res.json({ ok: !!req.session.ok }));
   app.post('/api/logout', (req, res) => req.session.destroy(() => res.json({ ok: true })));
