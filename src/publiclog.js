@@ -1,4 +1,5 @@
 const { AuditLogEvent } = require('discord.js');
+const { panneauEmbed } = require('./embed-format'); // largeur fixe commune à tous les messages du journal
 
 // Journal PUBLIC (salon PUBLIC_LOG_CHANNEL_ID) : arrivées, joueurs validés, tickets, choix de rôle, bannissements et expulsions
 // (avec la raison et l'auteur). Les départs de joueurs ne sont JAMAIS affichés, ni les avertissements ni les alertes du staff.
@@ -47,7 +48,7 @@ async function publier(client, type, data = {}) {
     }
   }
   await channel.send({
-    embeds: [embed],
+    embeds: [panneauEmbed(embed)],
     allowedMentions: { parse: [] },
   }).catch(err => console.error('⚠️ journal public :', err.message));
 }
@@ -115,7 +116,7 @@ async function demarrer(client) {
   const id = SALON();
   const channel = id && (client.channels.cache.get(id) || await client.channels.fetch(id).catch(() => null));
   if (!channel) return;
-  await channel.send({ embeds: [{ description: '⏳ En attente de logs', color: 0xF1C40F, timestamp: new Date().toISOString() }], allowedMentions: { parse: [] } })
+  await channel.send({ embeds: [panneauEmbed({ description: '⏳ En attente de logs', color: 0xF1C40F, timestamp: new Date().toISOString() })], allowedMentions: { parse: [] } })
     .catch(err => console.error('⚠️ journal public :', err.message));
   console.log('📰 Journal public · prêt (#' + channel.name + ')');
 }
