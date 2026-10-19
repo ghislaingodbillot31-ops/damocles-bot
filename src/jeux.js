@@ -116,12 +116,34 @@ async function startJeux(client) {
       for (const m of anciens?.filter(m => m.author.id === moi).values() || []) await m.delete().catch(() => {});
     }, 'Partage tes jeux')).id;
     save();
+    await ajouterImages(guild);
     await nettoyer(client);
     if (!sweep) sweep = setInterval(() => nettoyer(client).catch(() => {}), SWEEP_MS);
     console.log('🎮 Jeux · prêt (#' + hub.name + ')');
   } catch (err) {
     console.error('⚠️ Jeux :', err.message);
   }
+}
+
+// Ajoute l'image Steam aux cartes déjà publiées (salons de jeu : lien lu dans le sujet « nom · lien » ; wishlist : lien enregistré).
+// Idempotent : une carte qui a déjà son image n'est pas touchée. Les modifications ne notifient pas.
+async function ajouterImages(guild) {
+  let n = 0;
+  for (const chId of Object.values(store.jeux)) {
+    const ch = guild.channels.cache.get(chId);
+    const image = imageSteam(ch?.topic);
+    if (!image) continue;
+    const msgs = await ch.messages.fetch({ limit: 50 }).catch(() => null);
+    const carte = msgs?.find(m => m.author.id === guild.client.user.id && m.embeds[0]?.title?.startsWith('🎮 ') && !m.embeds[0].image);
+    if (carte && await carte.edit({ embeds: [{ ...carte.embeds[0].toJSON(), image }] }).then(() => true, () => false)) n++;
+  }
+  const wl = guild.channels.cache.get(store.wishId);
+  for (const [msgId, w] of Object.entries(store.wish)) {
+    if (!imageSteam(w.lien)) continue;
+    const m = await wl?.messages.fetch(msgId).catch(() => null);
+    if (m && !m.embeds[0]?.image && await m.edit(wishPayload(w)).then(() => true, () => false)) n++;
+  }
+  if (n) console.log('🖼️ Jeux · ' + n + ' carte(s) mise(s) à jour avec l\'image Steam');
 }
 
 // L'ID d'un message contient sa date (snowflake Discord)
