@@ -1,3 +1,4 @@
+const { noter } = require('./panneau-sync');
 const ids = require('./ids');
 const fs   = require('fs');
 const path = require('path');
@@ -262,10 +263,20 @@ async function _viderSalon(ch) {
 }
 
 // Reconstruit : vide le salon, puis poste (1) explication et (2) classement.
-async function _rebuild(ch) {
+async function _rebuild(ch, rapport) {
+  const [b0, m0] = await Promise.all([_baremeMsgId, _leaderboardMsgId].map(id => id && ch.messages.fetch(id).catch(() => null)));
+  if (b0 && m0) { // en place : on modifie les deux messages, on retire seulement le reste (annonces 🎉)
+    await b0.edit({ embeds: [baremeEmbed()] }).catch(() => {});
+    await m0.edit({ embeds: [classementEmbed()] }).catch(() => {});
+    const autres = (await ch.messages.fetch({ limit: 100 }).catch(() => null))?.filter(x => x.id !== b0.id && x.id !== m0.id);
+    for (const [, x] of autres || []) await x.delete().catch(() => {});
+    if (rapport) noter(ch, 'Barème & classement', 'modifié');
+    return;
+  }
   await _viderSalon(ch);
   const b = await ch.send({ embeds: [baremeEmbed()] }).catch(() => null);
   const m = await ch.send({ embeds: [classementEmbed()] }).catch(() => null);
+  if (rapport) noter(ch, 'Barème & classement', 'republié');
   _baremeMsgId      = b ? b.id : null;
   _leaderboardMsgId = m ? m.id : null;
   saveState();
@@ -289,12 +300,12 @@ async function editLeaderboard() {
 
 // Refresh complet : supprime tout le salon et repost explication + classement.
 // (démarrage + périodiquement) — les vieilles annonces 🎉 sont nettoyées ici.
-async function refreshLeaderboard() {
+async function refreshLeaderboard(rapport) {
   if (_refreshing) return;
   _refreshing = true;
   try {
     const ch = await _channel();
-    if (ch) await _rebuild(ch);
+    if (ch) await _rebuild(ch, rapport);
   } finally { _refreshing = false; }
 }
 
@@ -580,8 +591,8 @@ async function startLevels(client) {
   process.once('SIGHUP',  stop);
   process.once('beforeExit', _shutdown);
 
-  await refreshLeaderboard();
-  _refreshTimer = setInterval(() => refreshLeaderboard().catch(() => {}), 2 * 60 * 60_000); // toutes les 2 heures
+  await refreshLeaderboard(true);
+  _refreshTimer = setInterval(() => refreshLeaderboard().catch(() => {}), 60 * 60_000); // toutes les heures
 
   console.log('🎚️ Système de niveaux — prêt (' + Object.keys(_xp).length + ' membre(s) avec XP)');
 }

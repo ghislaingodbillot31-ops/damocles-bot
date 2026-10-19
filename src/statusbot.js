@@ -1,3 +1,4 @@
+const { publier } = require('./panneau-sync');
 const ids = require('./ids');
 require('dotenv').config();
 const fs = require('fs');
@@ -79,14 +80,12 @@ async function construire() {
   }] });
 }
 
-// Supprime l'ancien embed puis publie le nouveau
+// Modifie l'embed en place (aucune notification toutes les 5 min)
 async function refresh() {
   if (!_channel) return;
   const payload = await construire();
-  const ancien = _msg || (loadJson(MSG_FILE, {}).id && await _channel.messages.fetch(loadJson(MSG_FILE, {}).id).catch(() => null));
-  _msg = await _channel.send(payload).catch(() => null);
-  if (_msg) { saveJson(MSG_FILE, { id: _msg.id }); await ancien?.delete().catch(() => {}); }
-  else _msg = ancien || null;
+  const m = await publier(_channel, _msg?.id || loadJson(MSG_FILE, {}).id, payload).catch(() => null);
+  if (m) { _msg = m; saveJson(MSG_FILE, { id: m.id }); }
 }
 
 // Salon : l'ID configuré s'il existe, sinon le salon nommé « bot-status »

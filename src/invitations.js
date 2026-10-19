@@ -1,3 +1,4 @@
+const { publier } = require('./panneau-sync');
 const ids = require('./ids');
 const fs = require('fs');
 const { ActionRowBuilder, ButtonBuilder, ButtonStyle, ChannelType } = require('discord.js');
@@ -105,14 +106,12 @@ async function salon(client) {
   return HUB_CHANNEL && (client.channels.cache.get(HUB_CHANNEL) || await client.channels.fetch(HUB_CHANNEL).catch(() => null));
 }
 
-// À chaque démarrage : l'ancien panneau est supprimé, un nouveau est publié.
+// À chaque démarrage : le panneau est modifié en place (republié seulement s'il a disparu).
 async function startInvitations(client) {
   try {
     const channel = await salon(client);
     if (!channel) { console.error('⚠️ Invitations : salon HUB introuvable (INVITE_HUB_CHANNEL_ID)'); return; }
-    const ancien = store.panelMsgId && await channel.messages.fetch(store.panelMsgId).catch(() => null);
-    if (ancien) await ancien.delete().catch(() => {});
-    const msg = await channel.send(panelPayload()).catch(err => { console.error('⚠️ Invitations :', err.message); return null; });
+    const msg = await publier(channel, store.panelMsgId, panelPayload(), null, 'Hub communautaire').catch(err => { console.error('⚠️ Invitations :', err.message); return null; });
     store.panelMsgId = msg?.id || null;
     save();
     await require('./nettoyage').epurer(client, channel.id);

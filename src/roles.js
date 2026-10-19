@@ -1,3 +1,4 @@
+const { publier } = require('./panneau-sync');
 const ids = require('./ids');
 const fs   = require('fs');
 const path = require('path');
@@ -98,7 +99,7 @@ async function _viderSalon(channel) {
   }
 }
 
-// Rend le panneau : vide le salon puis republie [explication + boutons] en bas.
+// Rend le panneau : modifié en place ; s'il a disparu, le salon est vidé puis le panneau republié.
 // → l'ordre est toujours : texte, puis boutons. Rien au-dessus.
 async function renderPanel(client) {
   const channel = await _channel(client);
@@ -110,8 +111,7 @@ async function renderPanel(client) {
   const store   = loadStore();
   const payload = { embeds: [headerEmbed()], components: buildComponents(store.buttons) };
 
-  await _viderSalon(channel);
-  const sent = await channel.send(payload).catch(() => null);
+  const sent = await publier(channel, store.messageId, payload, () => _viderSalon(channel), 'Sélection des rôles').catch(() => null);
   if (sent) {
     store.messageId = sent.id;
     saveStore(store);

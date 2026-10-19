@@ -1,3 +1,4 @@
+const { publier } = require('./panneau-sync');
 const ids = require('./ids');
 const fs = require('fs');
 const { PermissionFlagsBits } = require('discord.js');
@@ -54,14 +55,12 @@ async function onMessage(message) {
   return true;
 }
 
-// À chaque démarrage : ancien panneau supprimé, nouveau publié.
+// À chaque démarrage : le panneau est modifié en place (republié seulement s'il a disparu).
 async function startAntiSpam(client) {
   try {
     const ch = TRAP && (client.channels.cache.get(TRAP) || await client.channels.fetch(TRAP).catch(() => null));
     if (!ch) { console.error('⚠️ Anti-spam : salon-piège introuvable (ANTISPAM_CHANNEL_ID)'); return; }
-    const ancien = store.panelMsgId && await ch.messages.fetch(store.panelMsgId).catch(() => null);
-    if (ancien) await ancien.delete().catch(() => {});
-    store.panelMsgId = (await ch.send(panelPayload()).catch(() => null))?.id || null;
+    store.panelMsgId = (await publier(ch, store.panelMsgId, panelPayload(), null, 'Anti-spam').catch(() => null))?.id || null;
     save();
     await require('./nettoyage').epurer(client, ch.id);
     console.log('🚫 Anti-spam · prêt (salon-piège : #' + ch.name + ')');
