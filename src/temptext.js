@@ -1,3 +1,4 @@
+const { publier } = require('./panneau-sync');
 const ids = require('./ids');
 const fs = require('fs');
 const {
@@ -63,12 +64,10 @@ async function salonAccueil(guild) {
 }
 
 async function postTextPanel(channel) {
-  try {
-    const msgs = await channel.messages.fetch({ limit: 20 });
-    for (const [, m] of msgs) if (m.author.id === channel.client.user.id) await m.delete().catch(() => {});
-  } catch {}
-
-  await channel.send(panneau({
+  // Panneau modifié en place (aucune notification) ; republié seulement s'il a disparu
+  const existant = [...(await channel.messages.fetch({ limit: 20 }).catch(() => new Map())).values()]
+    .find(m => m.author.id === channel.client.user.id && m.components.some(r => r.components.some(c => c.customId === 'text_create')));
+  const payload = panneau({
     embeds: [{
       title: '💬  SALONS TEXTUELS TEMPORAIRES',
       description: [
@@ -84,7 +83,8 @@ async function postTextPanel(channel) {
     components: [new ActionRowBuilder().addComponents(
       new ButtonBuilder().setCustomId('text_create').setLabel('💬 Créer mon salon textuel').setStyle(ButtonStyle.Success),
     )],
-  })).catch(console.error);
+  });
+  await publier(channel, existant?.id, payload, null, 'Salons textuels temporaires').catch(console.error);
 }
 
 function autoClean(interaction, delay = 5000) {
