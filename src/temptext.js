@@ -306,4 +306,4 @@ async function startTempText(client) {
   }
 }
 
-module.exports = { TEXT_CATEGORY, startTempText, handleTextCreate, handleTextControl, handleTextModal, inviter };
+module.exports = { visiblePar, cacherAuxAutres, TEXT_CATEGORY, startTempText, handleTextCreate, handleTextControl, handleTextModal, inviter };
