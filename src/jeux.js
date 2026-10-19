@@ -32,6 +32,30 @@ function lienValide(txt) {
   try { const u = new URL(txt.trim()); return /^https?:$/.test(u.protocol) && u.hostname.includes('.') ? u.href : null; } catch { return null; }
 }
 
+// Lien Steam (store.steampowered.com/app/<id>/…) → image d'en-tête du jeu ; autre lien → pas d'image
+function imageSteam(lien) {
+  const id = /^https?:\/\/store\.steampowered\.com\/app\/(\d+)/.exec(lien || '')?.[1];
+  return id ? { url: 'https://cdn.cloudflare.steamstatic.com/steam/apps/' + id + '/header.jpg' } : undefined;
+}
+
+const steamId = lien => /store\.steampowered\.com\/app\/(\d+)/.exec(lien || '')?.[1];
+
+// Refuse un jeu déjà présent (salon de jeu ou wishlist), reconnu par son nom (insensible à la casse/ponctuation)
+// ou par son identifiant Steam. Renvoie le message de refus, ou null si le jeu est nouveau.
+function doublon(guild, nom, lien) {
+  const cle = slug(nom), id = steamId(lien);
+  for (const [k, chId] of Object.entries(store.jeux)) {
+    const ch = guild.channels.cache.get(chId);
+    if (ch && (k === cle || (id && steamId(ch.topic) === id)))
+      return '⛔ Ce jeu existe déjà dans les jeux : <#' + ch.id + '>. Rejoins ce salon pour en parler ! · This game already exists in the games list.';
+  }
+  for (const [msgId, w] of Object.entries(store.wish)) {
+    if (slug(w.nom) === cle || (id && steamId(w.lien) === id))
+      return '⛔ Ce jeu est déjà dans la wishlist : https://discord.com/channels/' + guild.id + '/' + store.wishId + '/' + msgId + ' — vote 👍 ou 👎 dessus ! · This game is already in the wishlist.';
+  }
+  return null;
+}
+
 function panelPayload() {
   return panneau({
     embeds: [{
@@ -136,8 +160,9 @@ async function handleModal(interaction) {
   if (nomSalon === '🎮-') return reponse('❌ Nom de jeu invalide. · Invalid game name.');
 
   const guild = interaction.guild;
-  const existant = guild.channels.cache.get(store.jeux[nomSalon]) || guild.channels.cache.find(c => c.parentId === store.categoryId && c.name === nomSalon);
-  if (existant) return reponse('ℹ️ Ce jeu a déjà son salon : <#' + existant.id + '> · This game already has a channel.');
+  const refus = doublon(guild, nom, lien)
+    || (guild.channels.cache.find(c => c.parentId === store.categoryId && c.name === nomSalon) && '⛔ Ce jeu existe déjà dans les jeux. · This game already exists.');
+  if (refus) return reponse(refus);
 
   const attente = COOLDOWN_MS - (Date.now() - (derniere.get(interaction.user.id) || 0));
   if (attente > 0) return reponse('⏳ Patiente ' + Math.ceil(attente / 1000) + ' s avant d\'ajouter un autre jeu. · Please wait.');
@@ -160,6 +185,7 @@ async function handleModal(interaction) {
       title: '🎮 ' + nom.toUpperCase(),
       description: '🔗 **Lien · Link :** ' + lien + '\n\nProposé par · Added by <@' + interaction.user.id + '>\n⏳ Supprimé après **15 jours sans message** · Deleted after **15 days without messages**',
       color: 0x5865F2,
+      image: imageSteam(lien),
       footer: { text: 'MonCopainBot' },
     }] }),
     allowedMentions: { users: [] },
@@ -176,6 +202,7 @@ function wishPayload(w) {
       description: [w.lien ? '🔗 **Lien · Link :** ' + w.lien : null, w.date ? '📅 **Sortie · Release :** ' + w.date : null,
         'Proposé par · Added by <@' + w.auteur + '>'].filter(Boolean).join('\n'),
       color: 0xFEE75C,
+      image: imageSteam(w.lien),
       fields: [
         { name: '👍 Ça m\'intéresse (' + w.y.length + ')', value: fmt(w.y), inline: true },
         { name: '👎 Ne m\'intéresse pas (' + w.n.length + ')', value: fmt(w.n), inline: true },
@@ -204,6 +231,8 @@ async function handleWishModal(interaction) {
   const brut = interaction.fields.getTextInputValue('lien').trim();
   const lien = brut ? lienValide(brut) : null;
   if (brut && !lien) return interaction.reply({ content: '❌ Lien invalide (https://…). · Invalid link.', flags: 64 });
+  const refus = doublon(interaction.guild, nom, lien);
+  if (refus) return interaction.reply({ content: refus, flags: 64 });
   const attente = COOLDOWN_MS - (Date.now() - (derniere.get(interaction.user.id) || 0));
   if (attente > 0) return interaction.reply({ content: '⏳ Patiente ' + Math.ceil(attente / 1000) + ' s. · Please wait.', flags: 64 });
   const channel = interaction.guild.channels.cache.get(store.wishId);
@@ -228,4 +257,4 @@ async function handleWishVote(interaction) {
   await interaction.update(wishPayload(w));
 }
 
-module.exports = { startJeux, handleButton, handleModal, handleWishButton, handleWishModal, handleWishVote };
+module.exports = { doublon, __store: () => store, imageSteam, startJeux, handleButton, handleModal, handleWishButton, handleWishModal, handleWishVote };

@@ -33,3 +33,20 @@ const { sansNotif } = require('../src/silencieux');
 assert.strictEqual(sansNotif('salut').flags, 4096);
 assert.strictEqual(sansNotif({ content: 'x', flags: 64 }).flags, 64 | 4096);
 console.log('✅ silencieux : ok');
+
+const { imageSteam } = require('../src/jeux');
+assert.strictEqual(imageSteam('https://store.steampowered.com/app/1245620/ELDEN_RING/').url, 'https://cdn.cloudflare.steamstatic.com/steam/apps/1245620/header.jpg');
+assert.strictEqual(imageSteam('https://example.com/jeu'), undefined);
+assert.strictEqual(imageSteam(null), undefined);
+console.log('✅ image steam : ok');
+
+const jeux = require('../src/jeux');
+const st = jeux.__store();
+st.jeux = { '🎮-elden-ring': 'c1' }; st.wish = { m9: { nom: 'Hollow Knight: Silksong', lien: 'https://store.steampowered.com/app/1030300/x/' } }; st.wishId = 'w1';
+const guild = { id: 'g', channels: { cache: new Map([['c1', { id: 'c1', topic: 'Elden Ring · https://store.steampowered.com/app/1245620/ER/' }]]) } };
+assert.match(jeux.doublon(guild, 'ELDEN  ring!', ''), /déjà dans les jeux/);                                   // même nom, casse/ponctuation ignorées
+assert.match(jeux.doublon(guild, 'Autre nom', 'https://store.steampowered.com/app/1245620/z'), /déjà dans les jeux/); // même id Steam
+assert.match(jeux.doublon(guild, 'hollow knight silksong', ''), /déjà dans la wishlist/);                     // wishlist par nom
+assert.match(jeux.doublon(guild, 'Silk', 'https://store.steampowered.com/app/1030300'), /wishlist/);          // wishlist par id Steam
+assert.strictEqual(jeux.doublon(guild, 'Stardew Valley', ''), null);                                          // nouveau jeu
+console.log('✅ doublons : ok');
