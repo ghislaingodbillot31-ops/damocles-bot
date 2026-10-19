@@ -1,3 +1,4 @@
+const { publier } = require('./panneau-sync');
 const fs = require('fs');
 const {
   ChannelType, PermissionFlagsBits, ActionRowBuilder, ButtonBuilder, ButtonStyle,
@@ -11,13 +12,14 @@ const { visiblePar, cacherAuxAutres } = require('./temptext');
 // et un lien obligatoire (Steam ou site web), ce qui crée un salon textuel pour ce jeu.
 const STORE_PATH = dataPath('jeux.json');
 const CAT_NOM    = '🎮 JEUX DIVERS';
-const HUB_NOM    = '❓・à-quoi-tu-joues';
+const HUB_NOM    = '🎮・partage-tes-jeux';
+const WISH_NOM   = '⭐・wishlist';
 const INACTIF_MS  = 15 * 24 * 3600 * 1000; // salon supprimé après 15 jours sans message
 const SWEEP_MS    = 3600 * 1000;
 const COOLDOWN_MS = 60_000; // un jeu par minute et par joueur (anti-spam de salons)
 
-// { categoryId, hubId, panelMsgId, jeux: { nomDuSalon: channelId } }
-let store = { categoryId: null, hubId: null, panelMsgId: null, jeux: {} };
+// { categoryId, hubId, panelMsgId, wishId, jeux: { nomDuSalon: channelId }, wish: { msgId: { nom, lien, date, auteur, y: [ids], n: [ids] } } }
+let store = { categoryId: null, hubId: null, panelMsgId: null, wishId: null, jeux: {}, wish: {} };
 const derniere = new Map();
 let sweep = null;
 
@@ -33,16 +35,18 @@ function lienValide(txt) {
 function panelPayload() {
   return panneau({
     embeds: [{
-      title: '🎮  À QUOI TU JOUES ? · WHAT ARE YOU PLAYING?',
+      title: '🎮  PARTAGE TES JEUX · SHARE YOUR GAMES',
       description: [
         'Tu joues à un jeu qui n\'a pas encore son salon ? Clique sur le bouton, donne **le nom du jeu** et un **lien Steam ou site web** (obligatoire) : un salon textuel est créé pour en parler.',
         'Playing a game with no channel yet? Click the button, enter **the game name** and a **Steam or website link** (required): a text channel is created to talk about it.',
+        '⭐ **Wishlist** : propose un jeu pas encore sorti, les autres votent. · Suggest an unreleased game, others vote.',
       ].join('\n'),
       color: 0x5865F2,
       footer: { text: 'MonCopainBot' },
     }],
     components: [new ActionRowBuilder().addComponents(
       new ButtonBuilder().setCustomId('jeux_new').setLabel('🎮 Ajouter mon jeu').setStyle(ButtonStyle.Success),
+      new ButtonBuilder().setCustomId('jeux_wish').setLabel('⭐ Wishlist').setStyle(ButtonStyle.Primary),
     )],
   });
 }
@@ -70,10 +74,23 @@ async function startJeux(client) {
           { id: moi, allow: [PermissionFlagsBits.ViewChannel, PermissionFlagsBits.SendMessages, PermissionFlagsBits.ManageMessages, PermissionFlagsBits.EmbedLinks] },
         ],
       });
-    Object.assign(store, { categoryId: cat.id, hubId: hub.id });
-    const ancien = store.panelMsgId && await hub.messages.fetch(store.panelMsgId).catch(() => null);
-    if (ancien) await ancien.delete().catch(() => {});
-    store.panelMsgId = (await hub.send(panelPayload())).id;
+    const wish = guild.channels.cache.get(store.wishId)
+      || guild.channels.cache.find(c => c.parentId === cat.id && c.name === WISH_NOM)
+      || await guild.channels.create({
+        name: WISH_NOM, type: ChannelType.GuildText, parent: cat.id, reason: 'Salon wishlist',
+        permissionOverwrites: [
+          { id: visiblePar(guild), allow: [PermissionFlagsBits.ViewChannel, PermissionFlagsBits.ReadMessageHistory], deny: [PermissionFlagsBits.SendMessages] },
+          ...cacherAuxAutres(guild),
+          { id: moi, allow: [PermissionFlagsBits.ViewChannel, PermissionFlagsBits.SendMessages, PermissionFlagsBits.EmbedLinks] },
+        ],
+      });
+    if (hub.name !== HUB_NOM) await hub.setName(HUB_NOM, 'Renommage du salon').catch(() => {});
+    Object.assign(store, { categoryId: cat.id, hubId: hub.id, wishId: wish.id });
+    // Actualisation sans notification : on édite le panneau existant ; sinon on repart propre et on en republie un seul
+    store.panelMsgId = (await publier(hub, store.panelMsgId, panelPayload(), async () => {
+      const anciens = await hub.messages.fetch({ limit: 50 }).catch(() => null);
+      for (const m of anciens?.filter(m => m.author.id === moi).values() || []) await m.delete().catch(() => {});
+    }, 'Partage tes jeux')).id;
     save();
     await nettoyer(client);
     if (!sweep) sweep = setInterval(() => nettoyer(client).catch(() => {}), SWEEP_MS);
@@ -150,4 +167,65 @@ async function handleModal(interaction) {
   await interaction.editReply('✅ Salon créé : <#' + channel.id + '>');
 }
 
-module.exports = { startJeux, handleButton, handleModal };
+// ── Wishlist : jeux pas encore sortis, votes « m'intéresse / ne m'intéresse pas » ──
+function wishPayload(w) {
+  const fmt = ids => ids.length ? ids.map(i => '<@' + i + '>').join(' ').slice(0, 1000) : '—';
+  return {
+    ...panneau({ embeds: [{
+      title: '⭐ ' + w.nom.toUpperCase(),
+      description: [w.lien ? '🔗 **Lien · Link :** ' + w.lien : null, w.date ? '📅 **Sortie · Release :** ' + w.date : null,
+        'Proposé par · Added by <@' + w.auteur + '>'].filter(Boolean).join('\n'),
+      color: 0xFEE75C,
+      fields: [
+        { name: '👍 Ça m\'intéresse (' + w.y.length + ')', value: fmt(w.y), inline: true },
+        { name: '👎 Ne m\'intéresse pas (' + w.n.length + ')', value: fmt(w.n), inline: true },
+      ],
+      footer: { text: 'MonCopainBot' },
+    }] }),
+    components: [new ActionRowBuilder().addComponents(
+      new ButtonBuilder().setCustomId('wish_y').setLabel('Ce jeu m\'intéresse').setEmoji('👍').setStyle(ButtonStyle.Success),
+      new ButtonBuilder().setCustomId('wish_n').setLabel('Ne m\'intéresse pas').setEmoji('👎').setStyle(ButtonStyle.Danger),
+    )],
+    allowedMentions: { users: [] },
+  };
+}
+
+async function handleWishButton(interaction) {
+  const modal = new ModalBuilder().setCustomId('jeux_wishmodal').setTitle('Wishlist · Jeu à venir');
+  const champ = (id, label, req, max) => new ActionRowBuilder().addComponents(new TextInputBuilder().setCustomId(id).setLabel(label)
+    .setStyle(TextInputStyle.Short).setMaxLength(max).setRequired(req));
+  modal.addComponents(champ('nom', 'Nom du jeu · Game name', true, 60), champ('lien', 'Lien Steam ou site (optionnel) · Link', false, 300),
+    champ('date', 'Date de sortie (optionnel) · Release date', false, 40));
+  await interaction.showModal(modal);
+}
+
+async function handleWishModal(interaction) {
+  const nom = interaction.fields.getTextInputValue('nom').trim();
+  const brut = interaction.fields.getTextInputValue('lien').trim();
+  const lien = brut ? lienValide(brut) : null;
+  if (brut && !lien) return interaction.reply({ content: '❌ Lien invalide (https://…). · Invalid link.', flags: 64 });
+  const attente = COOLDOWN_MS - (Date.now() - (derniere.get(interaction.user.id) || 0));
+  if (attente > 0) return interaction.reply({ content: '⏳ Patiente ' + Math.ceil(attente / 1000) + ' s. · Please wait.', flags: 64 });
+  const channel = interaction.guild.channels.cache.get(store.wishId);
+  if (!channel) return interaction.reply({ content: '⚠️ Salon wishlist introuvable. · Wishlist channel not found.', flags: 64 });
+  derniere.set(interaction.user.id, Date.now());
+  const w = { nom, lien, date: interaction.fields.getTextInputValue('date').trim(), auteur: interaction.user.id, y: [], n: [] };
+  const msg = await channel.send(wishPayload(w));
+  store.wish[msg.id] = w;
+  save();
+  await interaction.reply({ content: '✅ Ajouté : <#' + channel.id + '>', flags: 64 });
+}
+
+// Un clic vote, un second clic identique retire le vote ; voter l'autre côté change le vote.
+async function handleWishVote(interaction) {
+  const w = store.wish[interaction.message.id];
+  if (!w) return interaction.reply({ content: '⚠️ Entrée inconnue. · Unknown entry.', flags: 64 });
+  const [pour, contre] = interaction.customId === 'wish_y' ? ['y', 'n'] : ['n', 'y'];
+  const uid = interaction.user.id;
+  w[contre] = w[contre].filter(i => i !== uid);
+  w[pour] = w[pour].includes(uid) ? w[pour].filter(i => i !== uid) : [...w[pour], uid];
+  save();
+  await interaction.update(wishPayload(w));
+}
+
+module.exports = { startJeux, handleButton, handleModal, handleWishButton, handleWishModal, handleWishVote };

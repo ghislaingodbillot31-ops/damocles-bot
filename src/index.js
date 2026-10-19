@@ -9,6 +9,7 @@ process.on('uncaughtException', err => {
 });
 
 const { Client, GatewayIntentBits, Partials, Events } = require('discord.js');
+require('./silencieux').installer();
 const { verifyMember, handleVerifyButton, handleVerifRefButton } = require('./verification');
 const { annoncerArrivee, sendWelcomeAfterReglement, sendJoinDM, sendLeave } = require('./welcome');
 const { createTicket, takeTicket, closeTicket }        = require('./tickets');
@@ -304,6 +305,7 @@ client.on(Events.InteractionCreate, async interaction => {
       if (/^bug_modal(_en)?$/.test(cid))        { await require('./bugs').handleBugModal(interaction); return; }
       if (/^bug_nomodal_\d+$/.test(cid))        { await require('./bugs').handleBugRefus(interaction); return; }
       if (cid === 'jeux_modal')                 { await require('./jeux').handleModal(interaction); return; }
+      if (cid === 'jeux_wishmodal')             { await require('./jeux').handleWishModal(interaction); return; }
       if (cid === 'hub_boutique_modal')        { await boutique.handleModal(interaction);         return; }
       if (cid.startsWith('xpadmin_bareme_modal_')) { await require('./commands/xp-admin').handleBaremeModal(interaction); return; }
     } catch (err) { console.error('Erreur modal :', err.stack || err.message); }
@@ -372,6 +374,8 @@ client.on(Events.InteractionCreate, async interaction => {
   try {
     if (id === 'lien_invite') { await require('./invitations').handleInviteButton(interaction); return; }
     if (id === 'jeux_new')    { await require('./jeux').handleButton(interaction); return; }
+    if (id === 'jeux_wish')   { await require('./jeux').handleWishButton(interaction); return; }
+    if (id === 'wish_y' || id === 'wish_n') { await require('./jeux').handleWishVote(interaction); return; }
     if (id === 'hub_roles')   { await require('./invitations').handleRolesButton(interaction); return; }
     if (id.startsWith('hubrole_')) { await require('./invitations').handleRoleToggle(interaction); return; }
   } catch (err) { console.error('Erreur bouton invitation :', err.stack || err.message); }

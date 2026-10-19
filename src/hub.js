@@ -1,3 +1,5 @@
+const fs = require('fs');
+const { noter } = require('./panneau-sync');
 const ids = require('./ids');
 const {
   ActionRowBuilder, ButtonBuilder, ButtonStyle,
@@ -65,18 +67,31 @@ function autoClean(interaction, delay = 4000) {
 }
 
 // ── Message HUB (publié au démarrage) ───────────────────────────────────────
+const HUB_MSG_FILE = require('./paths').dataPath('hub-messages.json');
 async function postHub(channel) {
-  try {
-    const msgs = await channel.messages.fetch({ limit: 100 });
-    for (const [, m] of msgs) {
-      if (m.author.id === channel.client.user.id) await m.delete().catch(() => {});
-    }
-  } catch {}
+  const saved = (() => { try { return JSON.parse(fs.readFileSync(HUB_MSG_FILE, 'utf-8')); } catch { return {}; } })();
+  const nettoyer = async () => {
+    try {
+      const msgs = await channel.messages.fetch({ limit: 100 });
+      for (const [, m] of msgs) {
+        if (m.author.id === channel.client.user.id) await m.delete().catch(() => {});
+      }
+    } catch {}
+  };
+  // Mise à jour en place si les deux messages existent encore ; sinon on nettoie et on republie les deux (ordre : info, panneau)
+  const [i0, p0] = await Promise.all([saved.info, saved.main].map(id => id && channel.messages.fetch(id).catch(() => null)));
+  if (!(i0 && p0)) await nettoyer();
+  const info = require('./hub-info').buildMessage();
+  const payload = panneauHub();
+  const i = i0 && p0 ? i0 : await channel.send(info);
+  const p = i0 && p0 ? p0 : await channel.send(payload);
+  if (i0 && p0) { await i.edit(info); await p.edit(payload); }
+  noter(channel, 'HUB des exploitants', i0 && p0 ? 'modifié' : 'republié');
+  try { fs.writeFileSync(HUB_MSG_FILE, JSON.stringify({ info: i.id, main: p.id })); } catch {}
+}
 
-  // HUB d'information (réglé depuis le dashboard), toujours au-dessus
-  await channel.send(require('./hub-info').buildMessage());
-
-  await channel.send(panneau({
+function panneauHub() {
+  return panneau({
     embeds: [{
       title: '🌾  EUROAGRI  ·  HUB DES EXPLOITANTS',
       description: [
@@ -116,7 +131,7 @@ async function postHub(channel) {
         new ButtonBuilder().setCustomId('hub_boutique').setLabel('🛒 Boutique').setStyle(ButtonStyle.Secondary),
       ),
     ],
-  }));
+  });
 }
 
 // ═══ BOUTON « Mon exploitation » ════════════════════════════════════════════
