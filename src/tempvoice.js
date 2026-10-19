@@ -1,3 +1,4 @@
+const { publier } = require('./panneau-sync');
 const ids = require('./ids');
 const fs   = require('fs');
 const path = require('path');
@@ -37,12 +38,10 @@ function save() {
 
 // ── Panneau avec le bouton ────────────────────────────────────────────────────
 async function postVoicePanel(channel) {
-  try {
-    const msgs = await channel.messages.fetch({ limit: 20 });
-    for (const [, m] of msgs) if (m.author.id === channel.client.user.id) await m.delete().catch(() => {});
-  } catch {}
-
-  await channel.send(panneau({
+  // Panneau modifié en place (aucune notification) ; republié seulement s'il a disparu
+  const existant = [...(await channel.messages.fetch({ limit: 20 }).catch(() => new Map())).values()]
+    .find(m => m.author.id === channel.client.user.id && m.components.some(r => r.components.some(c => c.customId === 'voice_create')));
+  const payload = panneau({
     embeds: [{
       title: '🔊  SALONS VOCAUX TEMPORAIRES',
       description: [
@@ -58,7 +57,8 @@ async function postVoicePanel(channel) {
     components: [new ActionRowBuilder().addComponents(
       new ButtonBuilder().setCustomId('voice_create').setLabel('➕ Créer mon salon vocal').setStyle(ButtonStyle.Success),
     )],
-  })).catch(console.error);
+  });
+  await publier(channel, existant?.id, payload, null, 'Salons vocaux temporaires').catch(console.error);
 }
 
 // ── Bouton « Créer mon salon vocal » ──────────────────────────────────────────
