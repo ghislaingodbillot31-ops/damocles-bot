@@ -29,6 +29,7 @@ const levels                                           = require('./levels');
 const boutique                                         = require('./boutique');
 const { postRolesHeader }                              = require('./roles');
 const cron                                             = require('node-cron');
+const multifruit                                       = require('./multifruit');
 
 const VERIFICATION_ROLE_ID = process.env.VERIFICATION_ROLE_ID;
 const ATTENTE_ROLE_ID      = process.env.ATTENTE_ROLE_ID;
@@ -221,6 +222,7 @@ client.on(Events.MessageCreate, async message => {
 
 // ── Interactions ──────────────────────────────────────────────────────────────
 client.on(Events.InteractionCreate, async interaction => {
+  if (await multifruit.handle(interaction)) return; // jeu Multifruit (customId « mf: »)
 
   if (interaction.isChatInputCommand()) {
     const cmdMap = {
@@ -281,7 +283,7 @@ client.on(Events.InteractionCreate, async interaction => {
       if (cid.startsWith('hub_expl_codel_'))   { await hub.handleHubExplCoDel(interaction);   return; }
       if (cid.startsWith('hub_expl_couleur_')) { await hub.handleHubExplCouleur(interaction); return; }
       if (cid.startsWith('hub_expl_recrute_')) { await hub.handleHubExplRecrute(interaction); return; }
-      if (cid.startsWith('hub_expl_proddel_')) { await hub.handleHubExplProdDel(interaction); return; }
+      if (cid === 'marche_retirer')            { await require('./marche').handleRetirer(interaction); return; }
       if (cid === 'xpadmin_bareme_select')     { await require('./commands/xp-admin').handleBaremeSelect(interaction); return; }
     } catch (err) { console.error('Erreur select menu :', err.stack || err.message); }
     return;
@@ -295,7 +297,6 @@ client.on(Events.InteractionCreate, async interaction => {
       if (cid === 'anniv_modal')                { await require('./birthday').handleModal(interaction); return; }
       if (cid === 'hub_expl_creer_modal')       { await hub.handleHubExplCreerModal(interaction); return; }
       if (cid.startsWith('hub_expl_nom_'))      { await hub.handleHubExplNom(interaction);        return; }
-      if (cid.startsWith('hub_expl_prodmodal_')) { await hub.handleHubExplProdModal(interaction); return; }
       if (cid.startsWith('contrat_modal_'))     { await contrat.handleContratModal(interaction);  return; }
       if (cid.startsWith('besoin_modal_'))      { await contrat.handleBesoinModal(interaction);   return; }
       if (cid.startsWith('voice_rename_modal_') || cid.startsWith('voice_limit_modal_')) { await tempvoice.handleVoiceModal(interaction); return; }
@@ -306,6 +307,7 @@ client.on(Events.InteractionCreate, async interaction => {
       if (/^bug_nomodal_\d+$/.test(cid))        { await require('./bugs').handleBugRefus(interaction); return; }
       if (cid === 'jeux_modal')                 { await require('./jeux').handleModal(interaction); return; }
       if (cid === 'jeux_wishmodal')             { await require('./jeux').handleWishModal(interaction); return; }
+      if (cid === 'marche_modal')              { await require('./marche').handleModal(interaction); return; }
       if (cid === 'hub_boutique_modal')        { await boutique.handleModal(interaction);         return; }
       if (cid.startsWith('xpadmin_bareme_modal_')) { await require('./commands/xp-admin').handleBaremeModal(interaction); return; }
     } catch (err) { console.error('Erreur modal :', err.stack || err.message); }
@@ -322,19 +324,19 @@ client.on(Events.InteractionCreate, async interaction => {
     if (id === 'hub_expl')                    { await hub.handleHubExpl(interaction);        return; }
     if (id === 'hub_expl_creer')              { await hub.handleHubExplCreer(interaction);   return; }
     if (id === 'hub_contrat')                 { await contrat.startContratFlow(interaction); return; }
+    if (id.startsWith('contrat_mode_'))       { await contrat.handleContratMode(interaction); return; }
     if (id === 'hub_besoin')                  { await contrat.handleBesoinButton(interaction); return; }
     if (id === 'hub_annuaire')                { await hub.handleHubAnnuaire(interaction);    return; }
     if (id === 'hub_annuaire_off')            { await hub.handleHubAnnuaireOff(interaction); return; }
     if (id.startsWith('hub_annuaire_delyes_')) { await hub.handleHubAnnuaireDelYes(interaction); return; }
     if (id.startsWith('hub_annuaire_delno_'))  { await hub.handleHubAnnuaireDelNo(interaction);  return; }
     if (id.startsWith('hub_annuaire_del_'))    { await hub.handleHubAnnuaireDel(interaction);    return; }
+    if (id === 'hub_marche')                  { await require('./marche').handleMarche(interaction); return; }
+    if (id === 'marche_ajouter')              { await require('./marche').handleAjouter(interaction); return; }
     if (id === 'hub_boutique')                { await boutique.handleBoutique(interaction);  return; }
     if (id === 'hub_boutique_monnaie')        { await boutique.handleMonnaie(interaction);   return; }
     if (id === 'hub_boutique_echange')        { await boutique.handleEchange(interaction);   return; }
     if (id.startsWith('shop_ok_') || id.startsWith('shop_no_')) { await boutique.handleDecision(interaction); return; }
-    if (id.startsWith('hub_expl_prodadd_'))   { await hub.handleHubExplProdAdd(interaction); return; }
-    if (id.startsWith('hub_expl_done_'))      { await hub.handleHubExplDone(interaction);    return; }
-    if (id.startsWith('hub_expl_switch_'))    { await hub.handleHubExplSwitch(interaction);  return; }
     if (id.startsWith('contrat_accepter_'))     { await contrat.handleContratAccepter(interaction);    return; }
     if (id.startsWith('contrat_deal_ok_'))      { await contrat.handleContratDealOk(interaction);      return; }
     if (id.startsWith('contrat_deal_refuse_'))  { await contrat.handleContratDealRefuse(interaction);  return; }

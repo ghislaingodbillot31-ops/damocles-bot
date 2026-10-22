@@ -21,6 +21,7 @@ const commands = [
   require('./commands/purge').dataStart.toJSON(),
   require('./commands/purge').dataEnd.toJSON(),
   require('./commands/invite').data.toJSON(),
+  ...require('./multifruit').commands,
 ];
 
 const rest = new REST().setToken(process.env.DISCORD_TOKEN);
