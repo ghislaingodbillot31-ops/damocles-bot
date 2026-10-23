@@ -1,0 +1,3 @@
+[
+  { "id": "cuve_inox_100", "nom": "Cuve inox 100 L", "emoji": "🛢️", "capacite_l": 100, "prix": 250, "amelioration_ajout_l": 50, "amelioration_prix": 150 }
+]

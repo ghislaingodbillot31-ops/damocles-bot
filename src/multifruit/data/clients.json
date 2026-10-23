@@ -1,0 +1,14 @@
+[
+  { "id": "bistro_soleil", "nom": "Bistro du Soleil", "emoji": "🍽️" },
+  { "id": "hotel_belle_vue", "nom": "Hôtel Belle Vue", "emoji": "🏨" },
+  { "id": "cantine_ecole", "nom": "Cantine des Tilleuls", "emoji": "🏫" },
+  { "id": "supermarche_atlas", "nom": "Supermarché Atlas", "emoji": "🛒" },
+  { "id": "camping_pins", "nom": "Camping Les Pins", "emoji": "⛺" },
+  { "id": "salle_sport", "nom": "Fit & Fun Club", "emoji": "🏋️" },
+  { "id": "boulangerie_dorure", "nom": "Boulangerie La Dorure", "emoji": "🥐" },
+  { "id": "cinema_etoile", "nom": "Cinéma l'Étoile", "emoji": "🎬" },
+  { "id": "ferme_auberge", "nom": "Ferme-Auberge du Coteau", "emoji": "🏡" },
+  { "id": "festival_ete", "nom": "Festival Été Vibrations", "emoji": "🎪" },
+  { "id": "clinique_sante", "nom": "Clinique Santé Plus", "emoji": "🏥" },
+  { "id": "traiteur_gourmet", "nom": "Traiteur Gourmet & Cie", "emoji": "🥂" }
+]
