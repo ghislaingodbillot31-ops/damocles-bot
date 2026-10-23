@@ -93,18 +93,19 @@ async function postHub(channel) {
 function panneauHub() {
   return panneau({
     embeds: [{
-      title: '🌾  EUROAGRI  ·  HUB DES EXPLOITANTS',
+      title: '🌾  LE COIN DES COPAINS  ·  HUB DES EXPLOITANTS',
       description: [
-        'Bienvenue sur le **HUB des exploitants EUROAGRI**. Tout se gère depuis les boutons ci-dessous :',
+        'Bienvenue sur le **HUB des exploitants du Coin des Copains**. Tout se gère depuis les boutons ci-dessous :',
         'crée ton exploitation, publie tes contrats, signale tes besoins et consulte l\'annuaire du serveur.',
         '',
         '**🌾  Mon exploitation**',
         '> Crée ton exploitation puis configure **son nom**, ses **3 activités** (principale, secondaire, supplémentaire),',
-        '> **tes ouvriers** (ajout par mention `@`), l\'état de ton **recrutement** et la liste de **tes produits en vente**.',
+        '> **tes ouvriers** (ajout par mention `@`), l\'état de ton **recrutement** et ta **couleur**.',
         '> Le rôle **Exploitant** est attribué automatiquement dès la création.',
         '',
         '**📋  Créer un contrat / sous-traitance**',
-        '> Publie un contrat de travail (travail demandé, champ, surface, précisions). Un autre exploitant peut l\'accepter :',
+        '> Choisis **🙋 Je propose** (tu offres tes services) ou **🔎 Je recherche** (tu cherches un joueur pour une action),',
+        '> puis renseigne le travail, le champ, la surface et les précisions. Un autre exploitant peut y répondre :',
         '> un **salon privé de négociation** s\'ouvre alors entre vous pour convenir du prix et des délais.',
         '',
         '**📦  Besoin**',
@@ -112,12 +113,16 @@ function panneauHub() {
         '> un exploitant peut y répondre et négocier avec toi en privé.',
         '',
         '**📖  Annuaire**',
-        '> Affiche la **liste complète des exploitations** du serveur (activités, ouvriers, produits, recrutement).',
+        '> Affiche la **liste complète des exploitations** du serveur (activités, ouvriers, recrutement).',
         '> Visible par toi seul : un clic sur **ON** pour l\'afficher, un clic sur **OFF** pour la masquer.',
         '',
         '**🛒  Boutique**',
         '> Échange tes **points de classement** contre de la **monnaie en jeu** (1 point = 5 €).',
         '> Le staff valide, puis crédite l\'argent dans Farming Simulator.',
+        '',
+        '**🏪  Marché**',
+        '> Mets tes **produits en vente** (nom, quantité, prix, unité) et consulte ceux des autres exploitants,',
+        '> classés par **ordre alphabétique**. Visible par toi seul.',
       ].join('\n'),
       color: 0x2ECC71,
       footer: { text: 'MonCopainBot' },
@@ -129,6 +134,9 @@ function panneauHub() {
         new ButtonBuilder().setCustomId('hub_besoin').setLabel('📦 Besoin').setStyle(ButtonStyle.Primary),
         new ButtonBuilder().setCustomId('hub_annuaire').setLabel('📖 Annuaire · ON').setStyle(ButtonStyle.Secondary),
         new ButtonBuilder().setCustomId('hub_boutique').setLabel('🛒 Boutique').setStyle(ButtonStyle.Secondary),
+      ),
+      new ActionRowBuilder().addComponents(
+        new ButtonBuilder().setCustomId('hub_marche').setLabel('🏪 Marché').setStyle(ButtonStyle.Success),
       ),
     ],
   });
@@ -151,14 +159,19 @@ async function handleHubExpl(interaction) {
     return;
   }
 
-  await interaction.reply({ ...manageMenu(list[0], uid, list.slice(1)), flags: 64 });
+  // Une carte distincte (couleur, menu) par exploitation gérée
+  await interaction.reply({ ...manageMenu(list[0], uid, { i: 1, n: list.length }), flags: 64 });
   autoClean(interaction, 120000);
+  for (const [k, e] of list.slice(1).entries()) {
+    const m = await interaction.followUp({ ...manageMenu(e, uid, { i: k + 2, n: list.length }), flags: 64 });
+    setTimeout(() => interaction.webhook.deleteMessage(m.id).catch(() => {}), 120000);
+  }
 }
 
 // Menu de gestion (réutilisé par le hub et par la carte). Renvoie un payload sans `flags`.
 // viewerId : qui consulte (pour n'afficher la gestion du co-exploitant qu'au créateur).
-// others   : autres exploitations gérées par le viewer → boutons de bascule.
-function manageMenu(exploit, viewerId, others = []) {
+// pos      : { i, n } rang de l'exploitation quand le viewer en gère plusieurs.
+function manageMenu(exploit, viewerId, pos) {
   const hasOuvriers = exploit.ouvriers?.length > 0;
   const hasCo       = (exploit.coExploitants?.length || 0) > 0;
   const isOwner     = viewerId === exploit.ownerId;
@@ -172,7 +185,6 @@ function manageMenu(exploit, viewerId, others = []) {
       : { label: '🥉 Activité supplémentaire', value: 'supplementaire', description: '🔒 Nécessite un ouvrier' },
     { label: '🧑‍🌾 Recrutement (oui / non)', value: 'recrute' },
     { label: '🎨 Couleur de l\'exploitation', value: 'couleur' },
-    { label: '🛒 Vos produits',             value: 'produits' },
     { label: '➕ Ajouter un ouvrier',        value: 'ouvrier_add' },
   ];
   if (hasOuvriers) options.push({ label: '➖ Retirer un ouvrier', value: 'ouvrier_del' });
@@ -185,60 +197,32 @@ function manageMenu(exploit, viewerId, others = []) {
     .addOptions(options);
 
   const components = [new ActionRowBuilder().addComponents(menu)];
-  if (others.length) {
-    components.push(new ActionRowBuilder().addComponents(
-      ...others.slice(0, 4).map(o => new ButtonBuilder()
-        .setCustomId('hub_expl_switch_' + o.id)
-        .setLabel(('🔁 ' + o.nom).slice(0, 80))
-        .setStyle(ButtonStyle.Secondary)),
-    ));
-  }
+  const dateCrea = exploit.createdAt ? new Date(exploit.createdAt).toLocaleDateString('fr-FR', { day: '2-digit', month: 'long', year: 'numeric' }) : null;
 
   return panneau({
     embeds: [{
-      title: '🌾 ' + exploit.nom,
+      title: '🌾  ' + exploit.nom.toUpperCase(),
+      description: [
+        '👑 **Exploitant :** <@' + exploit.ownerId + '>' + (dateCrea ? '　│　📅 **Créée le** ' + dateCrea : ''),
+        '🧑‍🌾 **Recrutement :** ' + (exploit.recrute ? '🟢 Ouvert' : '🔴 Fermé'),
+      ].join('\n'),
       fields: [
-        { name: '🥇 Principale',     value: exploit.activitePrincipale   || '*Non définie*', inline: true },
-        { name: '🥈 Secondaire',     value: exploit.activiteSecondaire    || '*Non définie*', inline: true },
-        { name: '🥉 Supplémentaire', value: hasOuvriers ? (exploit.activiteSupplementaire || '*Non définie*') : '🔒 *Nécessite ouvrier*', inline: true },
-        { name: '🧑‍🌾 Recrutement',  value: exploit.recrute ? '✅ Ouvert' : '❌ Fermé', inline: true },
-        { name: '🤝 Co-exploitant',  value: hasCo ? exploit.coExploitants.map(id => '<@' + id + '>').join(', ') : '*Aucun*', inline: true },
-        { name: '👷 Ouvriers',       value: hasOuvriers ? exploit.ouvriers.map(id => '<@' + id + '>').join(', ') : '*Aucun*', inline: true },
-        { name: '🛒 Produits',       value: exploit.produits?.length ? exploit.produits.map(p => '• ' + p).join('\n') : '*Aucun*', inline: false },
+        {
+          name: '🚜  Activités',
+          value: [
+            '🥇 **Principale :** ' + (exploit.activitePrincipale || '*Non définie*'),
+            '🥈 **Secondaire :** ' + (exploit.activiteSecondaire || '*Non définie*'),
+            '🥉 **Supplémentaire :** ' + (hasOuvriers ? (exploit.activiteSupplementaire || '*Non définie*') : '🔒 *Nécessite un ouvrier*'),
+          ].join('\n'),
+          inline: false,
+        },
+        { name: '🤝  Co-exploitant', value: hasCo ? exploit.coExploitants.map(id => '<@' + id + '>').join(', ') : '*Aucun*', inline: true },
+        { name: '👷  Ouvriers (' + (exploit.ouvriers?.length || 0) + ')', value: hasOuvriers ? exploit.ouvriers.map(id => '<@' + id + '>').join(', ') : '*Aucun*', inline: true },
       ],
       color: exploit.couleur ?? DEFAULT_COLOR,
+      footer: { text: 'MonCopainBot' + (pos?.n > 1 ? ' · Exploitation ' + pos.i + '/' + pos.n : '') },
     }],
     components,
-  });
-}
-
-// Vue de gestion des produits (ajout en boucle). Renvoie un payload sans `flags`.
-function produitsView(exploit) {
-  const list = exploit.produits?.length
-    ? exploit.produits.map((p, i) => '`' + (i + 1) + '.` ' + p).join('\n')
-    : '*Aucun produit pour le moment.*';
-
-  const rows = [];
-  if (exploit.produits?.length) {
-    rows.push(new ActionRowBuilder().addComponents(
-      new StringSelectMenuBuilder()
-        .setCustomId('hub_expl_proddel_' + exploit.id)
-        .setPlaceholder('Retirer un produit...')
-        .addOptions(exploit.produits.map((p, i) => ({ label: p.slice(0, 100), value: String(i) }))),
-    ));
-  }
-  rows.push(new ActionRowBuilder().addComponents(
-    new ButtonBuilder().setCustomId('hub_expl_prodadd_' + exploit.id).setLabel('➕ Ajouter un produit').setStyle(ButtonStyle.Success),
-    new ButtonBuilder().setCustomId('hub_expl_done_' + exploit.ownerId).setLabel('✅ Terminé').setStyle(ButtonStyle.Secondary),
-  ));
-
-  return panneau({
-    embeds: [{
-      title: '🛒 Vos produits · ' + exploit.nom,
-      description: list + '\n\nAjoute un produit, valide, puis recommence. Clique **✅ Terminé** quand tu as fini.',
-      color: exploit.couleur ?? DEFAULT_COLOR,
-    }],
-    components: rows,
   });
 }
 
@@ -332,11 +316,6 @@ async function handleHubExplManage(interaction) {
       embeds: [{ title: '🧑‍🌾 Recrutement · ' + exploit.nom, description: 'Est-ce que ton exploitation recrute ?', color: 0x5865F2 }],
       components: [new ActionRowBuilder().addComponents(menu)],
     });
-    return;
-  }
-
-  if (choice === 'produits') {
-    await interaction.update(produitsView(exploit));
     return;
   }
 
@@ -509,93 +488,6 @@ async function handleHubExplRecrute(interaction) {
   autoClean(interaction);
 }
 
-// ── Bouton « Ajouter un produit » → modale ─────────────────────────────────
-async function handleHubExplProdAdd(interaction) {
-  const exploitId = interaction.customId.replace('hub_expl_prodadd_', '');
-  const exploit   = Object.values(exp.load()).find(e => e.id === exploitId);
-  if (!exploit) { await interaction.reply({ content: '❌ Exploitation introuvable.', flags: 64 }); autoClean(interaction); return; }
-
-  const modal = new ModalBuilder().setCustomId('hub_expl_prodmodal_' + exploit.id).setTitle('Ajouter un produit / prestation');
-  modal.addComponents(
-    new ActionRowBuilder().addComponents(
-      new TextInputBuilder().setCustomId('nom').setLabel('Produit ou prestation').setStyle(TextInputStyle.Short)
-        .setPlaceholder('Ex: 🌾 Balle de foin ronde  ·  📦 Mise en balle').setRequired(true),
-    ),
-    new ActionRowBuilder().addComponents(
-      new TextInputBuilder().setCustomId('prix').setLabel('Prix').setStyle(TextInputStyle.Short)
-        .setPlaceholder('Ex: 0,12  ·  150').setRequired(true),
-    ),
-    new ActionRowBuilder().addComponents(
-      new TextInputBuilder().setCustomId('unite').setLabel('Unité').setStyle(TextInputStyle.Short)
-        .setPlaceholder('Ex: €/L  ·  €/U  ·  €/t  ·  €/h').setRequired(true),
-    ),
-  );
-  await interaction.showModal(modal);
-}
-
-// ── Modale produit → ajout + retour à la vue produits ──────────────────────
-async function handleHubExplProdModal(interaction) {
-  const exploitId = interaction.customId.replace('hub_expl_prodmodal_', '');
-  const exploit   = Object.values(exp.load()).find(e => e.id === exploitId);
-  if (!exploit) { await interaction.reply({ content: '❌ Exploitation introuvable.', flags: 64 }); autoClean(interaction); return; }
-
-  const nom   = interaction.fields.getTextInputValue('nom').trim().slice(0, 60);
-  const prix  = interaction.fields.getTextInputValue('prix').trim().slice(0, 15);
-  const unite = interaction.fields.getTextInputValue('unite').trim().slice(0, 10);
-  const produit = (nom + ' : ' + prix + ' ' + unite).slice(0, 100);
-
-  const produits = [...(exploit.produits || [])];
-  if (produits.length >= 25) {
-    await interaction.reply({ content: '❌ Limite de 25 produits atteinte.', flags: 64 });
-    autoClean(interaction);
-    return;
-  }
-  if (!produits.some(p => p.toLowerCase() === produit.toLowerCase())) produits.push(produit);
-
-  exp.updateExploitation(exploitId, { produits });
-  const updated = Object.values(exp.load()).find(e => e.id === exploitId);
-
-  if (interaction.isFromMessage()) await interaction.update(produitsView(updated));
-  else { await interaction.reply({ ...produitsView(updated), flags: 64 }); autoClean(interaction, 120000); }
-}
-
-// ── Select retrait produit ────────────────────────────────────────────────
-async function handleHubExplProdDel(interaction) {
-  const exploitId = interaction.customId.replace('hub_expl_proddel_', '');
-  const exploit   = Object.values(exp.load()).find(e => e.id === exploitId);
-  if (!exploit) { await interaction.update({ embeds: [{ description: '❌ Exploitation introuvable.', color: 0xE74C3C }], components: [] }); return; }
-
-  const idx = parseInt(interaction.values[0], 10);
-  const produits = [...(exploit.produits || [])];
-  if (idx >= 0 && idx < produits.length) produits.splice(idx, 1);
-
-  exp.updateExploitation(exploitId, { produits });
-  const updated = Object.values(exp.load()).find(e => e.id === exploitId);
-  await interaction.update(produitsView(updated));
-}
-
-// ── Bouton « Terminé » → retour au menu de gestion ────────────────────────
-async function handleHubExplDone(interaction) {
-  const ownerId = interaction.customId.replace('hub_expl_done_', '');
-  const exploit = exp.getByOwner(ownerId);
-  if (!exploit) { await interaction.update({ embeds: [{ description: '✅ Terminé.', color: 0x2ECC71 }], components: [] }); autoClean(interaction); return; }
-  const uid = interaction.user.id;
-  await interaction.update(manageMenu(exploit, uid, managedExploitations(uid).filter(x => x.id !== exploit.id)));
-}
-
-// ── Bouton de bascule entre exploitations gérées ──────────────────────────
-async function handleHubExplSwitch(interaction) {
-  const exploitId = interaction.customId.replace('hub_expl_switch_', '');
-  const uid = interaction.user.id;
-  const e   = exp.getById(exploitId);
-  if (!e || !exp.isManager(e, uid)) {
-    await interaction.reply({ content: '❌ Tu ne gères pas cette exploitation.', flags: 64 });
-    autoClean(interaction);
-    return;
-  }
-  await interaction.update(manageMenu(e, uid, managedExploitations(uid).filter(x => x.id !== e.id)));
-}
-
 // ── Select retrait ouvrier ──────────────────────────────────────────────────
 async function handleHubExplOuvDel(interaction) {
   const exploitId = interaction.customId.replace('hub_expl_ouvdel_', '');
@@ -676,93 +568,82 @@ async function handleHubExplCoDel(interaction) {
   await agrilog(interaction.guild, '➖ **' + exploit.nom + '** : <@' + coId + '> retiré des co-exploitants par <@' + interaction.user.id + '>');
 }
 
-function chunk(arr, size) {
-  const out = [];
-  for (let i = 0; i < arr.length; i += size) out.push(arr.slice(i, i + size));
-  return out;
-}
-
 function isAdmin(interaction) {
   return !!interaction.member?.permissions?.has(PermissionFlagsBits.Administrator);
 }
 
-// Construit le payload complet de l'annuaire (embeds + boutons), utilisé pour
-// l'ouverture initiale et pour tous les rafraîchissements (annulation, suppression).
-// `admin` ajoute un bouton 🗑️ par exploitation, réservé aux administrateurs.
+// Annuaire = UN SEUL embed : une rubrique (champ) par exploitation active.
+// Active = au moins un de ses exploitants est encore visible (présent, ni parti, ni banni, ni inactif).
+const MAX_EXPL = 20;
+const TRAIT = '─'.repeat(30);
+
+// Fiche d'une exploitation, au format de l'annuaire :
+// Nom / Exploitant / Recrutement / 2ᵉ exploitant / Créée le / Activités 1-2 / Élevage 1-2 / Ouvriers.
+// Les activités « Élevage … » vont dans les lignes Élevage, les autres dans les lignes Activités.
+function ficheAnnuaire(e, vis) {
+  const ouvriers = (e.ouvriers || []).filter(id => vis.has(id));
+  const co = (e.coExploitants || []).filter(id => vis.has(id));
+  const dateCrea = new Date(e.createdAt).toLocaleDateString('fr-FR', { day: '2-digit', month: 'long', year: 'numeric' });
+  const acts = [e.activitePrincipale, e.activiteSecondaire, ouvriers.length ? e.activiteSupplementaire : null].filter(Boolean);
+  const elevage = acts.filter(a => a.startsWith('Élevage'));
+  const autres  = acts.filter(a => !a.startsWith('Élevage'));
+  const slot = (list, i) => (i === 0 ? list[0] : list.slice(1).join(' · ')) || '—';
+  return [
+    '**Nom :** ' + e.nom,
+    '**Exploitant :** ' + (vis.has(e.ownerId) ? '<@' + e.ownerId + '>' : '—'),
+    '**RECRUTEMENT :** ' + (e.recrute ? 'OUI' : 'NON'),
+    '**Exploitant :** ' + (co.length ? co.map(id => '<@' + id + '>').join(' · ') : '—'),
+    '**Créée le :** ' + dateCrea,
+    '**Activités 1 :** ' + slot(autres, 0),
+    '**Activités 2 :** ' + slot(autres, 1),
+    '**Élevage 1 :** ' + slot(elevage, 0),
+    '**Élevage 2 :** ' + slot(elevage, 1),
+    '**Ouvriers :** ' + (ouvriers.length ? ouvriers.map(id => '<@' + id + '>').join(', ') : 'Aucun'),
+  ].join('\n');
+}
+
 function renderAnnuaire(admin) {
-  // Joueurs partis / inactifs : fiches conservées, mais masqués de l'annuaire.
-  // Une exploitation n'apparaît que si au moins un de ses exploitants est visible.
   const vis = require('./database').idsVisibles();
   const all = exp.getAll()
     .filter(e => e.nom && [e.ownerId, ...(e.coExploitants || [])].some(id => vis.has(id)))
-    .map(e => ({ ...e, ouvriers: (e.ouvriers || []).filter(id => vis.has(id)), coExploitants: (e.coExploitants || []).filter(id => vis.has(id)) }))
     .sort((a, b) => a.nom.localeCompare(b.nom));
-  if (all.length === 0) {
-    return { embeds: [{ description: '📭 Aucune exploitation enregistrée pour le moment.', color: 0x95A5A6 }], components: [], empty: true };
+
+  // Fiches séparées par un trait, dans une seule description (limite Discord : 4096 caractères)
+  const shown = [];
+  let corps = '';
+  for (const e of all.slice(0, MAX_EXPL)) {
+    const bloc = TRAIT + '\n' + ficheAnnuaire(e, vis) + '\n';
+    if ((corps + bloc + TRAIT).length > 3700) break;
+    corps += bloc;
+    shown.push(e);
   }
-
-  // Un EMBED distinct par exploitation → chacune a sa propre barre de couleur (bien séparées)
-  const DIV = '━━━━━━━━━━━━━━━━━━━━━━━';
-  const MAX = 9; // 9 exploitations + 1 embed d'en-tête = 10 (limite Discord)
   const recr = all.filter(e => e.recrute).length;
-  const shown = all.slice(0, MAX);
-  const reste = all.length - shown.length;
-
-  const header = {
-    title: '📖  ANNUAIRE DES EXPLOITATIONS · EUROAGRI',
-    description: '**' + all.length + '** exploitation(s) sur le serveur  ·  **' + recr + '** en recrutement.'
-      + (reste > 0 ? '\n\n⚠️ *' + reste + ' exploitation(s) non affichée(s) (trop pour un seul message).*' : ''),
-    color: 0x1F8B4C,
-  };
-
-  const cartes = shown.map(e => {
-    const hasO = e.ouvriers?.length > 0;
-    const acts = [e.activitePrincipale, e.activiteSecondaire, hasO ? e.activiteSupplementaire : null]
-      .filter(Boolean).join(' · ') || 'aucune activité définie';
-    const nbOuv = e.ouvriers?.length || 0;
-    const ouv = hasO ? e.ouvriers.map(id => '<@' + id + '>').join(', ') : 'Aucun ouvrier actuellement';
-    const dateCrea = new Date(e.createdAt).toLocaleDateString('fr-FR', { day: '2-digit', month: 'long', year: 'numeric' });
-    const prodBloc = e.produits?.length
-      ? e.produits.map(p => '• ' + p).join('\n')
-      : '*Aucun produit ni prestation pour le moment.*';
-    const exploitants = [e.ownerId, ...(e.coExploitants || [])].filter(id => vis.has(id));
-    const explLabel   = exploitants.length > 1 ? 'Exploitants' : 'Exploitant';
-
-    return {
-      title: e.recrute ? '🟢 RECRUTE' : '🔴 NE RECRUTE PAS',
-      description: [
-        '# 🌾 ' + e.nom,
-        '📢 **RECRUTEMENT :** ' + (e.recrute ? '🟢 OUI' : '🔴 NON'),
-        '👤 **' + explLabel + ' :** ' + exploitants.map(id => '<@' + id + '>').join(' · ') + '　│　📅 **Créée le :** ' + dateCrea,
-        '',
-        '🚜 **Activités :** ' + acts,
-        '👷 **Ouvriers :** ' + nbOuv + ' · ' + ouv,
-        '',
-        DIV,
-        '',
-        '**🛒 Produits & prestations :**',
-        prodBloc,
-      ].join('\n').slice(0, 4096),
-      color: e.couleur ?? DEFAULT_COLOR,
-    };
-  });
 
   const rows = [];
   if (admin) {
-    const delButtons = shown.map(e => new ButtonBuilder()
-      .setCustomId('hub_annuaire_del_' + e.id)
-      .setLabel('🗑️ ' + e.nom.slice(0, 20))
-      .setStyle(ButtonStyle.Danger));
-    for (const group of chunk(delButtons, 5)) rows.push(new ActionRowBuilder().addComponents(group));
+    const del = shown.map(e => new ButtonBuilder().setCustomId('hub_annuaire_del_' + e.id).setLabel('🗑️ ' + e.nom.slice(0, 20)).setStyle(ButtonStyle.Danger));
+    for (let i = 0; i < del.length && rows.length < 4; i += 5) rows.push(new ActionRowBuilder().addComponents(del.slice(i, i + 5)));
   }
   rows.push(new ActionRowBuilder().addComponents(
     new ButtonBuilder().setCustomId('hub_annuaire_off').setLabel('📖 Annuaire · OFF').setStyle(ButtonStyle.Danger),
   ));
 
-  return { ...panneau({ embeds: [header, ...cartes] }), components: rows, empty: false };
+  return {
+    ...panneau({ embeds: [{
+      title: '📖  ANNUAIRE DES EXPLOITATIONS',
+      description: all.length
+        ? '**' + all.length + '** exploitation(s) active(s)　│　**' + recr + '** en recrutement\n' + corps + TRAIT
+          + (all.length > shown.length ? '\n⚠️ *' + (all.length - shown.length) + ' non affichée(s).*' : '')
+        : '📭 Aucune exploitation active pour le moment.',
+      color: 0x1F8B4C,
+      footer: { text: 'MonCopainBot' },
+    }] }),
+    components: all.length ? rows : [],
+    empty: !all.length,
+  };
 }
 
-// ═══ BOUTON « Annuaire » (ON = affiche la liste globale, OFF = l'efface) ═══
+// ═══ BOUTON « Annuaire » (ON = affiche la liste, OFF = l'efface) ═══
 async function handleHubAnnuaire(interaction) {
   const { empty, ...view } = renderAnnuaire(isAdmin(interaction));
   await interaction.reply({ ...view, flags: 64 });
@@ -776,7 +657,7 @@ async function handleHubAnnuaireOff(interaction) {
 }
 
 // ── Suppression admin d'une exploitation depuis l'annuaire ──────────────────
-// Étape 1 : demande de confirmation (remplace les boutons de la carte concernée).
+// Étape 1 : demande de confirmation.
 async function handleHubAnnuaireDel(interaction) {
   if (!isAdmin(interaction)) {
     await interaction.reply({ content: '❌ Réservé aux administrateurs.', flags: 64 });
@@ -795,7 +676,7 @@ async function handleHubAnnuaireDel(interaction) {
     embeds: [{
       title: '⚠️ Confirmer la suppression',
       description: 'Supprimer définitivement **' + exploit.nom + '** (créateur <@' + exploit.ownerId + '>) ?\n'
-        + 'Action **irréversible** : co-exploitants, ouvriers et produits liés seront perdus.',
+        + 'Action **irréversible** : co-exploitants et ouvriers seront perdus.',
       color: 0xE74C3C,
     }],
     components: [new ActionRowBuilder().addComponents(
@@ -818,7 +699,6 @@ async function handleHubAnnuaireDelYes(interaction) {
     exp.deleteExploitation(id);
     await agrilog(interaction.guild, '🗑️ Exploitation supprimée : **' + exploit.nom + '** (créateur <@' + exploit.ownerId + '>) · par <@' + interaction.user.id + '>');
   }
-
   const { empty, ...view } = renderAnnuaire(true);
   await interaction.update({ ...view });
 }
@@ -843,7 +723,5 @@ module.exports = {
   handleHubExplManage, handleHubExplSetAct, handleHubExplNom,
   handleHubExplOuvAdd, handleHubExplOuvDel, handleHubAnnuaire, handleHubAnnuaireOff,
   handleHubAnnuaireDel, handleHubAnnuaireDelYes, handleHubAnnuaireDelNo,
-  handleHubExplRecrute, handleHubExplProdAdd, handleHubExplProdModal,
-  handleHubExplProdDel, handleHubExplDone,
-  handleHubExplSwitch, handleHubExplCouleur, handleHubExplCoAdd, handleHubExplCoDel,
+  handleHubExplRecrute, handleHubExplCouleur, handleHubExplCoAdd, handleHubExplCoDel,
 };

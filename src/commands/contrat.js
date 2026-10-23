@@ -31,13 +31,29 @@ async function startContratFlow(interaction) {
     return;
   }
 
+  await interaction.reply({
+    embeds: [{ title: '📋 Nouveau contrat', description: 'Que veux-tu faire ?\n\n> 🙋 **Je propose** : tu offres tes services aux autres joueurs.\n> 🔎 **Je recherche** : tu cherches un joueur pour réaliser une action.', color: 0x5865F2 }],
+    components: [new ActionRowBuilder().addComponents(
+      new ButtonBuilder().setCustomId('contrat_mode_propose').setLabel('🙋 Je propose').setStyle(ButtonStyle.Success),
+      new ButtonBuilder().setCustomId('contrat_mode_recherche').setLabel('🔎 Je recherche').setStyle(ButtonStyle.Primary),
+    )],
+    flags: 64,
+  });
+  autoClean(interaction, 120000);
+}
+
+// ── Clic sur « Je propose » / « Je recherche » → modale du contrat ──────────
+async function handleContratMode(interaction) {
+  const mode = interaction.customId.replace('contrat_mode_', '');
+  const propose = mode === 'propose';
   const modal = new ModalBuilder()
-    .setCustomId('contrat_modal_' + interaction.user.id)
-    .setTitle('Nouveau contrat');
+    .setCustomId('contrat_modal_' + mode + '_' + interaction.user.id)
+    .setTitle(propose ? 'Je propose mes services' : 'Je recherche un joueur');
 
   modal.addComponents(
     new ActionRowBuilder().addComponents(
-      new TextInputBuilder().setCustomId('travail').setLabel('Travail / besoin').setStyle(TextInputStyle.Short).setPlaceholder('Ex: Transport de blé, labour, récolte...').setRequired(true)
+      new TextInputBuilder().setCustomId('travail').setLabel(propose ? 'Service proposé' : 'Action recherchée').setStyle(TextInputStyle.Short)
+        .setPlaceholder(propose ? 'Ex: Labour, récolte, transport de blé...' : 'Ex: Récolte du champ 12, transport de blé...').setRequired(true)
     ),
     new ActionRowBuilder().addComponents(
       new TextInputBuilder().setCustomId('champ').setLabel('Numéro du champ (optionnel)').setStyle(TextInputStyle.Short).setPlaceholder('Ex: 12').setRequired(false)
@@ -93,7 +109,7 @@ module.exports = {
 
 // ── Handler modal contrat → publication ──────────────────────────────────────
 async function handleContratModal(interaction) {
-  const userId  = interaction.customId.replace('contrat_modal_', '');
+  const [, mode = 'recherche', userId] = interaction.customId.match(/^contrat_modal_(?:(propose|recherche)_)?(\d+)$/);
   const exploit = exp.getByMember(userId);
   if (!exploit) { await interaction.reply({ content: '❌ Exploitation introuvable.', flags: 64 }); autoClean(interaction); return; }
 
@@ -111,7 +127,7 @@ async function handleContratModal(interaction) {
   }
 
   const data = {
-    kind: 'contrat',
+    kind: 'contrat', mode,
     exploit, exploitId: exploit.id, travail, champ, surface, details,
     ownerId: userId, status: 'disponible',
   };
@@ -120,7 +136,7 @@ async function handleContratModal(interaction) {
   data.messageId = msg.id;
   setSession('msg_' + msg.id, data);
 
-  await agrilog(interaction.guild, '🆕 **' + exploit.nom + '** a publié un contrat : ' + travail);
+  await agrilog(interaction.guild, '🆕 **' + exploit.nom + (mode === 'propose' ? '** propose ses services : ' : '** recherche un joueur : ') + travail);
 
   await interaction.reply({
     embeds: [{ description: '✅ Contrat publié dans <#' + CONTRAT_CHANNEL + '> !', color: 0x2ECC71 }],
@@ -131,6 +147,7 @@ async function handleContratModal(interaction) {
 
 const isBesoin = data => data.kind === 'besoin';
 const LABEL    = data => (isBesoin(data) ? 'BESOIN' : 'CONTRAT');
+const isPropose = data => data.mode === 'propose';
 
 // ── Corps texte d'une annonce (besoin ou contrat) ───────────────────────────
 // Gabarit fixe : mêmes lignes, dans le même ordre, « Non précisé » pour le vide.
@@ -140,7 +157,7 @@ function corpsAnnonce(data, opts = {}) {
   const ex = (data.exploitId && exp.getById(data.exploitId)) || data.exploit;
   const qui = [
     '**L\'exploitation :** ' + (ex?.nom || data.exploit.nom),
-    '**Demandeur :** <@' + data.ownerId + '>',
+    '**' + (isPropose(data) ? 'Prestataire' : 'Demandeur') + ' :** <@' + data.ownerId + '>',
   ];
   if (opts.tiers && data.accepteurExploit) {
     qui.push('**' + opts.tiers + ' :** ' + data.accepteurExploit.nom + ' · <@' + data.accepteurId + '>');
@@ -156,7 +173,8 @@ function corpsAnnonce(data, opts = {}) {
     : [
         SEP,
         ...qui,
-        '**Travail :** ' + (data.travail || 'Non précisé'),
+        '**Type :** ' + (isPropose(data) ? '🙋 Je propose' : '🔎 Je recherche'),
+        '**' + (isPropose(data) ? 'Service' : 'Action') + ' :** ' + (data.travail || 'Non précisé'),
         '**Champ :** ' + (data.champ ? 'N° ' + data.champ : 'Non précisé'),
         '**Surface :** ' + (data.surface || 'Non précisé'),
         '**Informations complémentaires**',
@@ -168,7 +186,7 @@ function corpsAnnonce(data, opts = {}) {
 
 const boutonsDispo = data => [new ActionRowBuilder().addComponents(
   new ButtonBuilder().setCustomId('contrat_accepter_' + data.ownerId)
-    .setLabel(isBesoin(data) ? '✅ Répondre au besoin' : '✅ Accepter le contrat').setStyle(ButtonStyle.Success),
+    .setLabel(isBesoin(data) ? '✅ Répondre au besoin' : isPropose(data) ? '✅ Accepter l\'offre' : '✅ Répondre à la recherche').setStyle(ButtonStyle.Success),
   new ButtonBuilder().setCustomId('contrat_supprimer_' + data.ownerId).setLabel('🗑️ Supprimer').setStyle(ButtonStyle.Danger),
 )];
 
@@ -177,7 +195,7 @@ function disponibleMessage(data) {
   const ex = (data.exploitId && exp.getById(data.exploitId)) || data.exploit;
   return {
     embeds: [{
-      title: isBesoin(data) ? '📦 BESOIN' : '📋 CONTRAT DISPONIBLE',
+      title: isBesoin(data) ? '📦 BESOIN' : isPropose(data) ? '🙋 JE PROPOSE · SERVICE DISPONIBLE' : '🔎 JE RECHERCHE · CONTRAT DISPONIBLE',
       description: corpsAnnonce(data),
       color: ex?.couleur ?? 0x2ECC71,
     }],
@@ -278,7 +296,7 @@ async function handleContratAccepter(interaction) {
     content: pings,
     embeds: [{
       title: '🤝 ' + LABEL(data) + ' ACCEPTÉ · négociation',
-      description: corpsAnnonce(data, { tiers: 'Prestataire' }) + '\n' + SEP + '\n'
+      description: corpsAnnonce(data, { tiers: isPropose(data) ? 'Client' : 'Prestataire' }) + '\n' + SEP + '\n'
         + [
             'Tous les membres des deux exploitations ont accès à ce salon.',
             'Discutez ici du prix, du matériel et des délais.',
@@ -425,7 +443,7 @@ async function handleContratDealDone(interaction) {
   delSession('msg_' + mId);
 
   await agrilog(interaction.guild, '🏁 ' + (isBesoin(data) ? 'Besoin effectué' : 'Contrat terminé')
-    + ' : **' + data.exploit.nom + '** (client) × **' + (data.accepteurExploit?.nom || '?') + '** (prestataire) : ' + objetShort(data));
+    + ' : **' + data.exploit.nom + '** (' + (isPropose(data) ? 'prestataire' : 'client') + ') × **' + (data.accepteurExploit?.nom || '?') + '** (' + (isPropose(data) ? 'client' : 'prestataire') + ') : ' + objetShort(data));
 }
 
 // ── Handler supprimer contrat (par un exploitant de la ferme) ───────────────
@@ -506,6 +524,7 @@ async function handleBesoinModal(interaction) {
   autoClean(interaction);
 }
 
+module.exports.handleContratMode       = handleContratMode;
 module.exports.handleContratModal       = handleContratModal;
 module.exports.handleContratAccepter    = handleContratAccepter;
 module.exports.handleContratDealOk      = handleContratDealOk;

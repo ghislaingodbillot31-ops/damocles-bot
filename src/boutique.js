@@ -211,7 +211,7 @@ function decisionRow(reqId) {
 async function handleBoutique(interaction) {
   await interaction.reply({
     ...panneau({ embeds: [{
-      title: '🛒 BOUTIQUE EUROAGRI',
+      title: '🛒 BOUTIQUE LE COIN DES COPAINS',
       description: 'Échange tes points de classement contre des avantages.\nRéservé aux membres d\'une exploitation.',
       color: 0x1ABC9C,
     }] }),

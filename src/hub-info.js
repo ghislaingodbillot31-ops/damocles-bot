@@ -13,7 +13,7 @@ const STYLES = {
 };
 
 const DEFAUT = {
-  titre: '📌  EUROAGRI  ·  INFORMATIONS',
+  titre: '📌  LE COIN DES COPAINS  ·  INFORMATIONS',
   description: 'Tout ce qu\'il faut savoir avant de jouer. Clique sur un bouton pour afficher les détails (visible par toi seul).',
   couleur: 0x3498DB,
   boutons: [
@@ -21,6 +21,7 @@ const DEFAUT = {
     { key: 'exploitant', actif: true, label: '🌾 Exploitant', style: 'Success',   titre: '🌾  Devenir exploitant',   message: '', couleur: 0x2ECC71, image: '' },
     { key: 'activite',   actif: true, label: '🚜 Activité',   style: 'Secondary', titre: '🚜  Les activités',        message: '', couleur: 0xE67E22, image: '' },
     { key: 'parametre',  actif: true, label: '⚙️ Paramètre',  style: 'Secondary', titre: '⚙️  Paramètres de la partie', message: '', couleur: 0x95A5A6, image: '' },
+    { key: 'drive',      actif: true, label: '📁 Google Drive', style: 'Primary', titre: '📁  Google Drive',         message: '', couleur: 0x4285F4, image: '' },
   ],
 };
 
