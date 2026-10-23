@@ -1,0 +1,146 @@
+[
+  {
+    "id": "mvjk7jly8ml",
+    "userId": "231500104844967937",
+    "nom": "Blé",
+    "quantite": 1000,
+    "prix": 600,
+    "unite": "Litre"
+  },
+  {
+    "id": "mvjkc7aycdt",
+    "userId": "1538970781424549988",
+    "nom": "foin",
+    "quantite": 1000,
+    "prix": 160,
+    "unite": "L"
+  },
+  {
+    "id": "mvjkdh51qi7",
+    "userId": "213962551053123584",
+    "nom": "Betterave sucrière",
+    "quantite": 1000,
+    "prix": 320,
+    "unite": "L"
+  },
+  {
+    "id": "mvjkfltlz03",
+    "userId": "213962551053123584",
+    "nom": "Pomme de terre",
+    "quantite": 1000,
+    "prix": 412,
+    "unite": "L"
+  },
+  {
+    "id": "mvjm2yxzfky",
+    "userId": "231500104844967937",
+    "nom": "Huile de colza",
+    "quantite": 1000,
+    "prix": 3200,
+    "unite": "Litre"
+  },
+  {
+    "id": "mvjm332ku76",
+    "userId": "1538970781424549988",
+    "nom": "Lisier",
+    "quantite": 1000,
+    "prix": 60,
+    "unite": "Litre"
+  },
+  {
+    "id": "mvjm3ze77jw",
+    "userId": "1538970781424549988",
+    "nom": "Fumier",
+    "quantite": 1000,
+    "prix": 60,
+    "unite": "Litre"
+  },
+  {
+    "id": "mvjm433jxzm",
+    "userId": "231500104844967937",
+    "nom": "Farine",
+    "quantite": 1000,
+    "prix": 1200,
+    "unite": "Litre"
+  },
+  {
+    "id": "mvjm4o3we9x",
+    "userId": "1538970781424549988",
+    "nom": "Ensilage",
+    "quantite": 1000,
+    "prix": 500,
+    "unite": "Litre"
+  },
+  {
+    "id": "mvjm4xpnnme",
+    "userId": "231500104844967937",
+    "nom": "Lait de chevre",
+    "quantite": 1000,
+    "prix": 5000,
+    "unite": "Litre"
+  },
+  {
+    "id": "mvjm602hzry",
+    "userId": "231500104844967937",
+    "nom": "Miel",
+    "quantite": 1000,
+    "prix": 1800,
+    "unite": "Litre"
+  },
+  {
+    "id": "mvjm745r3fq",
+    "userId": "231500104844967937",
+    "nom": "Paille",
+    "quantite": 1000,
+    "prix": 80,
+    "unite": "Litre"
+  },
+  {
+    "id": "mvjm7ya77o1",
+    "userId": "231500104844967937",
+    "nom": "Sorgho",
+    "quantite": 1000,
+    "prix": 800,
+    "unite": "Litre"
+  },
+  {
+    "id": "mvjm8nn43nt",
+    "userId": "1538970781424549988",
+    "nom": "Herbe",
+    "quantite": 1000,
+    "prix": 120,
+    "unite": "Litre"
+  },
+  {
+    "id": "mvjmap4zolq",
+    "userId": "1538970781424549988",
+    "nom": "lait de vache en boiteille",
+    "quantite": 1000,
+    "prix": 1000,
+    "unite": "Litre"
+  },
+  {
+    "id": "mvjmblsqy1z",
+    "userId": "1538970781424549988",
+    "nom": "beurre",
+    "quantite": 1000,
+    "prix": 1800,
+    "unite": "Litre"
+  },
+  {
+    "id": "mvjmcgcqzxu",
+    "userId": "1538970781424549988",
+    "nom": "chocolat",
+    "quantite": 1000,
+    "prix": 2500,
+    "unite": "Litre"
+  },
+  {
+    "id": "mvjme320irt",
+    "userId": "1538970781424549988",
+    "nom": "Miel",
+    "quantite": 1000,
+    "prix": 1800,
+    "unite": "Litre"
+  }
+]
