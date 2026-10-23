@@ -13,6 +13,15 @@ const MAX_PAR_JOUEUR = 25; // limite d'un menu déroulant Discord
 
 const load = () => { try { return JSON.parse(fs.readFileSync(STORE, 'utf-8')); } catch { return []; } };
 const save = list => fs.writeFileSync(STORE, JSON.stringify(list, null, 2), 'utf-8');
+// Restauration unique : fusionne marche-seed.json (sans doublon d'id) puis pose un marqueur pour ne jamais ressusciter un produit retiré.
+const SEEDED = dataPath('marche.seeded');
+if (!fs.existsSync(SEEDED)) {
+  try {
+    const cur = load(), ids = new Set(cur.map(p => p.id));
+    save(cur.concat(JSON.parse(fs.readFileSync(require('path').join(__dirname, 'marche-seed.json'), 'utf-8')).filter(p => !ids.has(p.id))));
+    fs.writeFileSync(SEEDED, '1');
+  } catch (err) { console.error('⚠️ Marché : restauration impossible :', err.message); }
+}
 const nombre = s => Number(String(s).replace(/\s/g, '').replace(',', '.'));
 const fmt = n => n.toLocaleString('fr-FR');
 
