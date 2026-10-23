@@ -1,0 +1,11 @@
+{
+  "argent_depart": 1000,
+  "cuve_depart": "cuve_inox_100",
+  "caisse_kg": 10,
+  "stock_fruits_capacite_kg": 100,
+  "stock_fruits_amelioration_kg": 50,
+  "stock_fruits_amelioration_prix": 200,
+  "comptoir_coef": 0.6,
+  "comptoir_limite_l_par_jour": 200,
+  "nom_entreprise_max": 30
+}
