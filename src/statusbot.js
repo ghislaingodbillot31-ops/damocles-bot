@@ -13,8 +13,6 @@ try { _cfgStatus = require('./config').get().STATUS_CHANNEL_ID || ''; } catch {}
 // STATUS_CHANNEL_ID / config dashboard, sinon la valeur fixe.
 const STATUS_CHANNEL_ID = (process.env.VERIF_MODE === 'code' ? null : process.env.VERIFICATION_CHANNEL_ID)
   || process.env.STATUS_CHANNEL_ID || _cfgStatus || ids('VERIFICATION_CHANNEL_ID');
-const sleep = ms => new Promise(r => setTimeout(r, ms));
-
 // ── Centre de contrôle : UN message (embed natif), remplacé à chaque actualisation (l'ancien est supprimé) ──
 const MSG_FILE    = dataPath('status-msg.json');
 const EVENTS_FILE = dataPath('status-events.json');

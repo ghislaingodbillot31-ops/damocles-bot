@@ -6,8 +6,6 @@ const db = require('../database');
 require('dotenv').config();
 
 const EXCLUDED_ROLE_IDS = (process.env.EXCLUDED_ROLE_IDS || '').split(',').filter(Boolean);
-const sleep = ms => new Promise(r => setTimeout(r, ms));
-
 // File d'attente par serveur
 const queues = new Map();
 

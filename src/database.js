@@ -154,14 +154,6 @@ async function getAllMembers() {
   return Object.values(loadDB());
 }
 
-async function getPresentMembers() {
-  return Object.values(loadDB()).filter(m => m.present);
-}
-
-async function getAbsentMembers() {
-  return Object.values(loadDB()).filter(m => !m.present);
-}
-
 // ── Visibilité publique ───────────────────────────────────────────────────────
 // Un joueur parti, expulsé, banni ou inactif garde toutes ses données (XP,
 // anniversaire, historique…) mais n'apparaît plus dans ce que le bot affiche
@@ -176,10 +168,6 @@ function estVisible(m) {
 // Version synchrone (lecture directe du fichier) pour les affichages construits à la volée.
 function idsVisibles() {
   return new Set(Object.values(loadDB()).filter(estVisible).map(m => m.id));
-}
-
-async function recordActivity(userId, type) {
-  await updateMember(userId, null, { history: { event: type, date: new Date().toISOString() } });
 }
 
 // ── Nettoyage ─────────────────────────────────────────────────────────────────
@@ -217,12 +205,6 @@ async function cleanDatabase() {
   return { before: all.length, removed, after: all.length - removed };
 }
 
-async function getAnniversairesDuMois(mois) {
-  const all = await getAllMembers();
-  return all.filter(m => m.anniversaire && parseInt(m.anniversaire.split('/')[1]) === mois)
-            .sort((a, b) => parseInt(a.anniversaire.split('/')[0]) - parseInt(b.anniversaire.split('/')[0]));
-}
-
 async function getAnniversairesAujourdhui() {
   const today = new Date();
   const all   = await getAllMembers();
@@ -253,8 +235,6 @@ async function getStats() {
 
 module.exports = {
   upsertMember, updateMember, addWarning, banMember, kickMember, memberLeft,
-  reglementAccepted, setAnniversaire, getAnniversairesDuMois,
-  getAnniversairesAujourdhui, getMember, getAllMembers, getPresentMembers,
-  getAbsentMembers, recordActivity, getStats, STATUS,
+  reglementAccepted, setAnniversaire, getAnniversairesAujourdhui, getMember, getAllMembers, getStats, STATUS,
   removeMember, cleanDatabase, estVisible, idsVisibles,
 };

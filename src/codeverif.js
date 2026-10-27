@@ -19,9 +19,6 @@ const { dataPath } = require('./paths');
 const codeChannel = guild => guild.channels.cache.get(process.env.VERIFICATION_CHANNEL_ID);
 const FLOW = () => process.env.VERIF_MODE === 'code-compte';
 const MAX_ESSAIS = 5;
-// Rôles qui prouvent que le code a déjà été validé (ou que le membre est plus loin dans le parcours)
-const dejaActif = member => ['MEMBRE_ROLE_ID', 'ATTENTE_ROLE_ID', 'REGLEMENT_ROLE_ID', 'ACTIVE_ROLE_ID']
-  .some(k => process.env[k] && member.roles.cache.has(process.env[k]));
 const newCode = () => crypto.randomBytes(3).toString('hex').toUpperCase();
 
 const flash = async (channel, text, ms = 6000) => {
@@ -217,4 +214,4 @@ async function handleModal(interaction) {
 const onMessage = message => FLOW() ? onMessageFlow(message) : onMessageSimple(message);
 const issue = member => FLOW() ? issueFlow(member) : issueSimple(member);
 
-module.exports = { issue, onMessage, cleanup, dejaActif, publierPanneau, handleButton, handleModal };
+module.exports = { issue, onMessage, cleanup, publierPanneau, handleButton, handleModal };

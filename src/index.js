@@ -21,7 +21,6 @@ const { createDashboard, setClient }                   = require('./dashboard');
 const scheduledMessages                                = require('./scheduled-messages');
 const { startBirthdayTasks }                           = require('./birthday');
 const hub                                              = require('./hub');
-const { startFS25Monitor }                             = require('./fs25-monitor');
 const { startFs25Bridge }                              = require('./fs25-bridge');
 const contrat                                          = require('./commands/contrat');
 const { startDailyTasks }                              = require('./dailytasks');
@@ -75,7 +74,6 @@ client.once(Events.ClientReady, async () => {
 
   scheduledMessages.startAll(client);
   startBirthdayTasks(client, cron);
-  startFS25Monitor(client);
   startFs25Bridge(client).catch(e => console.error('[FS25] Pont :', e.message));
   startDailyTasks(client, cron);
   require('./restart').startDailyRestart(client, cron);
@@ -85,6 +83,7 @@ client.once(Events.ClientReady, async () => {
   require('./bugs').startBugs(client);
   require('./invitations').startInvitations(client);
   require('./jeux').startJeux(client);
+  require('./tickets').startTickets(client).catch(err => console.error('⚠️ Tickets :', err.message));
   require('./antispam').startAntiSpam(client);
   if (process.env.VERIF_MODE === 'code') require('./codeverif').publierPanneau(client).catch(() => {});
   require('./publiclog').demarrer(client).catch(() => {});
@@ -255,9 +254,6 @@ client.on(Events.InteractionCreate, async interaction => {
   if (interaction.isContextMenuCommand()) {
     if (interaction.commandName === 'Ajouter bouton règlement') {
       await require('./commands/ajouter-bouton-reglement').execute(interaction);
-    }
-    if (interaction.commandName === 'Ajouter bouton ticket') {
-      await require('./commands/ticket').execute(interaction);
     }
     try {
       if (interaction.commandName === 'Purge : début') await require('./commands/purge').executeStart(interaction);

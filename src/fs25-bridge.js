@@ -212,10 +212,6 @@ function presenceEvents(joined, players, now = Date.now()) {
 
 // ---------- Bouton « Liste des mods » ----------
 
-const modsRow = new ActionRowBuilder().addComponents(
-  new ButtonBuilder().setCustomId('fs_mods').setLabel('Liste des mods').setEmoji('📦').setStyle(ButtonStyle.Secondary),
-);
-
 let modsCache = { at: 0, lines: [] };
 
 // Titres et versions lus dans le log de démarrage du serveur ; à défaut, noms des zips de /profile/mods.
@@ -299,11 +295,10 @@ async function startFs25Bridge(client) {
   }
 
   let running = false;
-  // Connexions et banque ont chacune leur salon ; à défaut, FS25_LOG_CHANNEL_ID reçoit les deux.
+  // Connexions et banque ont chacune leur salon.
   const salon = (key) => (process.env[key] ? client.channels.fetch(process.env[key]).catch(() => null) : null);
-  const logChannel = await salon('FS25_LOG_CHANNEL_ID');
-  const connChannel = (await salon('FS25_CONNEXIONS_CHANNEL_ID')) || logChannel;
-  const bankChannel = (await salon('FS25_BANQUE_CHANNEL_ID')) || logChannel;
+  const connChannel = await salon('FS25_CONNEXIONS_CHANNEL_ID');
+  const bankChannel = await salon('FS25_BANQUE_CHANNEL_ID');
   const logTo = (ch, lines) => ch && lines.length && ch.send({ content: lines.join('\n'), allowedMentions: { parse: [] } }).catch((e) => console.warn(`[FS25] Journal : ${e.message}`));
   const minMove = parseInt(process.env.FS25_LOG_MIN || '500', 10); // ignore les petits mouvements
   let prevFarms = null;
