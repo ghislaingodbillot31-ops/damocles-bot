@@ -193,6 +193,22 @@ function moneyEvents(prev, cur, min) {
   return out;
 }
 
+function duration(ms) {
+  const min = Math.floor(ms / 60000);
+  if (min < 1) return "moins d'1 min";
+  return min < 60 ? `${min} min` : `${Math.floor(min / 60)}h${String(min % 60).padStart(2, '0')}`;
+}
+
+// Annonces connexion / déconnexion. `joined` est mis à jour ici.
+function presenceEvents(joined, players, now = Date.now()) {
+  const out = [];
+  const first = joined.size === 0 && !joined.seeded;
+  joined.seeded = true;
+  for (const n of players) if (!joined.has(n)) { joined.set(n, now); if (!first) out.push(`🟢 **${n}** s'est connecté au serveur`); }
+  for (const [n, t] of [...joined]) if (!players.includes(n)) { joined.delete(n); out.push(`🔴 **${n}** s'est déconnecté  ·  session ${duration(now - t)}`); }
+  return out;
+}
+
 // ---------- Boucle principale ----------
 
 let lastStatus = null; // dernier état connu (utilisable par une commande /fs25)
@@ -221,6 +237,7 @@ async function startFs25Bridge(client) {
   const logChannel = process.env.FS25_LOG_CHANNEL_ID ? await client.channels.fetch(process.env.FS25_LOG_CHANNEL_ID).catch(() => null) : null;
   const minMove = parseInt(process.env.FS25_LOG_MIN || '500', 10); // ignore les petits mouvements
   let prevFarms = null;
+  const joined = new Map(); // joueur -> heure de connexion observée (le 1er relevé après un redémarrage du bot ne génère aucune annonce)
 
   const tick = async () => {
     if (running) return; // évite les chevauchements si le FTP est lent
@@ -230,8 +247,9 @@ async function startFs25Bridge(client) {
       const { data, mtime } = c.source === 'sftp' ? await readViaSftp(c) : await readViaFtp(c);
       lastStatus = parseStatus(data);
       if (logChannel) {
+        const lines = presenceEvents(joined, lastStatus.players); // aussi au 1er relevé : il mémorise les joueurs déjà présents
         if (prevFarms) {
-          const lines = moneyEvents(prevFarms, lastStatus.farms, minMove);
+          lines.push(...moneyEvents(prevFarms, lastStatus.farms, minMove));
           if (lines.length) logChannel.send({ content: lines.join('\n'), allowedMentions: { parse: [] } }).catch((e) => console.warn(`[FS25] Journal : ${e.message}`));
         }
         prevFarms = new Map(lastStatus.farms.map((f) => [f.name, f]));
@@ -263,6 +281,7 @@ async function startFs25Bridge(client) {
 module.exports = {
   startFs25Bridge,
   moneyEvents,
+  presenceEvents,
   buildEmbed, // exporté pour les tests
   getLastFs25Status: () => lastStatus,
   parseStatus, // exporté pour les tests
