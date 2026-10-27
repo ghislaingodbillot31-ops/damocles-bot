@@ -134,28 +134,28 @@ function buildEmbed(d, mtime, c) {
     .setFooter({ text: FOOTER_TAG })
     .setTimestamp(new Date());
 
-  let desc = d.map ? `Carte : **${d.map}**` : '';
-  if (!online) desc += '\n_Serveur hors ligne — dernières données connues._';
-  if (desc) embed.setDescription(desc);
-
-  embed.addFields(
-    { name: '🕒 Heure en jeu', value: `**${String(d.hour).padStart(2, '0')}:${String(d.minute).padStart(2, '0')}**`, inline: true },
-    { name: '📅 Date', value: `Jour ${d.dayInPeriod}/${d.daysPerPeriod} — ${month} — Année ${d.year}`, inline: true },
-    { name: 'Saison', value: SEASONS[d.season] || '—', inline: true },
-  );
-  if (d.temperature !== null && d.temperature > -900) {
-    embed.addFields({ name: '🌡️ Température', value: `${Math.round(d.temperature)} °C`, inline: true });
-  }
-  embed.addFields({ name: '⏩ Vitesse du temps', value: `x${Math.round(d.timeScale)}`, inline: true });
+  const hhmm = `${String(d.hour).padStart(2, '0')}:${String(d.minute).padStart(2, '0')}`;
+  const temp = d.temperature !== null && d.temperature > -900 ? `  ·  🌡️ ${Math.round(d.temperature)} °C` : '';
+  const lines = [
+    d.map ? `🗺️  Carte : **${d.map}**` : null,
+    `🕒  Heure : **${hhmm}**  (x${Math.round(d.timeScale)})`,
+    `📅  Date : **Jour ${d.dayInPeriod}/${d.daysPerPeriod}**  ·  ${month}  ·  Année ${d.year}`,
+    `${SEASONS[d.season] || '—'}${temp}`,
+  ].filter(Boolean);
+  if (!online) lines.push('', '_Serveur hors ligne — dernières données connues._');
+  embed.setDescription(lines.join('\n'));
 
   if (d.farms.length) {
-    const lines = d.farms.map((f) => `**${f.name}** : ${money(f.money)}${f.loan > 0 ? `  _(prêt : ${money(f.loan)})_` : ''}`);
-    embed.addFields({ name: '💰 Finances', value: lines.join('\n').slice(0, 1024), inline: false });
+    const nameW = Math.min(14, Math.max(...d.farms.map((f) => f.name.length), 5));
+    const amountW = Math.max(...d.farms.map((f) => money(f.money).length), 6);
+    const loanW = Math.max(...d.farms.map((f) => money(f.loan).length), 4);
+    const head = `${'Ferme'.padEnd(nameW)}  ${'Argent'.padStart(amountW)}  ${'Prêt'.padStart(loanW)}`;
+    const rows = d.farms.map((f) => `${f.name.slice(0, nameW).padEnd(nameW)}  ${money(f.money).padStart(amountW)}  ${(f.loan > 0 ? money(f.loan) : '—').padStart(loanW)}`);
+    embed.addFields({ name: '💰  Finances', value: ['```', head, '─'.repeat(head.length), ...rows, '```'].join('\n').slice(0, 1024) });
   }
   embed.addFields({
-    name: `👨‍🌾 Joueurs (${d.players.length})`,
-    value: (d.players.length ? d.players.join(', ') : 'Personne').slice(0, 1024),
-    inline: false,
+    name: `👨‍🌾  Joueurs en ligne (${d.players.length})`,
+    value: (d.players.length ? d.players.map((n) => `• ${n}`).join('\n') : '_Personne_').slice(0, 1024),
   });
   return embed;
 }
@@ -169,12 +169,36 @@ function offlineEmbed(c, reason) {
     .setTimestamp(new Date());
 }
 
+// ---------- Journal des mouvements d'argent (déduit de l'écart entre deux relevés) ----------
+
+// Un relevé toutes les 30 s : plusieurs opérations dans l'intervalle sont additionnées.
+function moneyEvents(prev, cur, min) {
+  const out = [];
+  const ups = [], downs = [];
+  for (const f of cur) {
+    const p = prev.get(f.name);
+    if (!p) continue;
+    const dm = f.money - p.money, dl = f.loan - p.loan;
+    if (Math.abs(dm) < min) continue;
+    if (dl > 0 && Math.abs(dm - dl) < 1) out.push(`🏦 **${f.name}** a emprunté ${money(dl)}`);
+    else if (dl < 0 && Math.abs(dm - dl) < 1) out.push(`🏦 **${f.name}** a remboursé ${money(-dl)} de prêt`);
+    else (dm > 0 ? ups : downs).push({ name: f.name, amount: Math.abs(dm) });
+  }
+  for (const d of downs) {
+    const i = ups.findIndex((u) => Math.abs(u.amount - d.amount) < 1);
+    if (i >= 0) out.push(`💸 **${d.name}** → **${ups.splice(i, 1)[0].name}** : transfert de ${money(d.amount)}`);
+    else out.push(`🔻 **${d.name}** a dépensé ${money(d.amount)}`);
+  }
+  for (const u of ups) out.push(`🔺 **${u.name}** a reçu ${money(u.amount)}`);
+  return out;
+}
+
 // ---------- Boucle principale ----------
 
 let lastStatus = null; // dernier état connu (utilisable par une commande /fs25)
 
 async function findExistingMessage(channel, botId) {
-  const msgs = await channel.messages.fetch({ limit: 30 });
+  const msgs = await channel.messages.fetch({ limit: 100 });
   return msgs.find((m) => m.author.id === botId && m.embeds[0]?.footer?.text === FOOTER_TAG) || null;
 }
 
@@ -194,6 +218,9 @@ async function startFs25Bridge(client) {
 
   let message = await findExistingMessage(channel, client.user.id).catch(() => null);
   let running = false;
+  const logChannel = process.env.FS25_LOG_CHANNEL_ID ? await client.channels.fetch(process.env.FS25_LOG_CHANNEL_ID).catch(() => null) : null;
+  const minMove = parseInt(process.env.FS25_LOG_MIN || '500', 10); // ignore les petits mouvements
+  let prevFarms = null;
 
   const tick = async () => {
     if (running) return; // évite les chevauchements si le FTP est lent
@@ -202,6 +229,13 @@ async function startFs25Bridge(client) {
     try {
       const { data, mtime } = c.source === 'sftp' ? await readViaSftp(c) : await readViaFtp(c);
       lastStatus = parseStatus(data);
+      if (logChannel) {
+        if (prevFarms) {
+          const lines = moneyEvents(prevFarms, lastStatus.farms, minMove);
+          if (lines.length) logChannel.send({ content: lines.join('\n'), allowedMentions: { parse: [] } }).catch((e) => console.warn(`[FS25] Journal : ${e.message}`));
+        }
+        prevFarms = new Map(lastStatus.farms.map((f) => [f.name, f]));
+      }
       embed = buildEmbed(lastStatus, mtime, c);
     } catch (err) {
       console.warn(`[FS25] Lecture impossible : ${err.message}`);
@@ -228,6 +262,8 @@ async function startFs25Bridge(client) {
 
 module.exports = {
   startFs25Bridge,
+  moneyEvents,
+  buildEmbed, // exporté pour les tests
   getLastFs25Status: () => lastStatus,
   parseStatus, // exporté pour les tests
 };
