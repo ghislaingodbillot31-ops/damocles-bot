@@ -277,7 +277,7 @@ async function ensureStatusMessage(channel) {
   if (statusMsg) return statusMsg;
   statusPending ||= (async () => {
     statusMsg = await findExistingMessage(channel, channel.client.user.id).catch(() => null)
-      || await channel.send({ embeds: [panneauEmbed(new EmbedBuilder().setTitle('⏳ Chargement du statut…').setColor(0x999999).setFooter({ text: FOOTER_TAG }).toJSON())], components: [modsRow] });
+      || await channel.send({ embeds: [panneauEmbed(new EmbedBuilder().setTitle('⏳ Chargement du statut…').setColor(0x999999).setFooter({ text: FOOTER_TAG }).toJSON())], components: [] });
     return statusMsg;
   })().finally(() => { statusPending = null; });
   return statusPending;
@@ -326,7 +326,7 @@ async function startFs25Bridge(client) {
     }
     try {
       const message = await ensureStatusMessage(channel);
-      await message.edit({ embeds: [panneauEmbed(embed.toJSON())], components: [modsRow] });
+      await message.edit({ embeds: [panneauEmbed(embed.toJSON())], components: [] }); // le bouton « Liste des mods » est dans le HUB INFORMATIONS
     } catch (err) {
       if (err.code === 10008) statusMsg = null; // message supprimé -> recréé au prochain tour
       else console.warn(`[FS25] Envoi Discord impossible : ${err.message}`);

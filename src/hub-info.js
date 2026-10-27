@@ -22,6 +22,7 @@ const DEFAUT = {
     { key: 'activite',   actif: true, label: '🚜 Activité',   style: 'Secondary', titre: '🚜  Les activités',        message: '', couleur: 0xE67E22, image: '' },
     { key: 'parametre',  actif: true, label: '⚙️ Paramètre',  style: 'Secondary', titre: '⚙️  Paramètres de la partie', message: '', couleur: 0x95A5A6, image: '' },
     { key: 'drive',      actif: true, label: '📁 Google Drive', style: 'Primary', titre: '📁  Google Drive',         message: '', couleur: 0x4285F4, image: '' },
+    { key: 'mods',       actif: true, label: '📦 Liste des mods', style: 'Secondary', titre: '📦  Mods du serveur', message: '', couleur: 0x6AA84F, image: '' }, // contenu dynamique : liste lue sur le serveur
   ],
 };
 
@@ -64,14 +65,16 @@ function buildMessage() {
   const actifs = c.boutons.filter(b => b.actif);
   return {
     ...panneau({ embeds: [{ title: c.titre, description: c.description, color: c.couleur, footer: { text: 'MonCopainBot' } }] }),
-    components: actifs.length ? [new ActionRowBuilder().addComponents(
-      actifs.map(b => new ButtonBuilder().setCustomId('hubinfo_' + b.key).setLabel(b.label).setStyle(STYLES[b.style])),
-    )] : [],
+    // 5 boutons maximum par rangée
+    components: Array.from({ length: Math.ceil(actifs.length / 5) }, (_, i) => new ActionRowBuilder().addComponents(
+      actifs.slice(i * 5, i * 5 + 5).map(b => new ButtonBuilder().setCustomId('hubinfo_' + b.key).setLabel(b.label).setStyle(STYLES[b.style])),
+    )),
   };
 }
 
 async function handleButton(interaction) {
   const key = interaction.customId.replace('hubinfo_', '');
+  if (key === 'mods') { await require('./fs25-bridge').handleModsButton(interaction); return; }
   const b = get().boutons.find(x => x.key === key);
   if (!b || !b.message.trim()) {
     await interaction.reply({ content: 'ℹ️ Cette rubrique n\'est pas encore renseignée. Reviens bientôt !', flags: 64 });
