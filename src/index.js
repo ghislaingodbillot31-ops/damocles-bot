@@ -322,6 +322,7 @@ client.on(Events.InteractionCreate, async interaction => {
   // Boutons HUB des exploitants
   try {
     if (id === 'verif_code' || id === 'verif_saisir') { await require('./codeverif').handleButton(interaction); return; }
+    if (id === 'fs25_mods')                   { await require('./fs25-bridge').handleModsButton(interaction); return; }
     if (id === 'anniv_btn')                   { await require('./birthday').handleButton(interaction); return; }
     if (id === 'hub_expl')                    { await hub.handleHubExpl(interaction);        return; }
     if (id === 'hub_expl_creer')              { await hub.handleHubExplCreer(interaction);   return; }
