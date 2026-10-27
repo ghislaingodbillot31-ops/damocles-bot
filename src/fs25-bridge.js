@@ -299,7 +299,12 @@ async function startFs25Bridge(client) {
   }
 
   let running = false;
-  const logChannel = process.env.FS25_LOG_CHANNEL_ID ? await client.channels.fetch(process.env.FS25_LOG_CHANNEL_ID).catch(() => null) : null;
+  // Connexions et banque ont chacune leur salon ; à défaut, FS25_LOG_CHANNEL_ID reçoit les deux.
+  const salon = (key) => (process.env[key] ? client.channels.fetch(process.env[key]).catch(() => null) : null);
+  const logChannel = await salon('FS25_LOG_CHANNEL_ID');
+  const connChannel = (await salon('FS25_CONNEXIONS_CHANNEL_ID')) || logChannel;
+  const bankChannel = (await salon('FS25_BANQUE_CHANNEL_ID')) || logChannel;
+  const logTo = (ch, lines) => ch && lines.length && ch.send({ content: lines.join('\n'), allowedMentions: { parse: [] } }).catch((e) => console.warn(`[FS25] Journal : ${e.message}`));
   const minMove = parseInt(process.env.FS25_LOG_MIN || '500', 10); // ignore les petits mouvements
   let prevFarms = null;
   const joined = new Map(); // joueur -> heure de connexion observée (le 1er relevé après un redémarrage du bot ne génère aucune annonce)
@@ -311,14 +316,11 @@ async function startFs25Bridge(client) {
     try {
       const { data, mtime } = c.source === 'sftp' ? await readViaSftp(c) : await readViaFtp(c);
       lastStatus = parseStatus(data);
-      if (logChannel) {
-        const lines = presenceEvents(joined, lastStatus.players); // aussi au 1er relevé : il mémorise les joueurs déjà présents
-        if (prevFarms) {
-          lines.push(...moneyEvents(prevFarms, lastStatus.farms, minMove));
-          if (lines.length) logChannel.send({ content: lines.join('\n'), allowedMentions: { parse: [] } }).catch((e) => console.warn(`[FS25] Journal : ${e.message}`));
-        }
-        prevFarms = new Map(lastStatus.farms.map((f) => [f.name, f]));
-      }
+      const connexions = presenceEvents(joined, lastStatus.players); // aussi au 1er relevé : il mémorise les joueurs déjà présents
+      const banque = prevFarms ? moneyEvents(prevFarms, lastStatus.farms, minMove) : [];
+      prevFarms = new Map(lastStatus.farms.map((f) => [f.name, f]));
+      logTo(connChannel, connexions);
+      logTo(bankChannel, banque);
       embed = buildEmbed(lastStatus, mtime, c);
     } catch (err) {
       console.warn(`[FS25] Lecture impossible : ${err.message}`);
