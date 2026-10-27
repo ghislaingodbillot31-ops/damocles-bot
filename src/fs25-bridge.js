@@ -25,6 +25,7 @@
 
 const { EmbedBuilder, ActionRowBuilder, ButtonBuilder, ButtonStyle } = require('discord.js');
 const { Writable } = require('stream');
+const { panneauEmbed } = require('./embed-format');
 
 const MONTHS = ['Mars', 'Avril', 'Mai', 'Juin', 'Juillet', 'Août',
   'Septembre', 'Octobre', 'Novembre', 'Décembre', 'Janvier', 'Février'];
@@ -212,7 +213,7 @@ function presenceEvents(joined, players, now = Date.now()) {
 // ---------- Bouton « Liste des mods » ----------
 
 const modsRow = new ActionRowBuilder().addComponents(
-  new ButtonBuilder().setCustomId('fs25_mods').setLabel('Liste des mods').setEmoji('📦').setStyle(ButtonStyle.Secondary),
+  new ButtonBuilder().setCustomId('fs_mods').setLabel('Liste des mods').setEmoji('📦').setStyle(ButtonStyle.Secondary),
 );
 
 let modsCache = { at: 0, lines: [] };
@@ -269,6 +270,20 @@ async function findExistingMessage(channel, botId) {
   return msgs.find((m) => m.author.id === botId && m.embeds[0]?.footer?.text === FOOTER_TAG) || null;
 }
 
+// Message de statut unique. Le HUB l'appelle aussi pour le placer AU-DESSUS de ses panneaux (ordre : statut, infos, HUB).
+let statusMsg = null;
+let statusPending = null;
+async function ensureStatusMessage(channel) {
+  if (statusMsg) return statusMsg;
+  statusPending ||= (async () => {
+    statusMsg = await findExistingMessage(channel, channel.client.user.id).catch(() => null)
+      || await channel.send({ embeds: [panneauEmbed(new EmbedBuilder().setTitle('⏳ Chargement du statut…').setColor(0x999999).setFooter({ text: FOOTER_TAG }).toJSON())], components: [modsRow] });
+    return statusMsg;
+  })().finally(() => { statusPending = null; });
+  return statusPending;
+}
+const isStatusChannel = (channel) => !!process.env.FS25_HOST && process.env.FS25_STATUS_CHANNEL_ID === channel.id;
+
 async function startFs25Bridge(client) {
   const c = cfg();
   const missing = ['channelId', 'host', 'user', 'pass', 'path'].filter((k) => !c[k]);
@@ -283,7 +298,6 @@ async function startFs25Bridge(client) {
     return;
   }
 
-  let message = await findExistingMessage(channel, client.user.id).catch(() => null);
   let running = false;
   const logChannel = process.env.FS25_LOG_CHANNEL_ID ? await client.channels.fetch(process.env.FS25_LOG_CHANNEL_ID).catch(() => null) : null;
   const minMove = parseInt(process.env.FS25_LOG_MIN || '500', 10); // ignore les petits mouvements
@@ -311,13 +325,10 @@ async function startFs25Bridge(client) {
       embed = offlineEmbed(c, err.message);
     }
     try {
-      if (message) {
-        await message.edit({ embeds: [embed], components: [modsRow] });
-      } else {
-        message = await channel.send({ embeds: [embed], components: [modsRow] });
-      }
+      const message = await ensureStatusMessage(channel);
+      await message.edit({ embeds: [panneauEmbed(embed.toJSON())], components: [modsRow] });
     } catch (err) {
-      if (err.code === 10008) message = null; // message supprimé -> recréé au prochain tour
+      if (err.code === 10008) statusMsg = null; // message supprimé -> recréé au prochain tour
       else console.warn(`[FS25] Envoi Discord impossible : ${err.message}`);
     } finally {
       running = false;
@@ -331,6 +342,8 @@ async function startFs25Bridge(client) {
 
 module.exports = {
   startFs25Bridge,
+  ensureStatusMessage,
+  isStatusChannel,
   moneyEvents,
   handleModsButton,
   presenceEvents,

@@ -70,23 +70,27 @@ function autoClean(interaction, delay = 4000) {
 const HUB_MSG_FILE = require('./paths').dataPath('hub-messages.json');
 async function postHub(channel) {
   const saved = (() => { try { return JSON.parse(fs.readFileSync(HUB_MSG_FILE, 'utf-8')); } catch { return {}; } })();
+  // Statut FS25 en direct : message du pont, placé EN PREMIER dans le salon s'il est configuré ici.
+  const bridge = require('./fs25-bridge');
+  const status = bridge.isStatusChannel(channel) ? await bridge.ensureStatusMessage(channel).catch(() => null) : null;
   const nettoyer = async () => {
     try {
       const msgs = await channel.messages.fetch({ limit: 100 });
       for (const [, m] of msgs) {
-        if (m.author.id === channel.client.user.id) await m.delete().catch(() => {});
+        if (m.author.id === channel.client.user.id && m.id !== status?.id) await m.delete().catch(() => {});
       }
     } catch {}
   };
-  // Mise à jour en place si les deux messages existent encore ; sinon on nettoie et on republie les deux (ordre : info, panneau)
+  // Mise à jour en place si les messages existent encore ET dans le bon ordre (statut, infos, HUB) ; sinon on nettoie et on republie
   const [i0, p0] = await Promise.all([saved.info, saved.main].map(id => id && channel.messages.fetch(id).catch(() => null)));
-  if (!(i0 && p0)) await nettoyer();
+  const enPlace = !!(i0 && p0 && (!status || BigInt(status.id) < BigInt(i0.id)));
+  if (!enPlace) await nettoyer();
   const info = require('./hub-info').buildMessage();
   const payload = panneauHub();
-  const i = i0 && p0 ? i0 : await channel.send(info);
-  const p = i0 && p0 ? p0 : await channel.send(payload);
-  if (i0 && p0) { await i.edit(info); await p.edit(payload); }
-  noter(channel, 'HUB des exploitants', i0 && p0 ? 'modifié' : 'republié');
+  const i = enPlace ? i0 : await channel.send(info);
+  const p = enPlace ? p0 : await channel.send(payload);
+  if (enPlace) { await i.edit(info); await p.edit(payload); }
+  noter(channel, 'HUB des exploitants', enPlace ? 'modifié' : 'republié');
   try { fs.writeFileSync(HUB_MSG_FILE, JSON.stringify({ info: i.id, main: p.id })); } catch {}
 }
 
@@ -94,36 +98,7 @@ function panneauHub() {
   return panneau({
     embeds: [{
       title: '🌾  LE COIN DES COPAINS  ·  HUB DES EXPLOITANTS',
-      description: [
-        'Bienvenue sur le **HUB des exploitants du Coin des Copains**. Tout se gère depuis les boutons ci-dessous :',
-        'crée ton exploitation, publie tes contrats, signale tes besoins et consulte l\'annuaire du serveur.',
-        '',
-        '**🌾  Mon exploitation**',
-        '> Crée ton exploitation puis configure **son nom**, ses **3 activités** (principale, secondaire, supplémentaire),',
-        '> **tes ouvriers** (ajout par mention `@`), l\'état de ton **recrutement** et ta **couleur**.',
-        '> Le rôle **Exploitant** est attribué automatiquement dès la création.',
-        '',
-        '**📋  Créer un contrat / sous-traitance**',
-        '> Choisis **🙋 Je propose** (tu offres tes services) ou **🔎 Je recherche** (tu cherches un joueur pour une action),',
-        '> puis renseigne le travail, le champ, la surface et les précisions. Un autre exploitant peut y répondre :',
-        '> un **salon privé de négociation** s\'ouvre alors entre vous pour convenir du prix et des délais.',
-        '',
-        '**📦  Besoin**',
-        '> Signale que tu **recherches une matière première** (type + quantité). Fonctionne comme un contrat :',
-        '> un exploitant peut y répondre et négocier avec toi en privé.',
-        '',
-        '**📖  Annuaire**',
-        '> Affiche la **liste complète des exploitations** du serveur (activités, ouvriers, recrutement).',
-        '> Visible par toi seul : un clic sur **ON** pour l\'afficher, un clic sur **OFF** pour la masquer.',
-        '',
-        '**🛒  Boutique**',
-        '> Échange tes **points de classement** contre de la **monnaie en jeu** (1 point = 5 €).',
-        '> Le staff valide, puis crédite l\'argent dans Farming Simulator.',
-        '',
-        '**🏪  Marché**',
-        '> Mets tes **produits en vente** (nom, quantité, prix, unité) et consulte ceux des autres exploitants,',
-        '> classés par **ordre alphabétique**. Visible par toi seul.',
-      ].join('\n'),
+      description: 'Exploitation, contrats, échanges : tout se fait avec les boutons.',
       color: 0x2ECC71,
       footer: { text: 'MonCopainBot' },
     }],
