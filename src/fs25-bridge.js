@@ -23,7 +23,7 @@
  *   client.once('ready', () => startFs25Bridge(client));
  */
 
-const { EmbedBuilder } = require('discord.js');
+const { EmbedBuilder, ActionRowBuilder, ButtonBuilder, ButtonStyle } = require('discord.js');
 const { Writable } = require('stream');
 
 const MONTHS = ['Mars', 'Avril', 'Mai', 'Juin', 'Juillet', 'Août',
@@ -209,6 +209,57 @@ function presenceEvents(joined, players, now = Date.now()) {
   return out;
 }
 
+// ---------- Bouton « Liste des mods » ----------
+
+const modsRow = new ActionRowBuilder().addComponents(
+  new ButtonBuilder().setCustomId('fs25_mods').setLabel('Liste des mods').setEmoji('📦').setStyle(ButtonStyle.Secondary),
+);
+
+let modsCache = { at: 0, lines: [] };
+
+// Titres et versions lus dans le log de démarrage du serveur ; à défaut, noms des zips de /profile/mods.
+async function fetchMods(c) {
+  if (Date.now() - modsCache.at < 600000) return modsCache.lines;
+  if (c.source !== 'sftp') throw new Error('Liste des mods disponible uniquement en SFTP.');
+  const SftpClient = require('ssh2-sftp-client');
+  const sftp = new SftpClient();
+  try {
+    await sftp.connect({ host: c.host, port: c.port, username: c.user, password: c.pass, readyTimeout: 15000 });
+    const root = c.path.split('/modSettings/')[0]; // /profile
+    const logs = (await sftp.list(root)).filter((f) => /^log_.*\.txt$/.test(f.name)).sort((a, b) => b.modifyTime - a.modifyTime);
+    let lines = [];
+    if (logs[0]) {
+      const log = (await sftp.get(`${root}/${logs[0].name}`)).toString('utf8');
+      lines = [...log.matchAll(/adding mod (.+?);(.+?);.*?;FS25_/g)].map((m) => `${m[1]} ${m[2]}`);
+    }
+    if (!lines.length) lines = (await sftp.list(`${root}/mods`)).filter((f) => /\.zip$/i.test(f.name)).map((f) => f.name.replace(/\.zip$/i, ''));
+    modsCache = { at: Date.now(), lines: [...new Set(lines)].sort((a, b) => a.localeCompare(b, 'fr')) };
+    return modsCache.lines;
+  } finally {
+    await sftp.end().catch(() => {});
+  }
+}
+
+async function handleModsButton(interaction) {
+  await interaction.deferReply({ ephemeral: true });
+  try {
+    const lines = await fetchMods(cfg());
+    const embeds = [];
+    let cur = '';
+    for (const l of lines.map((x) => `• ${x}`)) {
+      if (cur.length + l.length + 1 > 3900) { embeds.push(cur); cur = ''; }
+      cur += (cur ? '\n' : '') + l;
+    }
+    if (cur) embeds.push(cur);
+    await interaction.editReply({
+      embeds: embeds.map((d, i) => new EmbedBuilder().setColor(0x6aa84f).setDescription(d)
+        .setTitle(i === 0 ? `📦 Mods du serveur (${lines.length})` : null)),
+    });
+  } catch (err) {
+    await interaction.editReply(`Liste des mods indisponible : ${err.message}`).catch(() => {});
+  }
+}
+
 // ---------- Boucle principale ----------
 
 let lastStatus = null; // dernier état connu (utilisable par une commande /fs25)
@@ -261,9 +312,9 @@ async function startFs25Bridge(client) {
     }
     try {
       if (message) {
-        await message.edit({ embeds: [embed] });
+        await message.edit({ embeds: [embed], components: [modsRow] });
       } else {
-        message = await channel.send({ embeds: [embed] });
+        message = await channel.send({ embeds: [embed], components: [modsRow] });
       }
     } catch (err) {
       if (err.code === 10008) message = null; // message supprimé -> recréé au prochain tour
@@ -281,6 +332,7 @@ async function startFs25Bridge(client) {
 module.exports = {
   startFs25Bridge,
   moneyEvents,
+  handleModsButton,
   presenceEvents,
   buildEmbed, // exporté pour les tests
   getLastFs25Status: () => lastStatus,
