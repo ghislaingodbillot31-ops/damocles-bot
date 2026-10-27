@@ -98,7 +98,14 @@ function panneauHub() {
   return panneau({
     embeds: [{
       title: '🌾  LE COIN DES COPAINS  ·  HUB DES EXPLOITANTS',
-      description: 'Exploitation, contrats, échanges : tout se fait avec les boutons.',
+      description: [
+        '🌾  **Mon exploitation** · crée et gère ta fiche',
+        '📋  **Créer un contrat** · propose tes services ou cherche un joueur',
+        '📦  **Besoin** · recherche une matière première',
+        '📖  **Annuaire** · liste des exploitations du serveur',
+        '🛒  **Boutique** · points de classement contre argent en jeu',
+        '🏪  **Marché** · vends tes produits, consulte ceux des autres',
+      ].join('\n'),
       color: 0x2ECC71,
       footer: { text: 'MonCopainBot' },
     }],
