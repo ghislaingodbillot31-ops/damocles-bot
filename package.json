@@ -11,12 +11,14 @@
     "setup": "node setup-moncopainbot.js"
   },
   "dependencies": {
+    "basic-ftp": "^6.2.3",
     "discord.js": "^14.15.2",
     "dotenv": "^16.4.5",
     "express": "^5.2.1",
     "express-session": "^1.19.0",
     "multer": "^1.4.5-lts.1",
     "node-cron": "^4.2.1",
-    "node-fetch": "^3.3.2"
+    "node-fetch": "^3.3.2",
+    "ssh2-sftp-client": "^12.1.1"
   }
 }

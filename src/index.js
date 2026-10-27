@@ -22,6 +22,7 @@ const scheduledMessages                                = require('./scheduled-me
 const { startBirthdayTasks }                           = require('./birthday');
 const hub                                              = require('./hub');
 const { startFS25Monitor }                             = require('./fs25-monitor');
+const { startFs25Bridge }                              = require('./fs25-bridge');
 const contrat                                          = require('./commands/contrat');
 const { startDailyTasks }                              = require('./dailytasks');
 const tempvoice                                        = require('./tempvoice');
@@ -75,6 +76,7 @@ client.once(Events.ClientReady, async () => {
   scheduledMessages.startAll(client);
   startBirthdayTasks(client, cron);
   startFS25Monitor(client);
+  startFs25Bridge(client).catch(e => console.error('[FS25] Pont :', e.message));
   startDailyTasks(client, cron);
   require('./restart').startDailyRestart(client, cron);
   tempvoice.startTempVoice(client);
