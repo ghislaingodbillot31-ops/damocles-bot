@@ -22,7 +22,8 @@ const DEFAUT = {
     { key: 'activite',   actif: true, label: '🚜 Activité',   style: 'Secondary', titre: '🚜  Les activités',        message: '', couleur: 0xE67E22, image: '' },
     { key: 'parametre',  actif: true, label: '⚙️ Paramètre',  style: 'Secondary', titre: '⚙️  Paramètres de la partie', message: '', couleur: 0x95A5A6, image: '' },
     { key: 'drive',      actif: true, label: '📁 Google Drive', style: 'Primary', titre: '📁  Google Drive',         message: '', couleur: 0x4285F4, image: '' },
-    { key: 'mods',       actif: true, label: '📦 Liste des mods', style: 'Secondary', titre: '📦  Mods du serveur', message: '', couleur: 0x6AA84F, image: '' }, // contenu dynamique : liste lue sur le serveur
+    { key: 'motdepasse', actif: true, label: '🔑 Mot de passe', style: 'Danger',    titre: '🔑  Mot de passe du serveur', message: '', couleur: 0xE74C3C, image: '' },
+    { key: 'mods',      actif: true, label: '📦 Liste des mods', style: 'Secondary', titre: '📦  Mods du serveur', message: '', couleur: 0x6AA84F, image: '' }, // contenu dynamique : liste lue sur le serveur
   ],
 };
 
