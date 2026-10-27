@@ -117,13 +117,6 @@ function saveXpNow() {
   }
 }
 
-// Écriture différée (2 s) pour éviter d'écrire le fichier à chaque petite modif
-function saveXpSoon() {
-  _xpDirty = true;
-  if (_saveTimer) return;
-  _saveTimer = setTimeout(saveXpNow, 2000);
-}
-
 function rec(userId) {
   if (!_xp[userId]) _xp[userId] = { xp: 0, level: 0, voiceMs: 0, invites: 0, tag: null };
   return _xp[userId];

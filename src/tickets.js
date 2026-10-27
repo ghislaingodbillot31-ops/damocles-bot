@@ -12,14 +12,80 @@ require('dotenv').config();
 
 const config = require('./config');
 
-async function postTicketButton(channel) {
+// Panneau d'ouverture : un embed + le bouton, publié au démarrage et modifié en place (jamais en double).
+function panneauTicket() {
+  return panneau({
+    embeds: [{
+      title: '🎫  SUPPORT  ·  OUVRIR UN TICKET',
+      description: 'Une question ou un problème ? Clique sur le bouton : un salon privé s\'ouvre avec le staff.',
+      color: 0x5865F2,
+      footer: { text: 'MonCopainBot' },
+    }],
+    components: [new ActionRowBuilder().addComponents(
+      new ButtonBuilder().setCustomId('ticket_create').setLabel('🎫 Ouvrir un ticket').setStyle(ButtonStyle.Primary),
+    )],
+  });
+}
+
+async function startTickets(client) {
+  const channel = await client.channels.fetch(process.env.TICKET_CHANNEL_ID || '').catch(() => null);
+  if (!channel) return console.warn('⚠️ Tickets : salon introuvable (TICKET_CHANNEL_ID)');
+  const msgs = await channel.messages.fetch({ limit: 20 }).catch(() => new Map());
+  const existant = [...msgs.values()].find(m => m.author.id === client.user.id && m.components.some(r => r.components.some(c => c.customId === 'ticket_create')));
+  if (existant) await existant.edit(panneauTicket());
+  else await channel.send(panneauTicket());
+  await require('./nettoyage').epurer(client, channel.id, false);
+  console.log('🎫 Tickets · prêt (#' + channel.name + ')');
+}
+
+// Crée le salon privé d'un ticket (joueur + rôle support) et y poste le message d'accueil avec les boutons
+// Prise en charge / Clôturer. Sert aux tickets classiques ET aux demandes d'échange de la boutique.
+//   prefix : début du nom du salon ('ticket' compte dans la limite par joueur, les autres non)
+async function ouvrirSalon(guild, member, { prefix = 'ticket', objet = 'Ticket', welcome } = {}) {
+  const cfg = config.get();
+  const categoryId = process.env.TICKET_CATEGORY_ID || cfg.TICKET_CATEGORY_ID || null;
+  const supportRoleId = roleSupport(guild);
+  const name = prefix + '-' + member.user.username.toLowerCase().replace(/[^a-z0-9]/g, '').slice(0, 20);
+
+  const permissionOverwrites = [
+    { id: guild.id, deny: [PermissionFlagsBits.ViewChannel] },
+    { id: member.id, allow: [PermissionFlagsBits.ViewChannel, PermissionFlagsBits.SendMessages, PermissionFlagsBits.ReadMessageHistory, PermissionFlagsBits.AttachFiles] },
+  ];
+  if (supportRoleId) {
+    permissionOverwrites.push({
+      id: supportRoleId,
+      allow: [PermissionFlagsBits.ViewChannel, PermissionFlagsBits.ReadMessageHistory, PermissionFlagsBits.ManageMessages],
+      deny: [PermissionFlagsBits.SendMessages],
+    });
+  }
+
+  const channel = await guild.channels.create({
+    name,
+    type: ChannelType.GuildText,
+    topic: objet + ' de ' + member.user.tag + ' | ID: ' + member.id,
+    parent: categoryId,
+    permissionOverwrites,
+  });
+  console.log('🎫 Salon créé:', channel.name, '| parent:', channel.parentId || 'aucun');
+
   const row = new ActionRowBuilder().addComponents(
-    new ButtonBuilder()
-      .setCustomId('ticket_create')
-      .setLabel('🎫 Ouvrir un ticket')
-      .setStyle(ButtonStyle.Primary),
+    new ButtonBuilder().setCustomId('ticket_take_' + member.id).setLabel('✋ Prise en charge').setStyle(ButtonStyle.Primary),
+    new ButtonBuilder().setCustomId('ticket_close_' + member.id).setLabel('🔒 Clôturer').setStyle(ButtonStyle.Danger),
   );
-  await channel.send({ components: [row] });
+  await channel.send(panneau({
+    content: supportRoleId ? '<@&' + supportRoleId + '>' : '',
+    embeds: [{
+      title: '🎫 ' + objet + ' · ' + member.user.username,
+      description: '<@' + member.id + '>\n\n' +
+        (welcome || 'Merci pour ton ticket ! Un responsable s\'occupera de toi.') +
+        '\n\n📌 Merci de clore ton ticket une fois ta demande traitée.',
+      color: 0x5865F2,
+      footer: { text: 'MonCopainBot' },
+      timestamp: new Date().toISOString(),
+    }],
+    components: [row],
+  }));
+  return channel;
 }
 
 async function createTicket(interaction) {
@@ -27,12 +93,6 @@ async function createTicket(interaction) {
   const guild       = interaction.guild;
   const cfg         = config.get();
   const maxTickets  = cfg.TICKET_MAX_PER_USER || 1;
-
-  // Lire depuis .env EN PRIORITÉ, puis config.json
-  const categoryId    = process.env.TICKET_CATEGORY_ID || cfg.TICKET_CATEGORY_ID || null;
-  const supportRoleId = roleSupport(guild);
-
-  console.log('🎫 Création ticket — catégorie:', categoryId || 'aucune', '| support:', supportRoleId || 'aucun');
 
   const existingTickets = guild.channels.cache.filter(c =>
     c.topic?.includes(member.id) && c.name.startsWith('ticket-')
@@ -45,59 +105,18 @@ async function createTicket(interaction) {
     return;
   }
 
-  const channelName = 'ticket-' + member.user.username.toLowerCase().replace(/[^a-z0-9]/g, '').slice(0, 20);
-
-  const permissionOverwrites = [
-    { id: guild.id, deny: [PermissionFlagsBits.ViewChannel] },
-    { id: member.id, allow: [PermissionFlagsBits.ViewChannel, PermissionFlagsBits.SendMessages, PermissionFlagsBits.ReadMessageHistory, PermissionFlagsBits.AttachFiles] },
-  ];
-
-  if (supportRoleId) {
-    permissionOverwrites.push({
-      id: supportRoleId,
-      allow: [PermissionFlagsBits.ViewChannel, PermissionFlagsBits.ReadMessageHistory, PermissionFlagsBits.ManageMessages],
-      deny: [PermissionFlagsBits.SendMessages],
-    });
-  }
-
   let ticketChannel;
   try {
-    ticketChannel = await guild.channels.create({
-      name: channelName,
-      type: ChannelType.GuildText,
-      topic: 'Ticket de ' + member.user.tag + ' | ID: ' + member.id,
-      parent: categoryId,
-      permissionOverwrites,
-    });
-    console.log('🎫 Salon créé:', ticketChannel.name, '| parent:', ticketChannel.parentId || 'aucun');
+    ticketChannel = await ouvrirSalon(guild, member, { welcome: cfg.TICKET_WELCOME });
   } catch (err) {
     console.error('❌ Erreur création ticket:', err.message);
     await interaction.reply({ content: '❌ Impossible de créer le ticket : ' + err.message, ephemeral: true });
     return;
   }
 
-  const row = new ActionRowBuilder().addComponents(
-    new ButtonBuilder().setCustomId('ticket_take_' + member.id).setLabel('✋ Prise en charge').setStyle(ButtonStyle.Primary),
-    new ButtonBuilder().setCustomId('ticket_close_' + member.id).setLabel('🔒 Clôturer').setStyle(ButtonStyle.Danger),
-  );
-
-  await ticketChannel.send(panneau({
-    content: supportRoleId ? '<@&' + supportRoleId + '>' : '',
-    embeds: [{
-      title: '🎫 Ticket · ' + member.user.username,
-      description: '<@' + member.id + '>\n\n' +
-        (cfg.TICKET_WELCOME || 'Merci pour ton ticket ! Un responsable s\'occupera de toi.') +
-        '\n\n📌 Merci de clore ton ticket une fois ta demande traitée.',
-      color: 0x5865F2,
-      footer: { text: 'MonCopainBot' },
-      timestamp: new Date().toISOString(),
-    }],
-    components: [row],
-  }));
-
   await interaction.reply({ content: '✅ Ton ticket a été créé : <#' + ticketChannel.id + '>', ephemeral: true });
-  await log(interaction.client, 'ticket_created', { userId: member.id, channelId: ticketChannel.id, channelName });
-  await historique(member.id, 'ticket_created', { channelId: ticketChannel.id, channelName });
+  await log(interaction.client, 'ticket_created', { userId: member.id, channelId: ticketChannel.id, channelName: ticketChannel.name });
+  await historique(member.id, 'ticket_created', { channelId: ticketChannel.id, channelName: ticketChannel.name });
 }
 
 // Rôle support : celui configuré (TICKET_SUPPORT_ROLE_ID) s'il existe encore sur le serveur, sinon le rôle Modérateur
@@ -108,8 +127,20 @@ function roleSupport(guild) {
   return guild.roles.cache.find(r => /mod[eé]rat/i.test(r.name) && !r.managed)?.id || null;
 }
 
+// Membre du rôle support (@ticket) ? Les administrateurs ne sont PAS dispensés : le rôle est exigé.
+function estSupport(member) {
+  const id = roleSupport(member.guild);
+  return !!id && member.roles.cache.has(id);
+}
+
 async function takeTicket(interaction, memberId) {
   const supportRoleId = roleSupport(interaction.guild);
+
+  // Seuls les membres du rôle @ticket peuvent prendre un ticket en charge
+  if (!supportRoleId || !interaction.member.roles.cache.has(supportRoleId)) {
+    await interaction.reply({ content: '❌ Seuls les membres du rôle <@&' + (supportRoleId || '') + '> peuvent prendre un ticket en charge.', flags: 64, allowedMentions: { parse: [] } });
+    return;
+  }
 
   if (supportRoleId) {
     await interaction.channel.permissionOverwrites.edit(supportRoleId, { SendMessages: true }).catch(() => {});
@@ -142,4 +173,4 @@ async function closeTicket(interaction, memberId) {
   setTimeout(async () => { await interaction.channel.delete().catch(() => {}); }, 5000);
 }
 
-module.exports = { postTicketButton, createTicket, takeTicket, closeTicket };
+module.exports = { startTickets, ouvrirSalon, estSupport, createTicket, takeTicket, closeTicket };

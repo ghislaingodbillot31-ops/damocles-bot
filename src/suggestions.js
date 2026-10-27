@@ -284,9 +284,9 @@ async function handleSuggDecisionModal(interaction) {
     }] }));
   } catch { mp = false; /* MP fermés */ }
 
-  // Mod refusé : le motif est aussi affiché dans le salon FS25 status
+  // Mod refusé : le motif est aussi affiché dans le salon des mods
   if (!valide && !JEU) {
-    const fs25 = interaction.client.channels.cache.get(ids('FS25_CHANNEL_ID'));
+    const fs25 = interaction.client.channels.cache.get(ids('MODS_CHANNEL_ID'));
     await fs25?.send({ ...panneau({ embeds: [{
       title: '❌ Mod refusé · ' + s.titre,
       description: 'Proposé par <@' + s.userId + '> · refusé par <@' + s.decidedBy + '>',

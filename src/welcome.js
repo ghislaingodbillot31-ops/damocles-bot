@@ -28,8 +28,6 @@ function saveWelcomeConfig(cfg) {
 }
 
 function getWelcomeConfig()      { return loadWelcomeConfig(); }
-function setWelcomeConfig(cfg)   { saveWelcomeConfig({ ...loadWelcomeConfig(), ...cfg }); return getWelcomeConfig(); }
-
 // ── Message de bienvenue après règlement validé (ping dans le général) ─────────
 async function sendWelcomeAfterReglement(member) {
   const channel = member.guild.channels.cache.get(CHAT_CHANNEL_ID)
@@ -139,4 +137,4 @@ async function sendLeave(member) {
   })).catch(console.error);
 }
 
-module.exports = { embedArrivee, annoncerArrivee, sendWelcomeAfterReglement, sendJoinDM, sendLeave, getWelcomeConfig, setWelcomeConfig };
+module.exports = { embedArrivee, annoncerArrivee, sendWelcomeAfterReglement, sendJoinDM, sendLeave, getWelcomeConfig };

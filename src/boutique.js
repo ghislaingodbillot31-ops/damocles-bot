@@ -1,4 +1,3 @@
-const ids = require('./ids');
 // Boutique EUROAGRI : échange de points de classement (XP) contre de la monnaie
 // en jeu (Farming Simulator). Le bot ne peut pas créditer l'argent en jeu → il
 // crée une demande dans un salon staff. À la validation, les points sont retirés
@@ -6,7 +5,7 @@ const ids = require('./ids');
 const fs   = require('fs');
 const path = require('path');
 const {
-  ChannelType, PermissionFlagsBits, ActionRowBuilder, ButtonBuilder, ButtonStyle,
+  PermissionFlagsBits, ActionRowBuilder, ButtonBuilder, ButtonStyle,
   ModalBuilder, TextInputBuilder, TextInputStyle,
 } = require('discord.js');
 const exp = require('./exploitation');
@@ -15,8 +14,6 @@ const { agrilog } = require('./agrilog');
 const { panneau, SEP } = require('./embed-format');
 
 // ── Config ────────────────────────────────────────────────────────────────────
-const HUB_CHANNEL  = ids('HUB_CHANNEL_ID'); // salon #hub → on en déduit la catégorie
-const CHANNEL_NAME = 'boutique';            // salon staff des demandes d'échange
 const TAUX         = 5;                     // 1 point = 5 € en jeu
 const MIN          = 10;                    // points mini par échange
 const COOLDOWN_MS  = 24 * 60 * 60 * 1000;   // délai entre deux demandes
@@ -113,56 +110,8 @@ function formatDuree(ms) {
   return m + ' min';
 }
 
-function adminRoles(guild) {
-  return guild.roles.cache.filter(r =>
-    r.id !== guild.id && !r.managed && r.permissions.has(PermissionFlagsBits.Administrator));
-}
-
 function estAdmin(interaction) {
   return !!interaction.member?.permissions?.has(PermissionFlagsBits.Administrator);
-}
-
-// ── Salon staff : récupération / création ─────────────────────────────────────
-async function ensureStaffChannel(client) {
-  const guild = (client.guilds.cache.get(process.env.GUILD_ID) || client.guilds.cache.first());
-  if (!guild) return null;
-
-  const state = load();
-
-  if (state.staffChannelId) {
-    const ch = guild.channels.cache.get(state.staffChannelId)
-      || await guild.channels.fetch(state.staffChannelId).catch(() => null);
-    if (ch) return ch;
-  }
-
-  const hubCh = guild.channels.cache.get(HUB_CHANNEL)
-    || await guild.channels.fetch(HUB_CHANNEL).catch(() => null);
-  const parentId = hubCh?.parentId || null;
-
-  let ch = guild.channels.cache.find(c =>
-    c.type === ChannelType.GuildText && c.name === CHANNEL_NAME
-    && (!parentId || c.parentId === parentId));
-
-  if (!ch) {
-    const perms = [PermissionFlagsBits.ViewChannel, PermissionFlagsBits.SendMessages, PermissionFlagsBits.ReadMessageHistory];
-    const overwrites = [{ id: guild.id, deny: [PermissionFlagsBits.ViewChannel] }];
-    for (const [, r] of adminRoles(guild)) overwrites.push({ id: r.id, allow: perms });
-    overwrites.push({ id: client.user.id, allow: perms });
-
-    ch = await guild.channels.create({
-      name: CHANNEL_NAME,
-      type: ChannelType.GuildText,
-      parent: parentId,
-      permissionOverwrites: overwrites,
-      reason: 'Boutique EUROAGRI : demandes d\'échange de points',
-    }).catch(err => { console.error('⚠️ Boutique — création salon :', err.message); return null; });
-  }
-
-  if (ch && ch.id !== state.staffChannelId) {
-    state.staffChannelId = ch.id;
-    save(state);
-  }
-  return ch;
 }
 
 // ── Embeds ────────────────────────────────────────────────────────────────────
@@ -343,23 +292,26 @@ async function handleModal(interaction) {
     return;
   }
 
-  const staffCh = await ensureStaffChannel(interaction.client);
-  if (!staffCh) {
-    await interaction.reply({ content: '⚠️ Salon de validation indisponible. Préviens un administrateur.', flags: 64 });
+  const reqId = genId();
+  let ticket;
+  try {
+    ticket = await require('./tickets').ouvrirSalon(interaction.guild, interaction.member, {
+      prefix: 'echange', objet: 'Échange de points',
+      welcome: 'Ta demande d\'échange est juste en dessous. Le staff la traite dans ce salon.',
+    });
+  } catch (err) {
+    console.error('⚠️ Boutique — création du ticket :', err.message);
+    await interaction.reply({ content: '⚠️ Impossible d\'ouvrir le ticket. Préviens un administrateur.', flags: 64 });
     autoClean(interaction);
     return;
   }
-
-  const reqId = genId();
-  const roles = adminRoles(interaction.guild);
-  const msg = await staffCh.send({
-    content: roles.map(r => '<@&' + r.id + '>').join(' ') || undefined,
+  const msg = await ticket.send({
     ...panneau({ embeds: [demandeEmbed({ reqId, userId: uid, exploitNom: exploit.nom, points: n, euros: n * TAUX }, solde)] }),
     components: [decisionRow(reqId)],
-    allowedMentions: { roles: roles.map(r => r.id) },
   }).catch(err => { console.error('⚠️ Boutique — envoi demande :', err.message); return null; });
 
   if (!msg) {
+    await ticket.delete().catch(() => {});
     await interaction.reply({ content: '⚠️ Impossible d\'envoyer la demande au staff. Réessaie plus tard.', flags: 64 });
     autoClean(interaction);
     return;
@@ -372,7 +324,7 @@ async function handleModal(interaction) {
   await interaction.reply({
     ...panneau({ embeds: [{
       title: '💱 Demande envoyée',
-      description: 'Ta demande d\'échange de **' + n + ' points** (' + (n * TAUX) + ' € en jeu) a été transmise au staff.\nTu recevras un message privé une fois la décision prise.',
+      description: 'Ta demande d\'échange de **' + n + ' points** (' + (n * TAUX) + ' € en jeu) a été transmise au staff dans ton ticket : <#' + ticket.id + '>\nTu recevras un message privé une fois la décision prise.',
       color: 0x2ECC71,
     }] }),
     flags: 64,
@@ -382,8 +334,8 @@ async function handleModal(interaction) {
 
 // ── Boutons staff « ✅ Valider » / « ❌ Refuser » ─────────────────────────────
 async function handleDecision(interaction) {
-  if (!estAdmin(interaction)) {
-    await interaction.reply({ content: '❌ Réservé aux administrateurs.', flags: 64 });
+  if (!estAdmin(interaction) && !require('./tickets').estSupport(interaction.member)) {
+    await interaction.reply({ content: '❌ Réservé au rôle ticket et aux administrateurs.', flags: 64 });
     autoClean(interaction);
     return;
   }
@@ -451,13 +403,8 @@ async function handleDecision(interaction) {
 }
 
 // ── Démarrage ─────────────────────────────────────────────────────────────────
-async function startBoutique(client) {
-  try {
-    const ch = await ensureStaffChannel(client);
-    console.log('🛒 Boutique — prêt' + (ch ? ' (salon #' + ch.name + ')' : ' (salon staff non disponible)'));
-  } catch (err) {
-    console.error('⚠️ Boutique :', err.message);
-  }
+async function startBoutique() {
+  console.log('🛒 Boutique — prêt (les échanges ouvrent un ticket)');
 }
 
 module.exports = {
