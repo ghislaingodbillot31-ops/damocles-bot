@@ -42,7 +42,32 @@ function vue(uid) {
     new StringSelectMenuBuilder().setCustomId('marche_retirer').setPlaceholder('🗑️ Retirer un de mes produits')
       .addOptions(miens.map(p => ({ label: `${p.nom} (${fmt(p.quantite)} ${p.unite})`.slice(0, 100), value: p.id }))),
   ));
+  if (miens.length) rows.splice(1, 0, new ActionRowBuilder().addComponents(
+    new StringSelectMenuBuilder().setCustomId('marche_prix').setPlaceholder('💰 Modifier le prix d\'un de mes produits')
+      .addOptions(miens.map(p => ({ label: `${p.nom} (${fmt(p.prix)} €)`.slice(0, 100), value: p.id }))),
+  ));
   return { ...panneau({ embeds: [embed] }), components: rows };
+}
+
+async function handlePrix(i) {
+  const p = load().find(x => x.id === i.values[0] && x.userId === i.user.id);
+  if (!p) return i.update(vue(i.user.id));
+  await i.showModal(new ModalBuilder().setCustomId(`marche_prixmodal_${p.id}`).setTitle(`Prix : ${p.nom}`.slice(0, 45)).addComponents(
+    new ActionRowBuilder().addComponents(
+      new TextInputBuilder().setCustomId('prix').setLabel('Nouveau prix (€)').setValue(String(p.prix)).setStyle(TextInputStyle.Short).setRequired(true).setMaxLength(15),
+    ),
+  ));
+}
+
+async function handlePrixModal(i) {
+  const prix = nombre(i.fields.getTextInputValue('prix'));
+  if (!(prix >= 0)) return i.reply({ content: '❌ Le prix doit être un nombre (ex : 1200).', flags: 64 });
+  const id = i.customId.slice('marche_prixmodal_'.length), list = load();
+  const p = list.find(x => x.id === id && x.userId === i.user.id);
+  if (!p) return i.reply({ content: '❌ Produit introuvable.', flags: 64 });
+  p.prix = prix;
+  save(list);
+  await i.reply({ ...vue(i.user.id), flags: 64 });
 }
 
 const handleMarche = i => i.reply({ ...vue(i.user.id), flags: 64 });
@@ -81,4 +106,4 @@ async function handleRetirer(i) {
   await i.update(vue(i.user.id));
 }
 
-module.exports = { handleMarche, handleAjouter, handleModal, handleRetirer };
+module.exports = { handleMarche, handleAjouter, handleModal, handleRetirer, handlePrix, handlePrixModal };
