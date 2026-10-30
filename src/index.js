@@ -281,6 +281,7 @@ client.on(Events.InteractionCreate, async interaction => {
       if (cid.startsWith('hub_expl_codel_'))   { await hub.handleHubExplCoDel(interaction);   return; }
       if (cid.startsWith('hub_expl_couleur_')) { await hub.handleHubExplCouleur(interaction); return; }
       if (cid.startsWith('hub_expl_recrute_')) { await hub.handleHubExplRecrute(interaction); return; }
+      if (cid === 'marche_prix')               { await require('./marche').handlePrix(interaction); return; }
       if (cid === 'marche_retirer')            { await require('./marche').handleRetirer(interaction); return; }
       if (cid === 'xpadmin_bareme_select')     { await require('./commands/xp-admin').handleBaremeSelect(interaction); return; }
     } catch (err) { console.error('Erreur select menu :', err.stack || err.message); }
@@ -305,6 +306,7 @@ client.on(Events.InteractionCreate, async interaction => {
       if (/^bug_nomodal_\d+$/.test(cid))        { await require('./bugs').handleBugRefus(interaction); return; }
       if (cid === 'jeux_modal')                 { await require('./jeux').handleModal(interaction); return; }
       if (cid === 'jeux_wishmodal')             { await require('./jeux').handleWishModal(interaction); return; }
+      if (cid.startsWith('marche_prixmodal_')) { await require('./marche').handlePrixModal(interaction); return; }
       if (cid === 'marche_modal')              { await require('./marche').handleModal(interaction); return; }
       if (cid === 'hub_boutique_modal')        { await boutique.handleModal(interaction);         return; }
       if (cid.startsWith('xpadmin_bareme_modal_')) { await require('./commands/xp-admin').handleBaremeModal(interaction); return; }
