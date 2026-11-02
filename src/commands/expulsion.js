@@ -1,8 +1,8 @@
 const { SlashCommandBuilder, PermissionFlagsBits, ActionRowBuilder, ButtonBuilder, ButtonStyle } = require('discord.js');
-const { panneau } = require('../embed-format');
-const activity = require('../activity');
+const { panneau } = require('../core/embed-format');
+const activity = require('../community/activity');
 const { getMemberStatus, getDaysInactive, getLastActivity, EXPEL_DAYS } = activity;
-const db = require('../database');
+const db = require('../core/database');
 require('dotenv').config();
 
 const EXCLUDED_ROLE_IDS = (process.env.EXCLUDED_ROLE_IDS || '').split(',').filter(Boolean);

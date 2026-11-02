@@ -3,7 +3,7 @@
 const fs   = require('fs');
 const path = require('path');
 const { DatabaseSync } = require('node:sqlite');
-const { dataPath } = require('../../paths');
+const { dataPath } = require('../../core/paths');
 
 const FICHIER = dataPath(path.join('multifruit', 'multifruit.db'));
 fs.mkdirSync(path.dirname(FICHIER), { recursive: true });

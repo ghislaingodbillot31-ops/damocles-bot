@@ -7,6 +7,6 @@ module.exports = {
     .addUserOption(o => o.setName('joueur').setDescription('Le joueur à inviter').setRequired(true)),
 
   async execute(interaction) {
-    await require('../temptext').inviter(interaction, interaction.options.getUser('joueur'));
+    await require('../community/temptext').inviter(interaction, interaction.options.getUser('joueur'));
   },
 };

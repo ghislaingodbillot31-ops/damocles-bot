@@ -1,8 +1,8 @@
 const { SlashCommandBuilder, PermissionFlagsBits } = require('discord.js');
-const { panneau } = require('../embed-format');
-const activity = require('../activity');
+const { panneau } = require('../core/embed-format');
+const activity = require('../community/activity');
 const { getMemberStatus, getDaysInactive, INACTIVE_DAYS, EXPEL_DAYS } = activity;
-const db = require('../database');
+const db = require('../core/database');
 require('dotenv').config();
 
 const EXCLUDED_ROLE_IDS = (process.env.EXCLUDED_ROLE_IDS || '').split(',').filter(Boolean);
@@ -128,11 +128,11 @@ module.exports = {
       }
 
       // Mettre à jour le status-bot
-      const { updateStatusMessage } = require('../statusbot');
+      const { updateStatusMessage } = require('../core/statusbot');
       await updateStatusMessage(interaction.client, true);
 
       // Log dans le salon des logs
-      const { log } = require('../logger');
+      const { log } = require('../core/logger');
       await log(interaction.client, 'analyse_done', { inactive: newInactive, reactivated: newActive, toExpel });
 
       await interaction.editReply({

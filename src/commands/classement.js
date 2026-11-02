@@ -1,5 +1,5 @@
 const { SlashCommandBuilder } = require('discord.js');
-const levels = require('../levels');
+const levels = require('../community/levels');
 
 module.exports = {
   data: new SlashCommandBuilder()

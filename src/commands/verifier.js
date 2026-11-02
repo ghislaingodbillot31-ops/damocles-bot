@@ -1,6 +1,6 @@
 const { SlashCommandBuilder, PermissionFlagsBits } = require('discord.js');
-const { verifyMember } = require('../verification');
-const db = require('../database');
+const { verifyMember } = require('../moderation/verification');
+const db = require('../core/database');
 
 module.exports = {
   data: new SlashCommandBuilder()

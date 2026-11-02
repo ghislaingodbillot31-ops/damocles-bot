@@ -1,6 +1,6 @@
 const { SlashCommandBuilder, PermissionFlagsBits } = require('discord.js');
-const { panneau } = require('../embed-format');
-const db = require('../database');
+const { panneau } = require('../core/embed-format');
+const db = require('../core/database');
 
 module.exports = {
   data: new SlashCommandBuilder()
@@ -20,7 +20,7 @@ module.exports = {
   },
 };
 
-// Toutes les écritures passent par src/database.js.
+// Toutes les écritures passent par src/core/database.js.
 // On ne touche JAMAIS members.json directement : un load→save brut autour du
 // `await fetch()` écraserait toute
 // écriture concurrente (ban, règlement, 1er message…) faite pendant le fetch.
