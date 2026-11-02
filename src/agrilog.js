@@ -3,10 +3,8 @@ const ids = require('./ids');
 // Chaque ligne va dans le salon de sa catégorie (cf. ROUTES).
 
 const ROUTES = [
-  [/^(💱|✅ Échange)/,                         'FS25_BANQUE_CHANNEL_ID'], // échanges de points de la boutique
-  [/^🛠️|^(✅|❌) Proposition n°|^❌ Mod refusé/, 'MODS_CHANNEL_ID'],        // propositions de mods
-  [/^💡/,                                      'SUGG_CHANNEL_ID'],        // propositions de jeux
-  [/./,                                        'CONTRAT_CHANNEL_ID'],     // contrats, besoins, exploitations
+  [/^(💱|✅ Échange)/, 'FS25_BANQUE_CHANNEL_ID'], // échanges de points de la boutique
+  [/./,                'JOURNAL_CHANNEL_ID'],    // propositions (mods, jeux), contrats, besoins, exploitations
 ];
 
 // ID du salon de destination d'une ligne de journal
