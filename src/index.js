@@ -1,5 +1,5 @@
 require('dotenv').config();
-const ids = require('./ids');
+const ids = require('./core/ids');
 
 process.on('unhandledRejection', err => {
   console.error('⚠️ Erreur non gérée :', err.message || err);
@@ -9,25 +9,25 @@ process.on('uncaughtException', err => {
 });
 
 const { Client, GatewayIntentBits, Partials, Events } = require('discord.js');
-require('./silencieux').installer();
-const { verifyMember, handleVerifyButton, handleVerifRefButton } = require('./verification');
-const { annoncerArrivee, sendWelcomeAfterReglement, sendJoinDM, sendLeave } = require('./welcome');
-const { createTicket, takeTicket, closeTicket }        = require('./tickets');
-const { checkSpam, checkLinks }                        = require('./antiraid');
-const { checkNewMember }                               = require('./antidoublecompte');
-const db                                               = require('./database');
-const { log }                                          = require('./logger');
-const { createDashboard, setClient }                   = require('./dashboard');
-const scheduledMessages                                = require('./scheduled-messages');
-const { startBirthdayTasks }                           = require('./birthday');
-const hub                                              = require('./hub');
-const { startFs25Bridge }                              = require('./fs25-bridge');
+require('./core/silencieux').installer();
+const { verifyMember, handleVerifyButton, handleVerifRefButton } = require('./moderation/verification');
+const { annoncerArrivee, sendWelcomeAfterReglement, sendJoinDM, sendLeave } = require('./moderation/welcome');
+const { createTicket, takeTicket, closeTicket }        = require('./moderation/tickets');
+const { checkSpam, checkLinks }                        = require('./moderation/antiraid');
+const { checkNewMember }                               = require('./moderation/antidoublecompte');
+const db                                               = require('./core/database');
+const { log }                                          = require('./core/logger');
+const { createDashboard, setClient }                   = require('./web/dashboard');
+const scheduledMessages                                = require('./core/scheduled-messages');
+const { startBirthdayTasks }                           = require('./community/birthday');
+const hub                                              = require('./farm/hub');
+const { startFs25Bridge }                              = require('./farm/fs25-bridge');
 const contrat                                          = require('./commands/contrat');
-const { startDailyTasks }                              = require('./dailytasks');
-const tempvoice                                        = require('./tempvoice');
-const levels                                           = require('./levels');
-const boutique                                         = require('./boutique');
-const { postRolesHeader }                              = require('./roles');
+const { startDailyTasks }                              = require('./community/dailytasks');
+const tempvoice                                        = require('./community/tempvoice');
+const levels                                           = require('./community/levels');
+const boutique                                         = require('./farm/boutique');
+const { postRolesHeader }                              = require('./moderation/roles');
 const cron                                             = require('node-cron');
 const multifruit                                       = require('./multifruit');
 
@@ -62,13 +62,13 @@ client.on = (ev, fn) => _on(ev, (...a) => {
 
 // ── Ready ─────────────────────────────────────────────────────────────────────
 // Réponses visibles par le joueur seul (clics, formulaires) : texte simple, sans cadre ni icône
-require('./simple').installer();
+require('./farm/simple').installer();
 
 client.once(Events.ClientReady, async () => {
   console.log('✅ Bot connecté : ' + client.user.tag);
   console.log('📡 Serveurs : ' + client.guilds.cache.size);
   setClient(client);
-  require('./embed-format').setClient(client);
+  require('./core/embed-format').setClient(client);
   const members = await db.getAllMembers();
   console.log('💾 DB : ' + members.length + ' membres');
 
@@ -76,22 +76,22 @@ client.once(Events.ClientReady, async () => {
   startBirthdayTasks(client, cron);
   startFs25Bridge(client).catch(e => console.error('[FS25] Pont :', e.message));
   startDailyTasks(client, cron);
-  require('./restart').startDailyRestart(client, cron);
+  require('./core/restart').startDailyRestart(client, cron);
   tempvoice.startTempVoice(client);
-  require('./temptext').startTempText(client);
-  require('./suggestions').startSuggestions(client);
-  require('./bugs').startBugs(client);
-  require('./invitations').startInvitations(client);
-  require('./jeux').startJeux(client);
-  require('./evenements').startEvenements(client);
-  require('./tickets').startTickets(client).catch(err => console.error('⚠️ Tickets :', err.message));
-  require('./antispam').startAntiSpam(client);
-  if (process.env.VERIF_MODE === 'code') require('./codeverif').publierPanneau(client).catch(() => {});
-  require('./publiclog').demarrer(client).catch(() => {});
+  require('./community/temptext').startTempText(client);
+  require('./community/suggestions').startSuggestions(client);
+  require('./community/bugs').startBugs(client);
+  require('./moderation/invitations').startInvitations(client);
+  require('./community/jeux').startJeux(client);
+  require('./community/evenements').startEvenements(client);
+  require('./moderation/tickets').startTickets(client).catch(err => console.error('⚠️ Tickets :', err.message));
+  require('./moderation/antispam').startAntiSpam(client);
+  if (process.env.VERIF_MODE === 'code') require('./moderation/codeverif').publierPanneau(client).catch(() => {});
+  require('./moderation/publiclog').demarrer(client).catch(() => {});
   levels.startLevels(client);
   boutique.startBoutique(client);
   // une seule version de chaque panneau : une fois les panneaux republiés, on supprime les anciens
-  setTimeout(() => require('./nettoyage').nettoyerTout(client).catch(() => {}), 60_000);
+  setTimeout(() => require('./core/nettoyage').nettoyerTout(client).catch(() => {}), 60_000);
 
   // En-tête explicatif du salon des rôles
   try {
@@ -112,7 +112,7 @@ client.once(Events.ClientReady, async () => {
   // Ré-attribuer le rôle Exploitant aux exploitants existants
   try {
     const guild = (client.guilds.cache.get(process.env.GUILD_ID) || client.guilds.cache.first());
-    const exploitations = require('./exploitation').getAll();
+    const exploitations = require('./farm/exploitation').getAll();
     for (const exploit of exploitations) {
       const member = await guild.members.fetch(exploit.ownerId).catch(() => null);
       if (member && !member.roles.cache.has(hub.EXPLOITANT_ROLE_ID)) {
@@ -150,7 +150,7 @@ client.on(Events.GuildMemberAdd, async member => {
     await log(client, 'member_join', { userId: member.id });
     // vérification complète de chaque arrivant (âge, pseudo, base de données : connu, expulsé, banni…) dans les logs publics
     await log(client, 'verification_ok', { userId: member.id });
-    await require('./codeverif').issue(member);
+    await require('./moderation/codeverif').issue(member);
     return;
   }
   if (VERIFICATION_ROLE_ID) await member.roles.add(VERIFICATION_ROLE_ID).catch(() => {});
@@ -164,9 +164,9 @@ client.on(Events.GuildMemberAdd, async member => {
 client.on(Events.GuildMemberRemove, async member => {
   if (member.user.bot) return;
   await db.memberLeft(member.user);
-  await require('./codeverif').cleanup(member).catch(() => {}); // salon de code privé éventuel
+  await require('./moderation/codeverif').cleanup(member).catch(() => {}); // salon de code privé éventuel
   // expulsion ? (les départs volontaires ne sont jamais publiés)
-  const kick = await require('./publiclog').auditRecent(member.guild, 'kick', member.id);
+  const kick = await require('./moderation/publiclog').auditRecent(member.guild, 'kick', member.id);
   if (kick) await log(client, 'member_kicked', { userId: member.id, modId: kick.executor?.id, reason: kick.reason, publicOnly: true });
   await sendLeave(member);
   await log(client, 'member_left', { userId: member.id });
@@ -177,7 +177,7 @@ client.on(Events.GuildMemberRemove, async member => {
 client.on(Events.GuildBanAdd, async ban => {
   await db.banMember(ban.user, ban.reason || 'Aucune raison', 'Discord');
   // qui / pourquoi : lu dans le journal d'audit Discord (couvre /banid, le bouton Discord et l'anti-spam)
-  const audit = await require('./publiclog').auditRecent(ban.guild, 'ban', ban.user.id);
+  const audit = await require('./moderation/publiclog').auditRecent(ban.guild, 'ban', ban.user.id);
   const reason = audit?.reason || ban.reason;
   await log(client, 'member_banned', { userId: ban.user.id, modId: audit?.executor?.id || client.user.id, reason, publicOnly: true, noStatus: /^anti-spam/i.test(reason || '') });
 });
@@ -196,10 +196,10 @@ client.on(Events.InviteDelete, inv => { try { levels.cacheInvites(inv.guild); } 
 client.on(Events.MessageCreate, async message => {
   if (message.author.bot) return;
   if (!message.guild) return;
-  if (await require('./antispam').onMessage(message)) return; // salon-piège anti-spam
+  if (await require('./moderation/antispam').onMessage(message)) return; // salon-piège anti-spam
   const member = message.member;
   if (!member) return;
-  if (['code', 'code-compte'].includes(process.env.VERIF_MODE) && await require('./codeverif').onMessage(message)) return;
+  if (['code', 'code-compte'].includes(process.env.VERIF_MODE) && await require('./moderation/codeverif').onMessage(message)) return;
 
   try { levels.onMessage(message); } catch {}
   await checkSpam(client, message);
@@ -282,8 +282,8 @@ client.on(Events.InteractionCreate, async interaction => {
       if (cid.startsWith('hub_expl_codel_'))   { await hub.handleHubExplCoDel(interaction);   return; }
       if (cid.startsWith('hub_expl_couleur_')) { await hub.handleHubExplCouleur(interaction); return; }
       if (cid.startsWith('hub_expl_recrute_')) { await hub.handleHubExplRecrute(interaction); return; }
-      if (cid === 'marche_prix')               { await require('./marche').handlePrix(interaction); return; }
-      if (cid === 'marche_retirer')            { await require('./marche').handleRetirer(interaction); return; }
+      if (cid === 'marche_prix')               { await require('./farm/marche').handlePrix(interaction); return; }
+      if (cid === 'marche_retirer')            { await require('./farm/marche').handleRetirer(interaction); return; }
       if (cid === 'xpadmin_bareme_select')     { await require('./commands/xp-admin').handleBaremeSelect(interaction); return; }
     } catch (err) { console.error('Erreur select menu :', err.stack || err.message); }
     return;
@@ -293,23 +293,23 @@ client.on(Events.InteractionCreate, async interaction => {
   if (interaction.isModalSubmit()) {
     const cid = interaction.customId;
     try {
-      if (cid === 'verif_modal')                { await require('./codeverif').handleModal(interaction); return; }
-      if (cid === 'anniv_modal')                { await require('./birthday').handleModal(interaction); return; }
+      if (cid === 'verif_modal')                { await require('./moderation/codeverif').handleModal(interaction); return; }
+      if (cid === 'anniv_modal')                { await require('./community/birthday').handleModal(interaction); return; }
       if (cid === 'hub_expl_creer_modal')       { await hub.handleHubExplCreerModal(interaction); return; }
       if (cid.startsWith('hub_expl_nom_'))      { await hub.handleHubExplNom(interaction);        return; }
       if (cid.startsWith('contrat_modal_'))     { await contrat.handleContratModal(interaction);  return; }
       if (cid.startsWith('besoin_modal_'))      { await contrat.handleBesoinModal(interaction);   return; }
       if (cid.startsWith('voice_rename_modal_') || cid.startsWith('voice_limit_modal_')) { await tempvoice.handleVoiceModal(interaction); return; }
-      if (cid === 'text_create_modal' || cid.startsWith('text_rename_modal_')) { await require('./temptext').handleTextModal(interaction); return; }
-      if (cid === 'sugg_modal' || cid === 'modprop_modal') { await require('./suggestions')[cid.split('_')[0] === 'sugg' ? 'jeu' : 'mods'].handleSuggModal(interaction); return; }
-      if (/^(sugg|modprop)_(ok|no)modal_\d+$/.test(cid)) { await require('./suggestions')[cid.startsWith('sugg') ? 'jeu' : 'mods'].handleSuggDecisionModal(interaction); return; }
-      if (/^bug_modal(_en)?$/.test(cid))        { await require('./bugs').handleBugModal(interaction); return; }
-      if (/^bug_nomodal_\d+$/.test(cid))        { await require('./bugs').handleBugRefus(interaction); return; }
-      if (cid.startsWith('event_bingo_modal_')) { await require('./evenements').handleBingoModal(interaction); return; }
-      if (cid === 'jeux_modal')                 { await require('./jeux').handleModal(interaction); return; }
-      if (cid === 'jeux_wishmodal')             { await require('./jeux').handleWishModal(interaction); return; }
-      if (cid.startsWith('marche_prixmodal_')) { await require('./marche').handlePrixModal(interaction); return; }
-      if (cid === 'marche_modal')              { await require('./marche').handleModal(interaction); return; }
+      if (cid === 'text_create_modal' || cid.startsWith('text_rename_modal_')) { await require('./community/temptext').handleTextModal(interaction); return; }
+      if (cid === 'sugg_modal' || cid === 'modprop_modal') { await require('./community/suggestions')[cid.split('_')[0] === 'sugg' ? 'jeu' : 'mods'].handleSuggModal(interaction); return; }
+      if (/^(sugg|modprop)_(ok|no)modal_\d+$/.test(cid)) { await require('./community/suggestions')[cid.startsWith('sugg') ? 'jeu' : 'mods'].handleSuggDecisionModal(interaction); return; }
+      if (/^bug_modal(_en)?$/.test(cid))        { await require('./community/bugs').handleBugModal(interaction); return; }
+      if (/^bug_nomodal_\d+$/.test(cid))        { await require('./community/bugs').handleBugRefus(interaction); return; }
+      if (cid.startsWith('event_bingo_modal_')) { await require('./community/evenements').handleBingoModal(interaction); return; }
+      if (cid === 'jeux_modal')                 { await require('./community/jeux').handleModal(interaction); return; }
+      if (cid === 'jeux_wishmodal')             { await require('./community/jeux').handleWishModal(interaction); return; }
+      if (cid.startsWith('marche_prixmodal_')) { await require('./farm/marche').handlePrixModal(interaction); return; }
+      if (cid === 'marche_modal')              { await require('./farm/marche').handleModal(interaction); return; }
       if (cid === 'hub_boutique_modal')        { await boutique.handleModal(interaction);         return; }
       if (cid.startsWith('xpadmin_bareme_modal_')) { await require('./commands/xp-admin').handleBaremeModal(interaction); return; }
     } catch (err) { console.error('Erreur modal :', err.stack || err.message); }
@@ -321,8 +321,8 @@ client.on(Events.InteractionCreate, async interaction => {
 
   // Boutons HUB des exploitants
   try {
-    if (id === 'verif_code' || id === 'verif_saisir') { await require('./codeverif').handleButton(interaction); return; }
-    if (id === 'anniv_btn')                   { await require('./birthday').handleButton(interaction); return; }
+    if (id === 'verif_code' || id === 'verif_saisir') { await require('./moderation/codeverif').handleButton(interaction); return; }
+    if (id === 'anniv_btn')                   { await require('./community/birthday').handleButton(interaction); return; }
     if (id === 'hub_expl')                    { await hub.handleHubExpl(interaction);        return; }
     if (id === 'hub_expl_creer')              { await hub.handleHubExplCreer(interaction);   return; }
     if (id === 'hub_contrat')                 { await contrat.startContratFlow(interaction); return; }
@@ -333,8 +333,8 @@ client.on(Events.InteractionCreate, async interaction => {
     if (id.startsWith('hub_annuaire_delyes_')) { await hub.handleHubAnnuaireDelYes(interaction); return; }
     if (id.startsWith('hub_annuaire_delno_'))  { await hub.handleHubAnnuaireDelNo(interaction);  return; }
     if (id.startsWith('hub_annuaire_del_'))    { await hub.handleHubAnnuaireDel(interaction);    return; }
-    if (id === 'hub_marche')                  { await require('./marche').handleMarche(interaction); return; }
-    if (id === 'marche_ajouter')              { await require('./marche').handleAjouter(interaction); return; }
+    if (id === 'hub_marche')                  { await require('./farm/marche').handleMarche(interaction); return; }
+    if (id === 'marche_ajouter')              { await require('./farm/marche').handleAjouter(interaction); return; }
     if (id === 'hub_boutique')                { await boutique.handleBoutique(interaction);  return; }
     if (id === 'hub_boutique_monnaie')        { await boutique.handleMonnaie(interaction);   return; }
     if (id === 'hub_boutique_echange')        { await boutique.handleEchange(interaction);   return; }
@@ -348,7 +348,7 @@ client.on(Events.InteractionCreate, async interaction => {
 
   // HUB d'information (boutons Règlement / Exploitant / Activité / Paramètre)
   if (id.startsWith('hubinfo_')) {
-    try { await require('./hub-info').handleButton(interaction); }
+    try { await require('./farm/hub-info').handleButton(interaction); }
     catch (err) { console.error('Erreur bouton HUB info :', err.stack || err.message); }
     return;
   }
@@ -364,31 +364,31 @@ client.on(Events.InteractionCreate, async interaction => {
   try {
     if (id === 'voice_create')                { await tempvoice.handleVoiceCreate(interaction);  return; }
     if (/^voice_(rename|limit|lock|delete)_/.test(id)) { await tempvoice.handleVoiceControl(interaction); return; }
-    if (id === 'text_create')                 { await require('./temptext').handleTextCreate(interaction); return; }
-    if (/^text_(rename|lock|delete)_/.test(id)) { await require('./temptext').handleTextControl(interaction); return; }
+    if (id === 'text_create')                 { await require('./community/temptext').handleTextCreate(interaction); return; }
+    if (/^text_(rename|lock|delete)_/.test(id)) { await require('./community/temptext').handleTextControl(interaction); return; }
   } catch (err) { console.error('Erreur bouton vocal :', err.message); }
 
   // Boîte à idées
   try {
-    if (id === 'sugg_new' || id === 'modprop_new') { await require('./suggestions')[id.startsWith('sugg') ? 'jeu' : 'mods'].handleSuggNew(interaction); return; }
-    if (/^(sugg|modprop)_(ok|no)_\d+$/.test(id)) { await require('./suggestions')[id.startsWith('sugg') ? 'jeu' : 'mods'].handleSuggDecision(interaction); return; }
+    if (id === 'sugg_new' || id === 'modprop_new') { await require('./community/suggestions')[id.startsWith('sugg') ? 'jeu' : 'mods'].handleSuggNew(interaction); return; }
+    if (/^(sugg|modprop)_(ok|no)_\d+$/.test(id)) { await require('./community/suggestions')[id.startsWith('sugg') ? 'jeu' : 'mods'].handleSuggDecision(interaction); return; }
   } catch (err) { console.error('Erreur bouton suggestions :', err.stack || err.message); }
 
   // Lien d'invitation (7 jours)
   try {
-    if (id === 'lien_invite') { await require('./invitations').handleInviteButton(interaction); return; }
-    if (id === 'event_clic' || id.startsWith('event_chrono') || id.startsWith('event_bingo')) { await require('./evenements').handleButton(interaction); return; }
-    if (id === 'jeux_new')    { await require('./jeux').handleButton(interaction); return; }
-    if (id === 'jeux_wish')   { await require('./jeux').handleWishButton(interaction); return; }
-    if (id === 'wish_y' || id === 'wish_n') { await require('./jeux').handleWishVote(interaction); return; }
-    if (id === 'hub_roles')   { await require('./invitations').handleRolesButton(interaction); return; }
-    if (id.startsWith('hubrole_')) { await require('./invitations').handleRoleToggle(interaction); return; }
+    if (id === 'lien_invite') { await require('./moderation/invitations').handleInviteButton(interaction); return; }
+    if (id === 'event_clic' || id.startsWith('event_chrono') || id.startsWith('event_bingo')) { await require('./community/evenements').handleButton(interaction); return; }
+    if (id === 'jeux_new')    { await require('./community/jeux').handleButton(interaction); return; }
+    if (id === 'jeux_wish')   { await require('./community/jeux').handleWishButton(interaction); return; }
+    if (id === 'wish_y' || id === 'wish_n') { await require('./community/jeux').handleWishVote(interaction); return; }
+    if (id === 'hub_roles')   { await require('./moderation/invitations').handleRolesButton(interaction); return; }
+    if (id.startsWith('hubrole_')) { await require('./moderation/invitations').handleRoleToggle(interaction); return; }
   } catch (err) { console.error('Erreur bouton invitation :', err.stack || err.message); }
 
   // Signalement de bugs
   try {
-    if (/^bug_new(_en)?$/.test(id))           { await require('./bugs').handleBugNew(interaction); return; }
-    if (/^bug_(ok|fix|no)_\d+$/.test(id))     { await require('./bugs').handleBugDecision(interaction); return; }
+    if (/^bug_new(_en)?$/.test(id))           { await require('./community/bugs').handleBugNew(interaction); return; }
+    if (/^bug_(ok|fix|no)_\d+$/.test(id))     { await require('./community/bugs').handleBugDecision(interaction); return; }
   } catch (err) { console.error('Erreur bouton bugs :', err.stack || err.message); }
 
   // Vérification admin

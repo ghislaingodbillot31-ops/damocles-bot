@@ -1,5 +1,5 @@
 const { ContextMenuCommandBuilder, PermissionFlagsBits, ApplicationCommandType, ActionRowBuilder, ButtonBuilder, ButtonStyle } = require('discord.js');
-const { log } = require('../logger');
+const { log } = require('../core/logger');
 
 // Suppression d'une plage de messages via le menu contextuel (clic droit > Applications) :
 //   1. « Purge : début » sur le premier message

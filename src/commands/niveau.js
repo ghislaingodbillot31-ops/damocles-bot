@@ -1,6 +1,6 @@
 const { SlashCommandBuilder } = require('discord.js');
-const { panneau } = require('../embed-format');
-const levels = require('../levels');
+const { panneau } = require('../core/embed-format');
+const levels = require('../community/levels');
 
 function barre(courant, total, taille = 18) {
   const ratio = total > 0 ? Math.min(1, Math.max(0, courant / total)) : 0;

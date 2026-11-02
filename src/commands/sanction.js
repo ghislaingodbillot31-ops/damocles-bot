@@ -1,6 +1,6 @@
 const { SlashCommandBuilder, PermissionFlagsBits } = require('discord.js');
-const { panneau } = require('../embed-format');
-const db = require('../database');
+const { panneau } = require('../core/embed-format');
+const db = require('../core/database');
 require('dotenv').config();
 
 const MUTE_ROLE_ID = process.env.MUTE_ROLE_ID;
@@ -37,7 +37,7 @@ module.exports = {
     if (warningCount < MAX_WARNINGS) {
       // Log dans le salon des logs
     try {
-      const { log } = require('../logger');
+      const { log } = require('../core/logger');
       await log(interaction.client, 'warning_added', { userId: target.id, modId: interaction.user.id, reason: raison, count: warningCount });
     } catch {}
 

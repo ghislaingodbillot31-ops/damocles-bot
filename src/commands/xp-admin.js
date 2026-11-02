@@ -3,8 +3,8 @@ const {
   ActionRowBuilder, StringSelectMenuBuilder,
   ModalBuilder, TextInputBuilder, TextInputStyle,
 } = require('discord.js');
-const { panneau } = require('../embed-format');
-const levels = require('../levels');
+const { panneau } = require('../core/embed-format');
+const levels = require('../community/levels');
 
 // Clés du barème pilotables via /xp-admin bareme, avec libellé et unité affichés.
 // `enMs: true` : la commande prend/affiche des secondes, stockées en ms en interne.

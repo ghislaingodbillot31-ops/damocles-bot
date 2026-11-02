@@ -1,5 +1,5 @@
 const { SlashCommandBuilder, PermissionFlagsBits } = require('discord.js');
-const { runDaily } = require('../dailytasks');
+const { runDaily } = require('../community/dailytasks');
 
 module.exports = {
   data: new SlashCommandBuilder()

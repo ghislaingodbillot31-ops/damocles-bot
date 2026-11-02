@@ -1,6 +1,6 @@
 // Construction des embeds et composants Discord (aucune logique de jeu ici).
 const { ActionRowBuilder, ButtonBuilder, ButtonStyle, StringSelectMenuBuilder } = require('discord.js');
-const { panneau, SEP } = require('../../embed-format');
+const { panneau, SEP } = require('../../core/embed-format');
 const C = require('../systems/contenu');
 const jeu = require('../systems/jeu');
 

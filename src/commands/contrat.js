@@ -1,15 +1,15 @@
-const ids = require('../ids');
+const ids = require('../core/ids');
 const fs   = require('fs');
 const path = require('path');
 const {
   SlashCommandBuilder, ActionRowBuilder, ButtonBuilder, ButtonStyle,
   ModalBuilder, TextInputBuilder, TextInputStyle, ChannelType, PermissionFlagsBits,
 } = require('discord.js');
-const exp = require('../exploitation');
-const { agrilog } = require('../agrilog');
-const { SEP, wrap } = require('../embed-format');
+const exp = require('../farm/exploitation');
+const { agrilog } = require('../core/agrilog');
+const { SEP, wrap } = require('../core/embed-format');
 
-const { dataPath }    = require('../paths');
+const { dataPath }    = require('../core/paths');
 const CONTRAT_CHANNEL = ids('CONTRAT_CHANNEL_ID');
 const SESSION_PATH    = dataPath('contrat-sessions.json');
 
