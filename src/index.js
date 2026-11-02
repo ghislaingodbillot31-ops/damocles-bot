@@ -83,6 +83,7 @@ client.once(Events.ClientReady, async () => {
   require('./bugs').startBugs(client);
   require('./invitations').startInvitations(client);
   require('./jeux').startJeux(client);
+  require('./evenements').startEvenements(client);
   require('./tickets').startTickets(client).catch(err => console.error('⚠️ Tickets :', err.message));
   require('./antispam').startAntiSpam(client);
   if (process.env.VERIF_MODE === 'code') require('./codeverif').publierPanneau(client).catch(() => {});
@@ -304,6 +305,7 @@ client.on(Events.InteractionCreate, async interaction => {
       if (/^(sugg|modprop)_(ok|no)modal_\d+$/.test(cid)) { await require('./suggestions')[cid.startsWith('sugg') ? 'jeu' : 'mods'].handleSuggDecisionModal(interaction); return; }
       if (/^bug_modal(_en)?$/.test(cid))        { await require('./bugs').handleBugModal(interaction); return; }
       if (/^bug_nomodal_\d+$/.test(cid))        { await require('./bugs').handleBugRefus(interaction); return; }
+      if (cid.startsWith('event_bingo_modal_')) { await require('./evenements').handleBingoModal(interaction); return; }
       if (cid === 'jeux_modal')                 { await require('./jeux').handleModal(interaction); return; }
       if (cid === 'jeux_wishmodal')             { await require('./jeux').handleWishModal(interaction); return; }
       if (cid.startsWith('marche_prixmodal_')) { await require('./marche').handlePrixModal(interaction); return; }
@@ -375,6 +377,7 @@ client.on(Events.InteractionCreate, async interaction => {
   // Lien d'invitation (7 jours)
   try {
     if (id === 'lien_invite') { await require('./invitations').handleInviteButton(interaction); return; }
+    if (id === 'event_clic' || id.startsWith('event_chrono') || id.startsWith('event_bingo')) { await require('./evenements').handleButton(interaction); return; }
     if (id === 'jeux_new')    { await require('./jeux').handleButton(interaction); return; }
     if (id === 'jeux_wish')   { await require('./jeux').handleWishButton(interaction); return; }
     if (id === 'wish_y' || id === 'wish_n') { await require('./jeux').handleWishVote(interaction); return; }

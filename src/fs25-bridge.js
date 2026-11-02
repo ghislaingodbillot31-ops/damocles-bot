@@ -15,6 +15,7 @@
  *   FS25_USER         utilisateur FTP                          (obligatoire)
  *   FS25_PASS         mot de passe FTP                         (obligatoire)
  *   FS25_PATH         chemin de status.xml sur le serveur      (obligatoire)
+ *   FS25_OUVRIERS_CHANNEL_ID salon des annonces d'ouvriers IA   (défaut : salon des connexions)
  *   FS25_REFRESH      secondes entre deux mises à jour         (défaut : 30)
  *   FS25_SERVER_NAME  nom affiché                              (défaut : Serveur FS25)
  *
@@ -117,6 +118,9 @@ function parseStatus(xml) {
       money: parseFloat(f.money || '0'),
       loan: parseFloat(f.loan || '0'),
     })),
+    helpers: allTags(xml, 'helper').map((h) => ({
+      id: h.id, farm: unescapeXml(h.farm) || '?', job: unescapeXml(h.job) || 'Ouvrier IA', vehicle: unescapeXml(h.vehicle),
+    })),
     players: allTags(xml, 'player').map((p) => unescapeXml(p.name)).filter((n) => n && n !== 'Server'),
   };
 }
@@ -125,8 +129,10 @@ function parseStatus(xml) {
 
 const money = (v) => `${Math.round(v).toLocaleString('fr-FR').replace(/ | /g, ' ')} €`;
 
+const isOnline = (mtime, c) => !mtime || (Date.now() - mtime) < (c.refresh * 3 + 60) * 1000;
+
 function buildEmbed(d, mtime, c) {
-  const online = !mtime || (Date.now() - mtime) < (c.refresh * 3 + 60) * 1000;
+  const online = isOnline(mtime, c);
   const month = MONTHS[(d.period - 1 + 12) % 12];
 
   const embed = new EmbedBuilder()
@@ -207,6 +213,18 @@ function presenceEvents(joined, players, now = Date.now()) {
   joined.seeded = true;
   for (const n of players) if (!joined.has(n)) { joined.set(n, now); if (!first) out.push(`🟢 **${n}** s'est connecté au serveur`); }
   for (const [n, t] of [...joined]) if (!players.includes(n)) { joined.delete(n); out.push(`🔴 **${n}** s'est déconnecté  ·  session ${duration(now - t)}`); }
+  return out;
+}
+
+// Annonces démarrage / fin d'un ouvrier IA. `active` (id -> ouvrier) est mis à jour ici ; le 1er relevé ne fait que mémoriser.
+function helperEvents(active, helpers) {
+  const out = [];
+  const first = !active.seeded;
+  active.seeded = true;
+  const desc = (h) => `**${h.farm}**${h.vehicle ? ` avec ${h.vehicle}` : ''}  ·  ${h.job}`;
+  const ids = new Set(helpers.map((h) => h.id));
+  for (const h of helpers) if (!active.has(h.id)) { active.set(h.id, h); if (!first) out.push(`🤖 Ouvrier IA lancé par ${desc(h)}`); }
+  for (const [id, h] of [...active]) if (!ids.has(id)) { active.delete(id); out.push(`🛑 Ouvrier IA terminé : ${desc(h)}`); }
   return out;
 }
 
@@ -300,8 +318,12 @@ async function startFs25Bridge(client) {
   const connChannel = await salon('FS25_CONNEXIONS_CHANNEL_ID');
   const bankChannel = await salon('FS25_BANQUE_CHANNEL_ID');
   const logTo = (ch, lines) => ch && lines.length && ch.send({ content: lines.join('\n'), allowedMentions: { parse: [] } }).catch((e) => console.warn(`[FS25] Journal : ${e.message}`));
+  const helperChannel = (await salon('FS25_OUVRIERS_CHANNEL_ID')) || connChannel; // à défaut : salon des connexions
+  const activeHelpers = new Map();
   const minMove = parseInt(process.env.FS25_LOG_MIN || '500', 10); // ignore les petits mouvements
   let prevFarms = null;
+  let wasUp = null; // null = pas encore observé (le 1er relevé ne génère aucune annonce)
+  const setUp = (up) => { if (wasUp !== null && up !== wasUp) logTo(connChannel, [up ? "🟢 **Serveur démarré**" : "🔴 **Serveur arrêté**"]); wasUp = up; };
   const joined = new Map(); // joueur -> heure de connexion observée (le 1er relevé après un redémarrage du bot ne génère aucune annonce)
 
   const tick = async () => {
@@ -311,14 +333,17 @@ async function startFs25Bridge(client) {
     try {
       const { data, mtime } = c.source === 'sftp' ? await readViaSftp(c) : await readViaFtp(c);
       lastStatus = parseStatus(data);
+      setUp(isOnline(mtime, c));
       const connexions = presenceEvents(joined, lastStatus.players); // aussi au 1er relevé : il mémorise les joueurs déjà présents
       const banque = prevFarms ? moneyEvents(prevFarms, lastStatus.farms, minMove) : [];
       prevFarms = new Map(lastStatus.farms.map((f) => [f.name, f]));
       logTo(connChannel, connexions);
+      logTo(helperChannel, helperEvents(activeHelpers, lastStatus.helpers));
       logTo(bankChannel, banque);
       embed = buildEmbed(lastStatus, mtime, c);
     } catch (err) {
       console.warn(`[FS25] Lecture impossible : ${err.message}`);
+      setUp(false);
       embed = offlineEmbed(c, err.message);
     }
     try {
@@ -344,6 +369,7 @@ module.exports = {
   moneyEvents,
   handleModsButton,
   presenceEvents,
+  helperEvents,
   buildEmbed, // exporté pour les tests
   getLastFs25Status: () => lastStatus,
   parseStatus, // exporté pour les tests
