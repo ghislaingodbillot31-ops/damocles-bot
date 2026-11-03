@@ -249,6 +249,7 @@ client.on(Events.InteractionCreate, async interaction => {
       'analyse':      './commands/analyse',
       'invite':       './commands/invite',
       'succes':       './commands/succes',
+      'succes-maj':   './commands/succes-maj',
     };
     const cmdPath = cmdMap[interaction.commandName];
     if (cmdPath) {
