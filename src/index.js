@@ -395,6 +395,7 @@ client.on(Events.InteractionCreate, async interaction => {
     if (id === 'jeux_new')    { await require('./community/jeux').handleButton(interaction); return; }
     if (id === 'jeux_wish')   { await require('./community/jeux').handleWishButton(interaction); return; }
     if (id === 'wish_y' || id === 'wish_n') { await require('./community/jeux').handleWishVote(interaction); return; }
+    if (id === 'hub_reglement') { await require('./moderation/invitations').handleReglementButton(interaction); return; }
     if (id === 'hub_roles')   { await require('./moderation/invitations').handleRolesButton(interaction); return; }
     if (id.startsWith('hubrole_')) { await require('./moderation/invitations').handleRoleToggle(interaction); return; }
   } catch (err) { console.error('Erreur bouton invitation :', err.stack || err.message); }

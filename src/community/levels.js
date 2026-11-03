@@ -169,7 +169,7 @@ async function flush() {
 
   // Toujours une mise à jour SUR PLACE : le classement reste en position 2,
   // les annonces 🎉 de montée de niveau s'empilent en dessous.
-  if (bougé) await editLeaderboard();
+  if (bougé) { await editLeaderboard(); require('../moderation/invitations').refreshHub(_client).catch(() => {}); }
 }
 
 async function announceLevelUp(userId, level) {

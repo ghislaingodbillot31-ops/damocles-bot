@@ -13,10 +13,7 @@ const REGLES = [
   ['7 · Discord ToS', 'Les conditions d\'utilisation de Discord s\'appliquent.', 'Discord\'s Terms of Service apply.'],
 ];
 
-function payload(nomServeur) {
-  return {
-    content: '',
-    ...panneau({ embeds: [{
+const reglementEmbed = () => panneau({ embeds: [{
       title: 'RÈGLEMENT · RULES',
       description: [
         ...REGLES.flatMap(([titre, fr, en]) => ['## ' + titre, '🇫🇷 ' + fr, '🇬🇧 ' + en]),
@@ -27,7 +24,12 @@ function payload(nomServeur) {
       ].join('\n'),
       color: 0x00E5FF,
       footer: { text: 'MonCopainBot' },
-    }] }),
+    }] });
+
+function payload(nomServeur) {
+  return {
+    content: '',
+    ...reglementEmbed(),
     components: [new ActionRowBuilder().addComponents(
       new ButtonBuilder().setCustomId('accept_reglement').setLabel('✅ J\'accepte le règlement · I accept the rules').setStyle(ButtonStyle.Success))],
   };
@@ -44,4 +46,4 @@ async function publier(client) {
   console.log('📜 Règlement publié (#' + channel.name + ')');
 }
 
-module.exports = { publier };
+module.exports = { publier, reglementEmbed };
