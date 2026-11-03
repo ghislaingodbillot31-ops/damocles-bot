@@ -27,6 +27,7 @@
 const { EmbedBuilder, ActionRowBuilder, ButtonBuilder, ButtonStyle } = require('discord.js');
 const { Writable } = require('stream');
 const { panneauEmbed } = require('../core/embed-format');
+const { processAchievements } = require('./fs25-succes');
 
 const MONTHS = ['Mars', 'Avril', 'Mai', 'Juin', 'Juillet', 'Août',
   'Septembre', 'Octobre', 'Novembre', 'Décembre', 'Janvier', 'Février'];
@@ -114,10 +115,14 @@ function parseStatus(xml) {
     year: parseInt(time.year || '1', 10),
     temperature: weather.temperature !== undefined ? parseFloat(weather.temperature) : null,
     farms: allTags(xml, 'farm').filter((f) => f.name).map((f) => ({
+      id: parseInt(f.id || '0', 10),
       name: unescapeXml(f.name) || '?',
       money: parseFloat(f.money || '0'),
       loan: parseFloat(f.loan || '0'),
     })),
+    // succès : stats de ferme (<stat farm name value>) et compteurs ventes/production (<c kind farm fillType value>)
+    stats: allTags(xml, 'stat').map((s) => ({ farm: parseInt(s.farm || '0', 10), name: unescapeXml(s.name), value: parseFloat(s.value || '0') })),
+    counters: allTags(xml, 'c').map((c) => ({ kind: c.kind, farm: parseInt(c.farm || '0', 10), fillType: unescapeXml(c.fillType), value: parseFloat(c.value || '0') })),
     helpers: allTags(xml, 'helper').map((h) => ({
       id: h.id, farm: unescapeXml(h.farm) || '?', job: unescapeXml(h.job) || 'Ouvrier IA', vehicle: unescapeXml(h.vehicle),
     })),
@@ -318,6 +323,7 @@ async function startFs25Bridge(client) {
   const connChannel = await salon('FS25_CONNEXIONS_CHANNEL_ID');
   const bankChannel = await salon('FS25_BANQUE_CHANNEL_ID');
   const logTo = (ch, lines) => ch && lines.length && ch.send({ content: lines.join('\n'), allowedMentions: { parse: [] } }).catch((e) => console.warn(`[FS25] Journal : ${e.message}`));
+  const succesChannel = (await salon('FS25_SUCCES_CHANNEL_ID')) || channel; // à défaut : salon du statut
   const helperChannel = (await salon('FS25_OUVRIERS_CHANNEL_ID')) || connChannel; // à défaut : salon des connexions
   const activeHelpers = new Map();
   const minMove = parseInt(process.env.FS25_LOG_MIN || '500', 10); // ignore les petits mouvements
@@ -340,6 +346,7 @@ async function startFs25Bridge(client) {
       logTo(connChannel, connexions);
       logTo(helperChannel, helperEvents(activeHelpers, lastStatus.helpers));
       logTo(bankChannel, banque);
+      await processAchievements(lastStatus, succesChannel).catch((e) => console.warn(`[FS25] Succès : ${e.message}`));
       embed = buildEmbed(lastStatus, mtime, c);
     } catch (err) {
       console.warn(`[FS25] Lecture impossible : ${err.message}`);

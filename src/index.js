@@ -226,6 +226,11 @@ client.on(Events.MessageCreate, async message => {
 client.on(Events.InteractionCreate, async interaction => {
   if (await multifruit.handle(interaction)) return; // jeu Multifruit (customId « mf: »)
 
+  if (interaction.isAutocomplete()) {
+    if (interaction.commandName === 'succes') await require('./commands/succes').autocomplete(interaction).catch(() => {});
+    return;
+  }
+
   if (interaction.isChatInputCommand()) {
     const cmdMap = {
       'anniversaire': './commands/anniversaire',
@@ -243,6 +248,7 @@ client.on(Events.InteractionCreate, async interaction => {
       'bouton':       './commands/bouton',
       'analyse':      './commands/analyse',
       'invite':       './commands/invite',
+      'succes':       './commands/succes',
     };
     const cmdPath = cmdMap[interaction.commandName];
     if (cmdPath) {
