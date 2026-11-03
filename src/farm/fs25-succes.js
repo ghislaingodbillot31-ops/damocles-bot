@@ -230,4 +230,13 @@ const succesCommand = {
   },
 };
 
-module.exports = { unlockEmbed, processAchievements, succesCommand, computeUnlocks, progressEmbed, _reset: () => { baselineDone = false; reached.clear(); } };
+// Recalcule tout depuis les stats actuelles et poste le bilan de chaque ferme (rattrapage manuel, admin).
+async function recapAll(channel) {
+  if (!lastStatus) return 0;
+  computeUnlocks(lastStatus); // met à jour la mémoire des paliers sans annoncer
+  const embeds = lastStatus.farms.map((f) => progressEmbed(f, lastStatus));
+  for (let i = 0; i < embeds.length; i += 10) await channel.send({ embeds: embeds.slice(i, i + 10) });
+  return embeds.length;
+}
+
+module.exports = { recapAll, unlockEmbed, processAchievements, succesCommand, computeUnlocks, progressEmbed, _reset: () => { baselineDone = false; reached.clear(); } };
