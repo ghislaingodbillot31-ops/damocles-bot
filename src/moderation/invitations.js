@@ -28,7 +28,7 @@ const createur = code => store.links[code]?.userId || null;
 // HUB COMMUNAUTAIRE : bouton Invitation (lien personnel de 7 jours) + bouton Rôles (prendre / retirer un rôle d'un clic).
 // Les boutons de rôle sont ceux de la commande /bouton (roles.js) : /bouton role:@Rôle nom:Mon nom emoji:🎮 couleur:Vert.
 function panelPayload() {
-  return panneau({
+  const p = panneau({
     embeds: [{
       title: '🏘️  HUB COMMUNAUTAIRE · COMMUNITY HUB',
       description: [
@@ -46,8 +46,11 @@ function panelPayload() {
     components: [new ActionRowBuilder().addComponents(
       new ButtonBuilder().setCustomId('lien_invite').setLabel('🔗 Invitation').setStyle(ButtonStyle.Primary),
       new ButtonBuilder().setCustomId('hub_roles').setLabel('🎭 Rôles').setStyle(ButtonStyle.Success),
+      new ButtonBuilder().setCustomId('hub_reglement').setLabel('📜 Règlement').setStyle(ButtonStyle.Secondary),
     )],
   });
+  p.embeds.push(require('../community/levels').classementEmbed()); // déjà formaté (largeur fixe)
+  return p;
 }
 
 // Rôles proposés, vus par le joueur : boutons verts = rôles possédés, rouges = rôles non possédés
@@ -80,6 +83,17 @@ function payloadRoles(member, boutons, desactive = false) {
     footer: { text: 'MonCopainBot · 🟢 vert = possédé · 🔴 rouge = non possédé' },
   } : { title: '🎭 RÔLES · ROLES', description: 'Aucun rôle n\'est proposé pour le moment. · No roles available yet.', color: 0x5865F2, footer: { text: 'MonCopainBot' } };
   return { ...panneau({ embeds: [embed] }), components: rows, natif: true }; // natif : exempté de la mise à plat en texte (simple.js)
+}
+
+async function handleReglementButton(interaction) {
+  await interaction.reply({ ...require('./reglement').reglementEmbed(), flags: 64 });
+}
+
+// Met à jour le HUB sur place (appelé quand le classement bouge)
+async function refreshHub(client) {
+  const channel = await salon(client);
+  const m = channel && store.panelMsgId && await channel.messages.fetch(store.panelMsgId).catch(() => null);
+  if (m) await m.edit(panelPayload()).catch(() => {});
 }
 
 async function handleRolesButton(interaction) {
@@ -155,4 +169,4 @@ async function handleInviteButton(interaction) {
     : { ...lien, content: 'Tes MP sont fermés, voici ton lien. / Your DMs are closed, here is your link.\n' + lien.content });
 }
 
-module.exports = { payloadRoles, startInvitations, handleInviteButton, handleRolesButton, handleRoleToggle, createur };
+module.exports = { handleReglementButton, refreshHub, payloadRoles, startInvitations, handleInviteButton, handleRolesButton, handleRoleToggle, createur };
