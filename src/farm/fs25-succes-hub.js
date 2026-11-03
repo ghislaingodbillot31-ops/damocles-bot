@@ -88,14 +88,14 @@ async function handleSelect(interaction) {
     await interaction.user.send({ embeds: [embed] });
     await interaction.editReply(`📩 Statistiques de **${farm.name}** envoyées en message privé.`);
   } catch {
-    await interaction.editReply({ content: '⚠️ MP fermés : voici tes statistiques ici (visibles par toi seul).', embeds: [embed] });
+    await interaction.editReply({ content: '⚠️ MP fermés : voici tes statistiques ici (visibles par toi seul).', embeds: [embed], natif: true });
   }
 }
 
 // Bouton : liste complète des succès (src/farm/liste-succes.md), visible par le joueur seul.
 async function handleButton(interaction) {
   const txt = fs.readFileSync(require('path').join(__dirname, 'liste-succes.md'), 'utf-8').replace(/^# .*\r?\n+/, '');
-  await interaction.reply({ embeds: [panneauEmbed({ title: '📋 Liste des succès FS25', color: 0xF1C40F, description: txt, footer: { text: 'MonCopainBot' } })], flags: 64 });
+  await interaction.reply({ embeds: [panneauEmbed({ title: '📋 Liste des succès FS25', color: 0xF1C40F, description: txt, footer: { text: 'MonCopainBot' } })], flags: 64, natif: true }); // natif : sinon simple.js aplatit l'embed en texte de 2000 car. max
 }
 
 module.exports = { handleButton, update, handleSelect, buildMessage };
