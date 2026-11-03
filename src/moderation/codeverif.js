@@ -101,7 +101,7 @@ async function onMessageFlow(message) {
     await db.upsertMember(member.user, { verifiedAt: new Date().toISOString(), verificationResult: 'ok', codeValidatedAt: new Date().toISOString() });
     delete store[userId]; save();
     await message.channel.send(panneau({ content: '<@' + userId + '>', embeds: [{
-      description: '✅ **Compte activé !** Lis et accepte le **règlement** (<#' + process.env.REGLEMENT_CHANNEL_ID + '>) pour accéder au serveur.\nCe salon va se fermer.',
+      description: '✅ **Compte activé !** Lis le **règlement** avec le bouton 📜 du HUB communautaire.\nCe salon va se fermer.',
       color: 0x2ECC71,
     }] })).catch(() => {});
     await log(message.client, 'verification_ok', { userId });

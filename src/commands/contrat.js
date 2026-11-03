@@ -7,7 +7,7 @@ const {
 } = require('discord.js');
 const exp = require('../farm/exploitation');
 const { agrilog } = require('../core/agrilog');
-const { SEP, wrap } = require('../core/embed-format');
+const { SEP, wrap, panneau } = require('../core/embed-format');
 
 const { dataPath }    = require('../core/paths');
 const CONTRAT_CHANNEL = ids('CONTRAT_CHANNEL_ID');
@@ -268,7 +268,7 @@ async function handleContratAccepter(interaction) {
   let negoChannel;
   try {
     negoChannel = await interaction.guild.channels.create({
-      name: (isBesoin(data) ? 'besoin-' : 'contrat-') + slug,
+      name: (isBesoin(data) ? '📦・besoin-' : '📋・contrat-') + slug,
       type: ChannelType.GuildText,
       parent: parentId,
       permissionOverwrites: overwrites,
@@ -292,7 +292,7 @@ async function handleContratAccepter(interaction) {
   // l'accès au salon + le DM restent la source de vérité).
   const pings = invites.map(id => '<@' + id + '>').join(' ').slice(0, 1900);
 
-  await negoChannel.send({
+  await negoChannel.send(panneau({
     content: pings,
     embeds: [{
       title: '🤝 ' + LABEL(data) + ' ACCEPTÉ · négociation',
@@ -311,7 +311,7 @@ async function handleContratAccepter(interaction) {
       timestamp: new Date().toISOString(),
     }],
     components: [dealRow(mId, false)],
-  });
+  }));
 
   // DM best-effort à chaque membre — un DM fermé ne bloque pas les autres.
   const dmEmbed = {

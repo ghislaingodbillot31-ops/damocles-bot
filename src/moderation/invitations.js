@@ -12,10 +12,10 @@ const STORE_PATH  = dataPath('invitations.json');
 const DUREE_S     = 7 * 24 * 3600;
 
 // { panelMsgId, links: { code: { userId, expiresAt } } }
-let store = { panelMsgId: null, links: {} };
+let store = { panelMsgId: null, rankMsgId: null, links: {} };
 
 function load() {
-  try { store = { panelMsgId: null, links: {}, ...JSON.parse(fs.readFileSync(STORE_PATH, 'utf-8')) }; } catch {}
+  try { store = { panelMsgId: null, rankMsgId: null, links: {}, ...JSON.parse(fs.readFileSync(STORE_PATH, 'utf-8')) }; } catch {}
 }
 function save() {
   try { fs.writeFileSync(STORE_PATH, JSON.stringify(store, null, 2), 'utf-8'); } catch {}
@@ -49,9 +49,11 @@ function panelPayload() {
       new ButtonBuilder().setCustomId('hub_reglement').setLabel('📜 Règlement').setStyle(ButtonStyle.Secondary),
     )],
   });
-  p.embeds.push(require('../community/levels').classementEmbed()); // déjà formaté (largeur fixe)
   return p;
 }
+
+// Le classement est un 2ᵉ message, sous le HUB : les boutons restent collés au HUB (Discord les place sous tous les embeds d'un message).
+const classementPayload = () => ({ embeds: [require('../community/levels').classementEmbed()] });
 
 // Rôles proposés, vus par le joueur : boutons verts = rôles possédés, rouges = rôles non possédés
 function listeRoles(member, boutons = require('./roles').listRoleButtons().filter(b => member.guild.roles.cache.has(b.roleId)), desactive = false) {
@@ -86,14 +88,14 @@ function payloadRoles(member, boutons, desactive = false) {
 }
 
 async function handleReglementButton(interaction) {
-  await interaction.reply({ ...require('./reglement').reglementEmbed(), flags: 64 });
+  await interaction.reply({ ...require('./reglement').reglementEmbed(), natif: true, flags: 64 });
 }
 
 // Met à jour le HUB sur place (appelé quand le classement bouge)
 async function refreshHub(client) {
   const channel = await salon(client);
-  const m = channel && store.panelMsgId && await channel.messages.fetch(store.panelMsgId).catch(() => null);
-  if (m) await m.edit(panelPayload()).catch(() => {});
+  const m = channel && store.rankMsgId && await channel.messages.fetch(store.rankMsgId).catch(() => null);
+  if (m) await m.edit(classementPayload()).catch(() => {});
 }
 
 async function handleRolesButton(interaction) {
@@ -126,7 +128,14 @@ async function startInvitations(client) {
     const channel = await salon(client);
     if (!channel) { console.error('⚠️ Invitations : salon HUB introuvable (INVITE_HUB_CHANNEL_ID)'); return; }
     const msg = await publier(channel, store.panelMsgId, panelPayload(), null, 'Hub communautaire').catch(err => { console.error('⚠️ Invitations :', err.message); return null; });
+    // HUB republié = nouveau message en bas : l'ancien classement (au-dessus) est retiré pour rester SOUS le HUB
+    if (msg && msg.id !== store.panelMsgId && store.rankMsgId) {
+      await channel.messages.delete(store.rankMsgId).catch(() => {});
+      store.rankMsgId = null;
+    }
     store.panelMsgId = msg?.id || null;
+    const rang = await publier(channel, store.rankMsgId, classementPayload(), null, 'Classement du HUB').catch(() => null);
+    store.rankMsgId = rang?.id || null;
     save();
     await require('../core/nettoyage').epurer(client, channel.id);
     console.log('🔗 Invitations · prêt (HUB : #' + channel.name + ')');

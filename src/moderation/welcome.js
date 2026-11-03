@@ -7,7 +7,6 @@ const { dataPath }       = require('../core/paths');
 const { panneau }        = require('../core/embed-format');
 const CONFIG_PATH        = dataPath('welcome-config.json');
 const LOG_CHANNEL_ID     = process.env.LOG_CHANNEL_ID;
-const REGLEMENT_CHANNEL_ID = process.env.REGLEMENT_CHANNEL_ID;
 const CHAT_CHANNEL_ID      = process.env.CHAT_CHANNEL_ID || ids('CHAT_CHANNEL_ID');
 
 // ── Config personnalisable ────────────────────────────────────────────────────
@@ -28,32 +27,6 @@ function saveWelcomeConfig(cfg) {
 }
 
 function getWelcomeConfig()      { return loadWelcomeConfig(); }
-// ── Message de bienvenue après règlement validé (ping dans le général) ─────────
-async function sendWelcomeAfterReglement(member) {
-  const channel = member.guild.channels.cache.get(CHAT_CHANNEL_ID)
-    || await member.guild.channels.fetch(CHAT_CHANNEL_ID).catch(() => null);
-  if (!channel) {
-    console.error('⚠️ sendWelcomeAfterReglement : salon général introuvable (CHAT_CHANNEL_ID=' + CHAT_CHANNEL_ID + ')');
-    return;
-  }
-
-  const cfg = loadWelcomeConfig();
-  if (!cfg.enabled) return;
-
-  const text = (cfg.message || '')
-    .replace(/{pseudo}/g,       member.user.username)
-    .replace(/{mention}/g,      '<@' + member.id + '>')
-    .replace(/{serveur}/g,      member.guild.name)
-    .replace(/{membres}/g,      member.guild.memberCount);
-
-  // message simple : du texte, sans cadre ni icône (le joueur est mentionné)
-  const simple = require('../farm/simple').simplifier(text);
-  await channel.send({
-    content: simple.includes('<@' + member.id + '>') ? simple : '<@' + member.id + '> ' + simple,
-    allowedMentions: { users: [member.id] },
-  }).catch(console.error);
-}
-
 // ── Annonce d'arrivée dans « bienvenue » (+ qui a invité le joueur) ───────────
 // Embed natif, largeur fixe commune (panneau) : titre, message bilingue, puis 3 blocs d'infos et la marche à suivre.
 function embedArrivee({ nom, serveur, num, creeLe, inviterId, avatar, date }) {
@@ -62,9 +35,8 @@ function embedArrivee({ nom, serveur, num, creeLe, inviterId, avatar, date }) {
     { name: '📅 Compte créé · Created', value: '<t:' + creeLe + ':D>', inline: true },
     { name: '🤝 Invité par · Invited by', value: inviterId ? '<@' + inviterId + '>' : '—', inline: true },
   ];
-  if (REGLEMENT_CHANNEL_ID || CHAT_CHANNEL_ID) fields.push({ name: '🚀 Pour commencer · Getting started', value: [
-    REGLEMENT_CHANNEL_ID ? '1️⃣ Accepte le règlement · Accept the rules → <#' + REGLEMENT_CHANNEL_ID + '>' : '',
-    CHAT_CHANNEL_ID ? '2️⃣ Présente-toi · Introduce yourself → <#' + CHAT_CHANNEL_ID + '>' : '',
+  if (CHAT_CHANNEL_ID) fields.push({ name: '🚀 Pour commencer · Getting started', value: [
+    CHAT_CHANNEL_ID ? '1️⃣ Présente-toi · Introduce yourself → <#' + CHAT_CHANNEL_ID + '>' : '',
   ].filter(Boolean).join('\n') });
   return panneau({ embeds: [{
     title: '👋 Bienvenue ' + nom + ' !',
@@ -89,9 +61,8 @@ async function annoncerArrivee(member, inviterId) {
   }).catch(err => console.error('⚠️ annoncerArrivee :', err.message));
 }
 
-// ── MP envoyé à l'arrivée : marche à suivre (règlement + présentation) ──────────
+// ── MP envoyé à l'arrivée : marche à suivre (présentation) ──────────
 async function sendJoinDM(member) {
-  const reglementMention = REGLEMENT_CHANNEL_ID ? '<#' + REGLEMENT_CHANNEL_ID + '>' : 'le salon **#règlement**';
   const chatMention      = CHAT_CHANNEL_ID ? '<#' + CHAT_CHANNEL_ID + '>' : 'le salon **#bavardage**';
 
   try {
@@ -101,10 +72,10 @@ async function sendJoinDM(member) {
         description: [
           'Salut ' + member.user.username + ' !',
           '',
-          'Avant de pouvoir profiter du serveur, deux petites étapes :',
+          'Pour commencer :',
           '',
-          '**1.** ✅ Accepte le règlement dans ' + reglementMention,
-          '**2.** 💬 Présente-toi dans ' + chatMention,
+          '**1.** 💬 Présente-toi dans ' + chatMention,
+          '**2.** 📜 Lis le règlement avec le bouton du HUB communautaire',
           '',
           'À très vite sur le serveur 🌾',
         ].join('\n'),
@@ -137,4 +108,4 @@ async function sendLeave(member) {
   })).catch(console.error);
 }
 
-module.exports = { embedArrivee, annoncerArrivee, sendWelcomeAfterReglement, sendJoinDM, sendLeave, getWelcomeConfig };
+module.exports = { embedArrivee, annoncerArrivee, sendJoinDM, sendLeave, getWelcomeConfig };
