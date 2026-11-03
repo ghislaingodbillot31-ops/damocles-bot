@@ -1,30 +1,16 @@
 /**
- * HUB des succès (salon des succès) : classement des exploitations, succès des dernières 24 h,
+ * HUB des succès (salon des succès) : classement des exploitations
  * et un menu pour recevoir ses statistiques détaillées en MP.
  * Mis à jour à chaque vérification des succès (toutes les 15 min).
  */
 const fs = require('fs');
 const { ActionRowBuilder, StringSelectMenuBuilder, ButtonBuilder, ButtonStyle } = require('discord.js');
-const { dataPath } = require('../core/paths');
 const { panneauEmbed } = require('../core/embed-format');
 const SERIES = require('./fs25-succes-config');
 
-const STORE = dataPath('succes-jour.json');
 const FOOTER = 'MonCopainBot · Hub succès';
-const DAY = 24 * 3600 * 1000;
 const MEDALS = ['🥇', '🥈', '🥉'];
 const succes = () => require('./fs25-succes'); // import tardif : évite la dépendance circulaire
-
-const load = () => { try { return JSON.parse(fs.readFileSync(STORE, 'utf-8')); } catch { return []; } };
-
-// Mémorise les nouveaux succès (24 h glissantes).
-function logUnlocks(unlocks) {
-  const now = Date.now();
-  const list = load().filter((e) => now - e.t < DAY);
-  for (const u of unlocks) list.push({ t: now, farm: u.farm.name, series: `${u.series.emoji} ${u.series.name}`, niveau: u.tierIndex + 1, max: u.series.tiers.length });
-  fs.writeFileSync(STORE, JSON.stringify(list));
-  return list;
-}
 
 // Nombre de niveaux débloqués par ferme, tri décroissant.
 function ranking(status) {
@@ -38,16 +24,6 @@ function ranking(status) {
 function buildMessage(status) {
   const rank = ranking(status);
   const lines = rank.map((r, i) => `${MEDALS[i] || '`' + String(i + 1).padStart(2) + '`'} **${r.farm.name}** · ${r.done} / ${r.total} niveaux`);
-  const day = load().filter((e) => Date.now() - e.t < DAY).reverse();
-  const shown = [];
-  let len = 0;
-  for (const e of day) {
-    const l = `• **${e.farm}** — ${e.series} niv. ${e.niveau}/${e.max}`;
-    if (len + l.length > 900) break;
-    shown.push(l); len += l.length + 1;
-  }
-  if (day.length > shown.length) shown.push(`… et ${day.length - shown.length} autres`);
-
   const embed = panneauEmbed({
     title: '🏆 HUB DES SUCCÈS',
     color: 0xF1C40F,
@@ -69,7 +45,6 @@ function buildMessage(status) {
 // Crée ou met à jour l'unique message du HUB dans le salon.
 async function update(status, channel, unlocks = []) {
   if (!channel) return;
-  if (unlocks.length) logUnlocks(unlocks);
   const msg = buildMessage(status);
   const msgs = await channel.messages.fetch({ limit: 50 });
   const existing = msgs.find((m) => m.author.id === channel.client.user.id && m.embeds[0]?.footer?.text === FOOTER);
