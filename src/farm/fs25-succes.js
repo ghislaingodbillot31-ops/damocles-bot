@@ -24,17 +24,42 @@ let statsLogged = false;
 
 // ---------- Valeurs ----------
 
+/**
+ * Valeur actuelle d'une série pour une ferme, ou null si la donnée n'existe pas dans le jeu.
+ * Sources possibles (voir fs25AchievementsConfig.js) :
+ *   stat: 'nom' | ['nom1', 'nom2']   statistique(s) de ferme (additionnées)
+ *   statPrefix: 'breed'              toutes les stats qui commencent par ce préfixe
+ *   produced: ['MILK', ...]          production animale / ruches
+ *   moneyIn: ['SOLD_ANIMALS'] | '*'  € gagnés par type
+ *   moneyOut: ['PURCHASE_FUEL'] | '*' € dépensés par type
+ *   scale: 1/60                      facteur appliqué (ex. minutes -> heures)
+ */
 function seriesValue(series, farmId, status) {
   const src = series.source;
-  if (src.stat) {
-    const s = status.stats.find((x) => x.farm === farmId && x.name === src.stat);
-    return s ? s.value : null; // null = stat inconnue du jeu
+  const scale = series.scale ?? 1;
+  const farmStats = status.stats.filter((x) => x.farm === farmId);
+
+  if (src.stat || src.statPrefix) {
+    const names = src.stat ? [].concat(src.stat) : null;
+    const matching = farmStats.filter((x) => (names ? names.includes(x.name) : x.name.startsWith(src.statPrefix)));
+    if (!matching.length) {
+      // Possessions : absentes = 0 ; autres stats : absentes = inconnues du jeu
+      const isOwned = names && names.every((n) => n.startsWith('_owned'));
+      return isOwned ? 0 : null;
+    }
+    return matching.reduce((sum, x) => sum + x.value, 0) * scale;
   }
-  const kind = src.sold ? 'sold' : 'produced';
-  const types = src.sold || src.produced;
+
+  let kind;
+  let keys;
+  if (src.produced) { kind = 'produced'; keys = src.produced; }
+  else if (src.moneyIn) { kind = 'money_in'; keys = src.moneyIn; }
+  else if (src.moneyOut) { kind = 'money_out'; keys = src.moneyOut; }
+  else return null;
+
   return status.counters
-    .filter((c) => c.kind === kind && c.farm === farmId && (types === '*' || types.includes(c.fillType)))
-    .reduce((sum, c) => sum + c.value, 0);
+    .filter((c) => c.kind === kind && c.farm === farmId && (keys === '*' || keys.includes(c.fillType)))
+    .reduce((sum, c) => sum + c.value, 0) * scale;
 }
 
 const tiersReached = (series, value) => series.tiers.filter((t) => value >= t).length;
@@ -106,7 +131,7 @@ async function processAchievements(status, channel) {
   if (!statsLogged && status.stats.length) {
     const names = [...new Set(status.stats.map((s) => s.name))].sort();
     console.log(`[FS25] Stats disponibles dans le jeu : ${names.join(', ')}`);
-    const missing = SERIES.filter((s) => s.source.stat && !names.includes(s.source.stat)).map((s) => s.source.stat);
+    const missing = SERIES.flatMap((s) => (s.source.stat ? [].concat(s.source.stat) : [])).filter((n) => !n.startsWith('_owned') && !names.includes(n));
     if (missing.length) console.log(`[FS25] Stats configurées mais absentes du jeu (ignorées) : ${missing.join(', ')}`);
     statsLogged = true;
   }
