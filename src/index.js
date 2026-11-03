@@ -11,7 +11,7 @@ process.on('uncaughtException', err => {
 const { Client, GatewayIntentBits, Partials, Events } = require('discord.js');
 require('./core/silencieux').installer();
 const { verifyMember, handleVerifyButton, handleVerifRefButton } = require('./moderation/verification');
-const { annoncerArrivee, sendWelcomeAfterReglement, sendJoinDM, sendLeave } = require('./moderation/welcome');
+const { annoncerArrivee, sendJoinDM, sendLeave } = require('./moderation/welcome');
 const { createTicket, takeTicket, closeTicket }        = require('./moderation/tickets');
 const { checkSpam, checkLinks }                        = require('./moderation/antiraid');
 const { checkNewMember }                               = require('./moderation/antidoublecompte');
@@ -32,7 +32,6 @@ const cron                                             = require('node-cron');
 const multifruit                                       = require('./multifruit');
 
 const VERIFICATION_ROLE_ID = process.env.VERIFICATION_ROLE_ID;
-const ATTENTE_ROLE_ID      = process.env.ATTENTE_ROLE_ID;
 const REGLEMENT_ROLE_ID    = process.env.REGLEMENT_ROLE_ID;
 const ACTIVE_ROLE_ID       = process.env.ACTIVE_ROLE_ID;
 const GENERAL_CHANNEL_ID   = ids('CHAT_CHANNEL_ID');
@@ -260,9 +259,6 @@ client.on(Events.InteractionCreate, async interaction => {
   }
 
   if (interaction.isContextMenuCommand()) {
-    if (interaction.commandName === 'Ajouter bouton règlement') {
-      await require('./commands/ajouter-bouton-reglement').execute(interaction);
-    }
     try {
       if (interaction.commandName === 'Purge : début') await require('./commands/purge').executeStart(interaction);
       if (interaction.commandName === 'Purge : fin')   await require('./commands/purge').executeEnd(interaction);
@@ -413,35 +409,6 @@ client.on(Events.InteractionCreate, async interaction => {
   }
   if (id.startsWith('verify_')) {
     await handleVerifyButton(interaction);
-    return;
-  }
-
-  // Règlement accepté
-  if (id === 'accept_reglement') {
-    const member = interaction.member;
-    await interaction.reply({
-      embeds: [{
-        description: '✅ **Règlement accepté !**\nRends-toi dans le salon général pour la suite.',
-        color: 0x2ECC71,
-        footer: { text: 'MonCopainBot' },
-      }],
-      flags: 64,
-    }).catch(err => console.error('⚠️ accept_reglement reply :', err.message));
-
-    if (ATTENTE_ROLE_ID)      await member.roles.remove(ATTENTE_ROLE_ID).catch(() => {});
-    if (VERIFICATION_ROLE_ID) await member.roles.remove(VERIFICATION_ROLE_ID).catch(() => {});
-    if (REGLEMENT_ROLE_ID)    await member.roles.add(REGLEMENT_ROLE_ID).catch(() => {});
-    // code-compte : le règlement accepté ouvre tout de suite tous les salons (compte activé)
-    if (process.env.VERIF_MODE === 'code-compte' && ACTIVE_ROLE_ID) await member.roles.add(ACTIVE_ROLE_ID).catch(() => {});
-
-    try { await db.reglementAccepted(member.id); }
-    catch (err) { console.error('⚠️ db.reglementAccepted :', err.message); }
-
-    await log(client, 'reglement_accepted', { userId: member.id }).catch(err => console.error('⚠️ log reglement_accepted :', err.message));
-
-    // Toujours tenté, même si une étape précédente a échoué.
-    await sendWelcomeAfterReglement(member).catch(err => console.error('⚠️ sendWelcomeAfterReglement :', err.message));
-    console.log('📜 Règlement accepté : ' + member.user.tag);
     return;
   }
 
