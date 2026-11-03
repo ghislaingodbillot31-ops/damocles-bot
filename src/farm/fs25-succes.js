@@ -10,7 +10,6 @@
  */
 
 const { EmbedBuilder, SlashCommandBuilder } = require('discord.js');
-const { panneauEmbed } = require('../core/embed-format');
 const SERIES = require('./fs25-succes-config');
 
 // Médaille selon l'avancement dans la série (début -> fin)
@@ -104,23 +103,22 @@ function computeUnlocks(status) {
   return unlocks;
 }
 
-// Un embed « panneau » par succès : exploitation, série, niveau, prochain palier.
-function unlockEmbed({ farm, series, tierIndex, value }) {
+// Une ligne par succès (même format que les logs) : ferme, série, niveau, prochain palier.
+function unlockLine({ farm, series, tierIndex, value }, done = false) {
   const n = series.tiers.length;
   const next = series.tiers[tierIndex + 1];
-  return panneauEmbed({
-    title: '🏆 Succès débloqué',
-    color: 0xF1C40F,
-    description: [
-      '`▶` 🌾 **Exploitation** · ' + farm.name,
-      '`▶` ' + series.emoji + ' **Succès** · ' + series.name,
-      '`▶` ' + tierEmoji(tierIndex, n) + ' **Niveau** · ' + (tierIndex + 1) + '/' + n + ' (' + fmt(series.tiers[tierIndex]) + ' ' + series.unit + ')',
-      '`▶` 📊 **Total actuel** · ' + fmt(value) + ' ' + series.unit,
-      '`▶` 🎯 **Prochain palier** · ' + (next ? fmt(next) + ' ' + series.unit : 'série terminée ✅'),
-    ].join('\n'),
-    footer: { text: 'MonCopainBot · Succès' },
-    timestamp: new Date().toISOString(),
-  });
+  const medal = tierEmoji(tierIndex, n);
+  return `${done ? medal : '🏆'} **${farm.name}** ${done ? '·' : 'a débloqué'} ${series.emoji} **${series.name}**  ·  niv. ${tierIndex + 1}/${n}${done ? '' : ' ' + medal} (${fmt(value)} ${series.unit})  ·  ${next ? 'prochain : ' + fmt(next) + ' ' + series.unit : 'série terminée ✅'}`;
+}
+
+// Envoie des lignes en messages de 2000 caractères max.
+async function sendLines(channel, lines) {
+  let buf = '';
+  for (const l of lines) {
+    if (buf && buf.length + l.length + 1 > 2000) { await channel.send({ content: buf, allowedMentions: { parse: [] } }); buf = ''; }
+    buf += (buf ? '\n' : '') + l;
+  }
+  if (buf) await channel.send({ content: buf, allowedMentions: { parse: [] } });
 }
 
 /**
@@ -143,9 +141,7 @@ async function processAchievements(status, channel) {
 
   const unlocks = computeUnlocks(status);
   if (unlocks.length && channel) {
-    for (let i = 0; i < unlocks.length; i += 5) { // 6000 caractères max par message
-      await channel.send({ embeds: unlocks.slice(i, i + 5).map(unlockEmbed) }).catch((e) => console.warn(`[FS25] Annonce succès impossible : ${e.message}`));
-    }
+    await sendLines(channel, unlocks.map((u) => unlockLine(u))).catch((e) => console.warn(`[FS25] Annonce succès impossible : ${e.message}`));
   }
   await require('./fs25-succes-hub').update(status, channel, unlocks).catch((e) => console.warn(`[FS25] Hub succès : ${e.message}`));
 }
@@ -236,13 +232,20 @@ const succesCommand = {
   },
 };
 
-// Recalcule tout depuis les stats actuelles et poste le bilan de chaque ferme (rattrapage manuel, admin).
+// Recalcule tout depuis les stats actuelles et poste les succès déjà réalisés, une ligne chacun (rattrapage manuel, admin).
 async function recapAll(channel) {
   if (!lastStatus) return 0;
   computeUnlocks(lastStatus); // met à jour la mémoire des paliers sans annoncer
-  const embeds = lastStatus.farms.map((f) => progressEmbed(f, lastStatus));
-  for (const e of embeds) await channel.send({ embeds: [e] }); // 6000 caractères max par message
-  return embeds.length;
+  const lines = [];
+  for (const farm of lastStatus.farms) {
+    for (const series of SERIES) {
+      const value = seriesValue(series, farm.id, lastStatus);
+      const count = value === null ? 0 : tiersReached(series, value);
+      if (count) lines.push(unlockLine({ farm, series, tierIndex: count - 1, value }, true));
+    }
+  }
+  await sendLines(channel, lines);
+  return lastStatus.farms.length;
 }
 
-module.exports = { getStatus: () => lastStatus, seriesValue, tiersReached, recapAll, unlockEmbed, processAchievements, succesCommand, computeUnlocks, progressEmbed, _reset: () => { lastCheck = 0; baselineDone = false; reached.clear(); } };
+module.exports = { getStatus: () => lastStatus, seriesValue, tiersReached, recapAll, unlockLine, processAchievements, succesCommand, computeUnlocks, progressEmbed, _reset: () => { lastCheck = 0; baselineDone = false; reached.clear(); } };
