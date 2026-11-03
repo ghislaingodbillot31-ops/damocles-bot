@@ -20,6 +20,7 @@ const commands = [
   require('./commands/purge').dataStart.toJSON(),
   require('./commands/purge').dataEnd.toJSON(),
   require('./commands/invite').data.toJSON(),
+  require('./commands/succes').data.toJSON(),
   ...require('./multifruit').commands,
 ];
 
