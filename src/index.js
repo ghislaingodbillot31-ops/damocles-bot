@@ -289,6 +289,7 @@ client.on(Events.InteractionCreate, async interaction => {
       if (cid.startsWith('hub_expl_codel_'))   { await hub.handleHubExplCoDel(interaction);   return; }
       if (cid.startsWith('hub_expl_couleur_')) { await hub.handleHubExplCouleur(interaction); return; }
       if (cid.startsWith('hub_expl_recrute_')) { await hub.handleHubExplRecrute(interaction); return; }
+      if (cid === 'succhub_farm')              { await require('./farm/fs25-succes-hub').handleSelect(interaction); return; }
       if (cid === 'marche_prix')               { await require('./farm/marche').handlePrix(interaction); return; }
       if (cid === 'marche_retirer')            { await require('./farm/marche').handleRetirer(interaction); return; }
       if (cid === 'xpadmin_bareme_select')     { await require('./commands/xp-admin').handleBaremeSelect(interaction); return; }

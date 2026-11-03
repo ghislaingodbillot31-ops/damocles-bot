@@ -143,10 +143,11 @@ async function processAchievements(status, channel) {
 
   const unlocks = computeUnlocks(status);
   if (unlocks.length && channel) {
-    for (let i = 0; i < unlocks.length; i += 10) { // 10 embeds max par message
-      await channel.send({ embeds: unlocks.slice(i, i + 10).map(unlockEmbed) }).catch((e) => console.warn(`[FS25] Annonce succès impossible : ${e.message}`));
+    for (let i = 0; i < unlocks.length; i += 5) { // 6000 caractères max par message
+      await channel.send({ embeds: unlocks.slice(i, i + 5).map(unlockEmbed) }).catch((e) => console.warn(`[FS25] Annonce succès impossible : ${e.message}`));
     }
   }
+  await require('./fs25-succes-hub').update(status, channel, unlocks).catch((e) => console.warn(`[FS25] Hub succès : ${e.message}`));
 }
 
 // ---------- Commande /succes ----------
@@ -244,4 +245,4 @@ async function recapAll(channel) {
   return embeds.length;
 }
 
-module.exports = { recapAll, unlockEmbed, processAchievements, succesCommand, computeUnlocks, progressEmbed, _reset: () => { lastCheck = 0; baselineDone = false; reached.clear(); } };
+module.exports = { getStatus: () => lastStatus, seriesValue, tiersReached, recapAll, unlockEmbed, processAchievements, succesCommand, computeUnlocks, progressEmbed, _reset: () => { lastCheck = 0; baselineDone = false; reached.clear(); } };
