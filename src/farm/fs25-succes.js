@@ -126,8 +126,13 @@ function unlockEmbed({ farm, series, tierIndex, value }) {
 /**
  * Appelé par fs25Bridge à chaque lecture réussie.
  */
+const CHECK_EVERY_MS = 15 * 60 * 1000; // vérification des succès toutes les 15 min
+let lastCheck = 0;
+
 async function processAchievements(status, channel) {
-  lastStatus = status;
+  lastStatus = status; // /succes lit toujours les dernières données
+  if (Date.now() - lastCheck < CHECK_EVERY_MS) return;
+  lastCheck = Date.now();
   if (!statsLogged && status.stats.length) {
     const names = [...new Set(status.stats.map((s) => s.name))].sort();
     console.log(`[FS25] Stats disponibles dans le jeu : ${names.join(', ')}`);
@@ -239,4 +244,4 @@ async function recapAll(channel) {
   return embeds.length;
 }
 
-module.exports = { recapAll, unlockEmbed, processAchievements, succesCommand, computeUnlocks, progressEmbed, _reset: () => { baselineDone = false; reached.clear(); } };
+module.exports = { recapAll, unlockEmbed, processAchievements, succesCommand, computeUnlocks, progressEmbed, _reset: () => { lastCheck = 0; baselineDone = false; reached.clear(); } };
