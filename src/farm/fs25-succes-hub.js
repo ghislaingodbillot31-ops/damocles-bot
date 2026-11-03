@@ -4,7 +4,7 @@
  * Mis à jour à chaque vérification des succès (toutes les 15 min).
  */
 const fs = require('fs');
-const { ActionRowBuilder, StringSelectMenuBuilder } = require('discord.js');
+const { ActionRowBuilder, StringSelectMenuBuilder, ButtonBuilder, ButtonStyle } = require('discord.js');
 const { dataPath } = require('../core/paths');
 const { panneauEmbed } = require('../core/embed-format');
 const SERIES = require('./fs25-succes-config');
@@ -60,7 +60,10 @@ function buildMessage(status) {
     .setCustomId('succhub_farm')
     .setPlaceholder('🌾 Choisis ton exploitation pour recevoir tes statistiques en MP')
     .addOptions(rank.slice(0, 25).map((r) => ({ label: r.farm.name.slice(0, 100), value: String(r.farm.id), description: `${r.done} / ${r.total} niveaux` })));
-  return { embeds: [embed], components: rank.length ? [new ActionRowBuilder().addComponents(menu)] : [] };
+  return { embeds: [embed], components: [
+    ...(rank.length ? [new ActionRowBuilder().addComponents(menu)] : []),
+    new ActionRowBuilder().addComponents(new ButtonBuilder().setCustomId('succhub_liste').setLabel('📋 Liste complète des succès').setStyle(ButtonStyle.Secondary)),
+  ] };
 }
 
 // Crée ou met à jour l'unique message du HUB dans le salon.
@@ -89,4 +92,10 @@ async function handleSelect(interaction) {
   }
 }
 
-module.exports = { update, handleSelect, buildMessage };
+// Bouton : liste complète des succès (src/farm/liste-succes.md), visible par le joueur seul.
+async function handleButton(interaction) {
+  const txt = fs.readFileSync(require('path').join(__dirname, 'liste-succes.md'), 'utf-8').replace(/^# .*\r?\n+/, '');
+  await interaction.reply({ embeds: [panneauEmbed({ title: '📋 Liste des succès FS25', color: 0xF1C40F, description: txt, footer: { text: 'MonCopainBot' } })], flags: 64 });
+}
+
+module.exports = { handleButton, update, handleSelect, buildMessage };

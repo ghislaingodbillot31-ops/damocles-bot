@@ -354,6 +354,12 @@ client.on(Events.InteractionCreate, async interaction => {
     if (id.startsWith('contrat_supprimer_'))    { await contrat.handleContratSupprimer(interaction);   return; }
   } catch (err) { console.error('Erreur bouton farming :', err.message); }
 
+  if (id === 'succhub_liste') {
+    try { await require('./farm/fs25-succes-hub').handleButton(interaction); }
+    catch (err) { console.error('Erreur bouton liste succès :', err.message); }
+    return;
+  }
+
   // HUB d'information (boutons Règlement / Exploitant / Activité / Paramètre)
   if (id.startsWith('hubinfo_')) {
     try { await require('./farm/hub-info').handleButton(interaction); }
