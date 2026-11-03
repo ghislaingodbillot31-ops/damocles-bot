@@ -28,7 +28,6 @@ function buildMessage(status) {
     title: '🏆 HUB DES SUCCÈS',
     color: 0xF1C40F,
     description: '**Classement des exploitations**\n' + (lines.join('\n') || '_Aucune exploitation._'),
-    fields: [{ name: '📅 Succès des dernières 24 h', value: shown.join('\n') || '_Aucun succès débloqué pour le moment._' }],
     footer: { text: FOOTER },
     timestamp: new Date().toISOString(),
   });
