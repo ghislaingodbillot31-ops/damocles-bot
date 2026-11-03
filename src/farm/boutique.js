@@ -319,7 +319,7 @@ async function handleModal(interaction) {
 
   createRequest({ reqId, userId: uid, exploitId: exploit.id, exploitNom: exploit.nom, points: n, staffMsgId: msg.id });
 
-  await agrilog(interaction.guild, '💱 <@' + uid + '> demande l\'échange de ' + n + ' points (' + (n * TAUX) + ' €)');
+  await agrilog(interaction.guild, '💱 <@' + uid + '> a demandé un échange de ' + n + ' points (' + (n * TAUX) + ' €)');
 
   await interaction.reply({
     ...panneau({ embeds: [{
@@ -376,7 +376,7 @@ async function handleDecision(interaction) {
         description: 'Ta demande d\'échange de ' + req.points + ' points (' + req.euros + ' € en jeu) a été validée par le staff.\nLes points ont été retirés de ton compte. Un administrateur va créditer l\'argent en jeu.',
         color: 0x2ECC71,
       };
-      logLine = '✅ Échange validé : <@' + req.userId + '> · ' + req.points + ' points → ' + req.euros + ' € · par <@' + staffId + '>';
+      logLine = '✅ Échange **accepté** : <@' + req.userId + '> · ' + req.points + ' points → ' + req.euros + ' € · par <@' + staffId + '>';
     }
   } else {
     resolveRequest(reqId, { status: 'refuse', decidedBy: staffId });

@@ -3,8 +3,10 @@ const ids = require('./ids');
 // Chaque ligne va dans le salon de sa catégorie (cf. ROUTES).
 
 const ROUTES = [
-  [/^(💱|✅ Échange)/, 'FS25_BANQUE_CHANNEL_ID'], // échanges de points de la boutique
-  // Journal général supprimé (contrats, besoins, propositions, exploitations) : toute autre ligne est ignorée
+  // (échanges boutique : demande + décision, dans le salon d'activité)
+  // demandes d'échange de points, contrats/besoins (prise, accord, refus, fin, retrait, nouveau besoin)
+  [/^(💱|(✅|❌|⚠️) Échange|📋|📦|🤝 Accord|❌ (Besoin|Contrat)|🏁|🗑️ \*\*|🆕 \*\*.*\*\* recherche : )/, 'FS25_ACTIVITE_CHANNEL_ID'],
+  // Le reste (propositions, exploitations) est ignoré
 ];
 
 // ID du salon de destination d'une ligne de journal
