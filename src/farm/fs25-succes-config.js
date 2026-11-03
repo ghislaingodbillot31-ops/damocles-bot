@@ -1,90 +1,103 @@
 /**
  * Liste des succès FS25 — à modifier librement.
  *
- * Chaque série a 50 niveaux (tiers). Un niveau atteint = un succès débloqué.
+ * Chaque série a jusqu'à 50 niveaux. Un niveau atteint = un succès débloqué.
+ * Toutes les sources ci-dessous ont été vérifiées dans le code de FS25
+ * (FS25 Community LUADOC), sauf mention "à vérifier".
  *
  * source :
- *   { stat: 'plowedHectares' }              -> statistique de la ferme (menu Statistiques du jeu)
- *   { sold: ['MILK', 'GOATMILK'] }          -> quantité vendue de ces produits
- *   { sold: '*' }                           -> quantité vendue, tous produits confondus
- *   { produced: ['WOOL'] }                  -> quantité produite par les animaux
- *
- * Les noms de stats inconnus du jeu sont simplement ignorés (la série n'apparaît pas).
- * Au démarrage, le bot affiche dans ses logs la liste des stats disponibles.
+ *   { stat: 'plowedHectares' }          statistique de ferme mise à jour par le jeu
+ *   { stat: ['a', 'b'] }                plusieurs stats additionnées
+ *   { statPrefix: 'breed' }             toutes les stats commençant par ce préfixe
+ *   { produced: ['MILK'] }              production des animaux / ruches (compteur du mod)
+ *   { moneyIn: ['SOLD_ANIMALS'] }       € gagnés par type de mouvement ('*' = tous)
+ *   { moneyOut: ['PURCHASE_FUEL'] }     € dépensés par type ('*' = tous)
+ *   { stat: '_ownedVehicles' }          possessions actuelles (compteur du mod)
+ * scale : facteur appliqué à la valeur (ex. 1/60 pour passer des minutes aux heures)
  */
 
 // =================== NIVEAUX ===================
-// Toutes les séries ont NB_NIVEAUX niveaux, du plus petit jusqu'au maximum indiqué.
 const NB_NIVEAUX = 50;
+const COURBE = 2;
 
 /**
- * Niveaux en courbe douce : niveau i = max x (i / nb)^COURBE, arrondi.
- * Les écarts grandissent progressivement mais restent raisonnables en haut
- * (contrairement au x2 où le dernier écart vaut la moitié du maximum).
+ * Niveau i = max x (i / nb)^COURBE, arrondi (écarts qui grandissent doucement).
+ * Pour les petits maximums (< 500), progression linéaire : max / nb par niveau.
  */
-const COURBE = 2;
-function niveaux(max, nb) {
+function niveaux(max, nb = NB_NIVEAUX) {
   const out = [];
   for (let i = 1; i <= nb; i += 1) {
-    const v = max * (i / nb) ** COURBE;
-    // arrondi fin pour garder des écarts réguliers
-    const step = v < 50 ? 1 : v < 200 ? 5 : v < 1000 ? 10 : 10 ** (Math.floor(Math.log10(v)) - 2) * 5; // ~3 chiffres
-    let r = Math.max(1, Math.round(v / step) * step);
-    if (out.length && r <= out[out.length - 1]) r = out[out.length - 1] + 1;
-    out.push(r);
+    const lineaire = max < 500;
+    const v = lineaire ? (max * i) / nb : max * (i / nb) ** COURBE;
+    const step = lineaire ? 1 : v < 50 ? 1 : v < 200 ? 5 : v < 1000 ? 10 : 10 ** (Math.floor(Math.log10(v)) - 2) * 5;
+    const r = Math.max(1, Math.round(v / step) * step);
+    if (!out.length || r > out[out.length - 1]) out.push(r);
   }
   out[out.length - 1] = max;
   return out;
 }
 
-// ---- Maximum (niveau 50) de chaque série : à ajuster librement ----
-const HA_FIELD      = niveaux(10000, NB_NIVEAUX);      // travaux des champs (ha)
-const HA_TOTAL      = niveaux(50000, NB_NIVEAUX);      // total des hectares travaillés
-const BALES         = niveaux(10000, NB_NIVEAUX);      // bottes pressées / enrubannées
-const CONTRACTS     = niveaux(1000, NB_NIVEAUX);       // contrats
-const DISTANCE      = niveaux(20000, NB_NIVEAUX);      // km parcourus
-const TREES         = niveaux(5000, NB_NIVEAUX);       // arbres plantés / coupés
-const DOG           = niveaux(1000, NB_NIVEAUX);       // caresses au chien
-const LITERS_ANIMAL = niveaux(5000000, NB_NIVEAUX);    // lait (L)
-const SMALL_ANIMAL  = niveaux(200000, NB_NIVEAUX);     // laine (L), œufs
-const MANURE        = niveaux(10000000, NB_NIVEAUX);   // fumier + lisier (L)
-const LITERS_CROP   = niveaux(20000000, NB_NIVEAUX);   // ventes de cultures (L)
-const SOLD_TOTAL    = niveaux(100000000, NB_NIVEAUX);  // tout vendu (L)
+const C = {
+  champs: '🚜 Travaux des champs',
+  route: '🛣️ Route & conduite',
+  fourrage: '🌾 Fourrage, forêt & atelier',
+  elevage: '🐄 Élevage & ruches',
+  argent: '💰 Argent',
+  possessions: '🏠 Possessions',
+  divers: '🎯 Divers',
+};
 
 module.exports = [
   // ---------------- Travaux des champs ----------------
-  { id: 'labour',       category: '🚜 Travaux des champs', emoji: '🚜', name: 'Laboureur',     source: { stat: 'plowedHectares' },     unit: 'ha', tiers: HA_FIELD },
-  { id: 'dechaumage',   category: '🚜 Travaux des champs', emoji: '⚙️', name: 'Déchaumeur',    source: { stat: 'cultivatedHectares' }, unit: 'ha', tiers: HA_FIELD },
-  { id: 'semis',        category: '🚜 Travaux des champs', emoji: '🌱', name: 'Semeur',        source: { stat: 'sownHectares' },       unit: 'ha', tiers: HA_FIELD },
-  { id: 'fertilisation',category: '🚜 Travaux des champs', emoji: '💧', name: 'Pulvérisateur', source: { stat: 'sprayedHectares' },    unit: 'ha', tiers: HA_FIELD },
-  { id: 'desherbage',   category: '🚜 Travaux des champs', emoji: '🌿', name: 'Désherbeur',    source: { stat: 'weededHectares' },     unit: 'ha', tiers: HA_FIELD },
-  { id: 'fauche',       category: '🚜 Travaux des champs', emoji: '🌾', name: 'Faucheur',      source: { stat: 'mowedHectares' },      unit: 'ha', tiers: HA_FIELD },
-  { id: 'moisson',      category: '🚜 Travaux des champs', emoji: '🌾', name: 'Moissonneur',   source: { stat: 'threshedHectares' },   unit: 'ha', tiers: HA_FIELD },
-  { id: 'travail',      category: '🚜 Travaux des champs', emoji: '🧑‍🌾', name: 'Bourreau de travail', source: { stat: 'workedHectares' }, unit: 'ha', tiers: HA_TOTAL },
+  { id: 'labour',      category: C.champs, emoji: '🚜', name: 'Laboureur',             source: { stat: 'plowedHectares' },     unit: 'ha', tiers: niveaux(10000) },
+  { id: 'dechaumage',  category: C.champs, emoji: '⚙️', name: 'Déchaumeur',            source: { stat: 'cultivatedHectares' }, unit: 'ha', tiers: niveaux(10000) },
+  { id: 'semis',       category: C.champs, emoji: '🌱', name: 'Semeur',                source: { stat: 'sownHectares' },       unit: 'ha', tiers: niveaux(10000) },
+  { id: 'pulve',       category: C.champs, emoji: '💧', name: 'Pulvérisateur',         source: { stat: 'sprayedHectares' },    unit: 'ha', tiers: niveaux(10000) },
+  // Le jeu compte la fauche (Mower) et la moisson (Cutter) dans la même stat
+  { id: 'moisson',     category: C.champs, emoji: '🌾', name: 'Moissonneur & Faucheur', source: { stat: 'threshedHectares' },  unit: 'ha', tiers: niveaux(10000) },
+  { id: 'travail',     category: C.champs, emoji: '🧑‍🌾', name: 'Bourreau de travail',  source: { stat: 'workedHectares' },     unit: 'ha', tiers: niveaux(50000) },
+  { id: 'heures',      category: C.champs, emoji: '⏱️', name: 'Acharné',               source: { stat: 'workedTime' }, scale: 1 / 60, unit: 'h', tiers: niveaux(5000) },
+  { id: 'semences',    category: C.champs, emoji: '🫘', name: 'Semencier',             source: { stat: 'seedUsage' },          unit: 'L', tiers: niveaux(2000000) },
 
-  // ---------------- Fourrage ----------------
-  { id: 'bottes',       category: '🎯 Fourrage & divers', emoji: '🟫', name: 'Botteleur',     source: { stat: 'baleCount' },          unit: 'bottes', tiers: BALES },
-  { id: 'enrubannage',  category: '🎯 Fourrage & divers', emoji: '⚪', name: 'Enrubanneur',   source: { stat: 'wrappedBales' },       unit: 'bottes', tiers: BALES },
-  { id: 'missions',     category: '🎯 Fourrage & divers', emoji: '📋', name: 'Prestataire',   source: { stat: 'missionCount' },       unit: 'contrats', tiers: CONTRACTS },
-  { id: 'distance',     category: '🎯 Fourrage & divers', emoji: '🛣️', name: 'Routier',       source: { stat: 'traveledDistance' },   unit: 'km', tiers: DISTANCE },
-  { id: 'plantation',   category: '🎯 Fourrage & divers', emoji: '🌳', name: 'Planteur',      source: { stat: 'plantedTreeCount' },   unit: 'arbres', tiers: TREES },
-  { id: 'bucheron',     category: '🎯 Fourrage & divers', emoji: '🪓', name: 'Bûcheron',      source: { stat: 'cutTreeCount' },       unit: 'arbres', tiers: TREES },
-  { id: 'chien',        category: '🎯 Fourrage & divers', emoji: '🐕', name: 'Ami des chiens', source: { stat: 'petDogCount' },       unit: 'caresses', tiers: DOG },
+  // ---------------- Route & conduite ----------------
+  { id: 'distance',    category: C.route, emoji: '🛣️', name: 'Routier',                source: { stat: 'traveledDistance' },   unit: 'km', tiers: niveaux(20000) },
+  { id: 'tracteur',    category: C.route, emoji: '🚜', name: 'Tractoriste',            source: { stat: 'tractorDistance' },    unit: 'km', tiers: niveaux(10000) },
+  { id: 'camion',      category: C.route, emoji: '🚛', name: 'Camionneur',             source: { stat: 'truckDistance' },      unit: 'km', tiers: niveaux(10000) },
+  { id: 'voiture',     category: C.route, emoji: '🚗', name: 'Pilote',                 source: { stat: 'carDistance' },        unit: 'km', tiers: niveaux(5000) },
+  { id: 'gasoil',      category: C.route, emoji: '⛽', name: 'Gros buveur de gasoil',   source: { stat: 'fuelUsage' },          unit: 'L', tiers: niveaux(1000000) },
 
-  // ---------------- Élevage (production) ----------------
-  { id: 'prod_lait',    category: '🐄 Élevage', emoji: '🥛', name: 'Producteur laitier', source: { produced: ['MILK', 'GOATMILK', 'BUFFALOMILK'] }, unit: 'L', tiers: LITERS_ANIMAL },
-  { id: 'prod_laine',   category: '🐄 Élevage', emoji: '🐑', name: 'Tondeur',            source: { produced: ['WOOL'] },  unit: 'L', tiers: SMALL_ANIMAL },
-  { id: 'prod_oeufs',   category: '🐄 Élevage', emoji: '🥚', name: 'Aviculteur',         source: { produced: ['EGG'] },   unit: 'œufs', tiers: SMALL_ANIMAL },
-  { id: 'prod_fumier',  category: '🐄 Élevage', emoji: '💩', name: 'Roi du fumier',      source: { produced: ['MANURE', 'LIQUIDMANURE'] }, unit: 'L', tiers: MANURE },
+  // ---------------- Fourrage, forêt & atelier ----------------
+  { id: 'bottes',      category: C.fourrage, emoji: '🟫', name: 'Botteleur',           source: { stat: 'baleCount' },          unit: 'bottes', tiers: niveaux(10000) },
+  { id: 'enrubannage', category: C.fourrage, emoji: '⚪', name: 'Enrubanneur',         source: { stat: 'wrappedBales' },       unit: 'bottes', tiers: niveaux(10000) },
+  { id: 'plantation',  category: C.fourrage, emoji: '🌳', name: 'Planteur',            source: { stat: 'plantedTreeCount' },   unit: 'arbres', tiers: niveaux(5000) },
+  { id: 'bucheron',    category: C.fourrage, emoji: '🪓', name: 'Bûcheron',            source: { stat: 'cutTreeCount' },       unit: 'arbres', tiers: niveaux(5000) },
+  { id: 'mecanicien',  category: C.fourrage, emoji: '🔧', name: 'Mécanicien',          source: { stat: 'repairVehicleCount' }, unit: 'réparations', tiers: niveaux(1000) },
+  { id: 'missions',    category: C.fourrage, emoji: '📋', name: 'Prestataire',         source: { stat: 'missionCount' },       unit: 'contrats', tiers: niveaux(1000) }, // nom à vérifier (incrémenté par stats:updateMissionDone)
 
-  // ---------------- Ventes ----------------
-  { id: 'vente_lait',   category: '💰 Ventes', emoji: '🥛', name: 'Laitier',            source: { sold: ['MILK', 'GOATMILK', 'BUFFALOMILK'] }, unit: 'L', tiers: LITERS_ANIMAL },
-  { id: 'vente_laine',  category: '💰 Ventes', emoji: '🧶', name: 'Lainier',            source: { sold: ['WOOL'] }, unit: 'L', tiers: SMALL_ANIMAL },
-  { id: 'vente_oeufs',  category: '💰 Ventes', emoji: '🥚', name: 'Coquetier',          source: { sold: ['EGG'] }, unit: 'œufs', tiers: SMALL_ANIMAL },
-  { id: 'vente_cereales', category: '💰 Ventes', emoji: '🌾', name: 'Céréalier',        source: { sold: ['WHEAT', 'BARLEY', 'OAT', 'SORGHUM', 'RICE', 'RICELONGGRAIN'] }, unit: 'L', tiers: LITERS_CROP },
-  { id: 'vente_oleagineux', category: '💰 Ventes', emoji: '🌻', name: 'Roi des oléagineux',    source: { sold: ['CANOLA', 'SUNFLOWER', 'SOYBEAN'] }, unit: 'L', tiers: LITERS_CROP },
-  { id: 'vente_mais',   category: '💰 Ventes', emoji: '🌽', name: 'Maïsiculteur',       source: { sold: ['MAIZE'] }, unit: 'L', tiers: LITERS_CROP },
-  { id: 'vente_racines',category: '💰 Ventes', emoji: '🥔', name: 'Arracheur',          source: { sold: ['POTATO', 'SUGARBEET', 'SUGARBEET_CUT', 'CARROT', 'PARSNIP', 'BEETROOT'] }, unit: 'L', tiers: LITERS_CROP },
-  { id: 'vente_fourrage', category: '💰 Ventes', emoji: '🌿', name: 'Marchand de foin', source: { sold: ['HAY', 'STRAW', 'SILAGE', 'GRASS_WINDROW', 'DRYGRASS_WINDROW'] }, unit: 'L', tiers: LITERS_CROP },
-  { id: 'vente_total',  category: '💰 Ventes', emoji: '🏪', name: 'Grand négociant',    source: { sold: '*' }, unit: 'L', tiers: SOLD_TOTAL },
+  // ---------------- Élevage & ruches ----------------
+  { id: 'naissances',  category: C.elevage, emoji: '🐣', name: 'Éleveur',             source: { statPrefix: 'breed' },         unit: 'naissances', tiers: niveaux(5000) }, // stats statsBreedingName (préfixe à vérifier)
+  { id: 'prod_lait',   category: C.elevage, emoji: '🥛', name: 'Producteur laitier',  source: { produced: ['MILK', 'GOATMILK', 'BUFFALOMILK'] }, unit: 'L', tiers: niveaux(5000000) },
+  { id: 'prod_laine',  category: C.elevage, emoji: '🐑', name: 'Tondeur',             source: { produced: ['WOOL'] },  unit: 'L', tiers: niveaux(200000) },
+  { id: 'prod_oeufs',  category: C.elevage, emoji: '🥚', name: 'Aviculteur',          source: { produced: ['EGG'] },   unit: 'œufs', tiers: niveaux(200000) },
+  { id: 'prod_fumier', category: C.elevage, emoji: '💩', name: 'Roi du fumier',       source: { produced: ['MANURE', 'LIQUIDMANURE'] }, unit: 'L', tiers: niveaux(10000000) },
+  { id: 'prod_miel',   category: C.elevage, emoji: '🍯', name: 'Apiculteur',          source: { produced: ['HONEY'] }, unit: 'L', tiers: niveaux(200000) },
+  { id: 'cheval_km',   category: C.elevage, emoji: '🐎', name: 'Cavalier',            source: { stat: 'horseDistance' },  unit: 'km', tiers: niveaux(1000) },
+  { id: 'cheval_saut', category: C.elevage, emoji: '🏇', name: 'Sauteur d\'obstacles', source: { stat: 'horseJumpCount' }, unit: 'sauts', tiers: niveaux(1000) },
+
+  // ---------------- Argent ----------------
+  { id: 'eur_ventes',   category: C.argent, emoji: '🏪', name: 'Grand négociant',     source: { moneyIn: ['SOLD_PRODUCTS', 'HARVEST_INCOME'] }, unit: '€', tiers: niveaux(100000000) },
+  { id: 'eur_animaux',  category: C.argent, emoji: '🐄', name: 'Marchand de bétail',  source: { moneyIn: ['SOLD_ANIMALS'] },   unit: '€', tiers: niveaux(10000000) },
+  { id: 'eur_contrats', category: C.argent, emoji: '🤝', name: 'Entrepreneur',        source: { moneyIn: ['MISSIONS'] },       unit: '€', tiers: niveaux(20000000) },
+  { id: 'eur_loyers',   category: C.argent, emoji: '🏡', name: 'Rentier',             source: { moneyIn: ['PROPERTY_INCOME'] }, unit: '€', tiers: niveaux(5000000) },
+  { id: 'eur_total',    category: C.argent, emoji: '💶', name: 'Magnat',              source: { moneyIn: '*' },                unit: '€', tiers: niveaux(200000000) },
+  { id: 'eur_depenses', category: C.argent, emoji: '💸', name: 'Panier percé',        source: { moneyOut: '*' },               unit: '€', tiers: niveaux(200000000) },
+  { id: 'eur_carbu',    category: C.argent, emoji: '⛽', name: 'Client de la pompe',  source: { moneyOut: ['PURCHASE_FUEL'] }, unit: '€', tiers: niveaux(5000000) },
+
+  // ---------------- Possessions (valeur actuelle) ----------------
+  { id: 'vehicules',   category: C.possessions, emoji: '🚜', name: 'Collectionneur',     source: { stat: '_ownedVehicles' },        unit: 'véhicules', tiers: niveaux(250) },
+  { id: 'usines',      category: C.possessions, emoji: '🏭', name: 'Industriel',         source: { stat: '_ownedProductionPoints' }, unit: 'usines', tiers: niveaux(50) },
+  { id: 'ruches',      category: C.possessions, emoji: '🐝', name: 'Roi des abeilles',   source: { stat: '_ownedBeehives' },        unit: 'ruches', tiers: niveaux(100) },
+
+  // ---------------- Divers ----------------
+  { id: 'chien',       category: C.divers, emoji: '🐕', name: 'Ami des chiens',       source: { stat: 'petDogCount' },        unit: 'caresses', tiers: niveaux(1000) },
 ];
