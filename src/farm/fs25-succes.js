@@ -235,7 +235,7 @@ async function recapAll(channel) {
   if (!lastStatus) return 0;
   computeUnlocks(lastStatus); // met à jour la mémoire des paliers sans annoncer
   const embeds = lastStatus.farms.map((f) => progressEmbed(f, lastStatus));
-  for (let i = 0; i < embeds.length; i += 10) await channel.send({ embeds: embeds.slice(i, i + 10) });
+  for (const e of embeds) await channel.send({ embeds: [e] }); // 6000 caractères max par message
   return embeds.length;
 }
 
