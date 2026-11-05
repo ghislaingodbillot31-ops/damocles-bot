@@ -248,4 +248,17 @@ async function recapAll(channel) {
   return lastStatus.farms.length;
 }
 
-module.exports = { getStatus: () => lastStatus, seriesValue, tiersReached, recapAll, unlockLine, processAchievements, succesCommand, computeUnlocks, progressEmbed, _reset: () => { lastCheck = 0; baselineDone = false; reached.clear(); } };
+// Chaque matin : vide le salon, republie le HUB puis le bilan des succès.
+async function resetSalon(channel) {
+  if (!lastStatus || !channel) return;
+  for (;;) { // bulkDelete ignore les messages > 14 j : on les supprime un par un
+    const msgs = await channel.messages.fetch({ limit: 100 });
+    if (!msgs.size) break;
+    const del = await channel.bulkDelete(msgs, true);
+    for (const m of msgs.values()) if (!del.has(m.id)) await m.delete().catch(() => {});
+  }
+  await require('./fs25-succes-hub').update(lastStatus, channel);
+  await recapAll(channel);
+}
+
+module.exports = { resetSalon, getStatus: () => lastStatus, seriesValue, tiersReached, recapAll, unlockLine, processAchievements, succesCommand, computeUnlocks, progressEmbed, _reset: () => { lastCheck = 0; baselineDone = false; reached.clear(); } };

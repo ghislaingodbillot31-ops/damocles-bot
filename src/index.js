@@ -76,6 +76,13 @@ client.once(Events.ClientReady, async () => {
   startFs25Bridge(client).catch(e => console.error('[FS25] Pont :', e.message));
   startDailyTasks(client, cron);
   require('./core/restart').startDailyRestart(client, cron);
+  // 6h (Paris) : salon des succès remis à zéro (HUB puis succès)
+  cron.schedule('0 6 * * *', async () => {
+    try {
+      const ch = await client.channels.fetch(process.env.FS25_SUCCES_CHANNEL_ID);
+      await require('./farm/fs25-succes').resetSalon(ch);
+    } catch (e) { console.warn('[FS25] Reset salon succès :', e.message); }
+  }, { timezone: 'Europe/Paris' });
   tempvoice.startTempVoice(client);
   require('./community/temptext').startTempText(client);
   require('./community/suggestions').startSuggestions(client);
