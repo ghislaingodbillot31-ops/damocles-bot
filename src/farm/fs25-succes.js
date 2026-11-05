@@ -249,7 +249,7 @@ async function recapAll(channel) {
 }
 
 // Chaque matin : vide le salon, republie le HUB puis le bilan des succès.
-async function resetSalon(channel) {
+async function resetSalon(channel, avecSucces = true) {
   if (!lastStatus || !channel) return;
   for (;;) { // bulkDelete ignore les messages > 14 j : on les supprime un par un
     const msgs = await channel.messages.fetch({ limit: 100 });
@@ -258,7 +258,7 @@ async function resetSalon(channel) {
     for (const m of msgs.values()) if (!del.has(m.id)) await m.delete().catch(() => {});
   }
   await require('./fs25-succes-hub').update(lastStatus, channel);
-  await recapAll(channel);
+  if (avecSucces) await recapAll(channel);
 }
 
 module.exports = { resetSalon, getStatus: () => lastStatus, seriesValue, tiersReached, recapAll, unlockLine, processAchievements, succesCommand, computeUnlocks, progressEmbed, _reset: () => { lastCheck = 0; baselineDone = false; reached.clear(); } };
