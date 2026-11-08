@@ -249,7 +249,7 @@ async function recapAll(channel) {
 }
 
 // Chaque matin : vide le salon, republie le HUB puis le bilan des succès.
-async function resetSalon(channel, avecSucces = true) {
+async function resetSalon(channel, avecSucces = false) {
   if (!lastStatus || !channel) return;
   for (;;) { // bulkDelete ignore les messages > 14 j : on les supprime un par un
     const msgs = await channel.messages.fetch({ limit: 100 });
