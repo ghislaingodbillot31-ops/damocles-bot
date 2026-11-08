@@ -195,16 +195,16 @@ function moneyEvents(prev, cur, min) {
     if (!p) continue;
     const dm = f.money - p.money, dl = f.loan - p.loan;
     if (Math.abs(dm) < min) continue;
-    if (dl > 0 && Math.abs(dm - dl) < 1) out.push(`🏦 **${f.name}** a emprunté ${money(dl)}`);
-    else if (dl < 0 && Math.abs(dm - dl) < 1) out.push(`🏦 **${f.name}** a remboursé ${money(-dl)} de prêt`);
+    if (dl > 0 && Math.abs(dm - dl) < 1) out.push(`🧾 **${f.name}** a emprunté ${money(dl)}`);
+    else if (dl < 0 && Math.abs(dm - dl) < 1) out.push(`✅ **${f.name}** a remboursé ${money(-dl)} de prêt`);
     else (dm > 0 ? ups : downs).push({ name: f.name, amount: Math.abs(dm) });
   }
   for (const d of downs) {
     const i = ups.findIndex((u) => Math.abs(u.amount - d.amount) < 1);
-    if (i >= 0) out.push(`💸 **${d.name}** → **${ups.splice(i, 1)[0].name}** : transfert de ${money(d.amount)}`);
-    else out.push(`🔻 **${d.name}** a dépensé ${money(d.amount)}`);
+    if (i >= 0) out.push(`🔄 **${d.name}** →**${ups.splice(i, 1)[0].name}** : transfert de ${money(d.amount)}`);
+    else out.push(`🛒 **${d.name}** a dépensé ${money(d.amount)}`);
   }
-  for (const u of ups) out.push(`🔺 **${u.name}** a reçu ${money(u.amount)}`);
+  for (const u of ups) out.push(`💰 **${u.name}** a reçu ${money(u.amount)}`);
   return out;
 }
 
