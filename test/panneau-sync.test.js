@@ -1,5 +1,5 @@
 const assert = require('assert');
-const { publier } = require('../src/panneau-sync');
+const { publier } = require('../src/farm/panneau-sync');
 
 const salon = (existe, editOk = true) => {
   const log = [];
@@ -24,23 +24,23 @@ const salon = (existe, editOk = true) => {
   console.log('✅ panneau-sync : ok');
 })();
 
-const { formater } = require('../src/panneau-sync');
+const { formater } = require('../src/farm/panneau-sync');
 assert.strictEqual(formater([{ nom: 'Rôles', action: 'modifié', salon: '1' }, { nom: 'Hub', action: 'republié', salon: '2' }]),
   '✏️ **Rôles** · <#1> · modifié\n📤 **Hub** · <#2> · republié');
 console.log('✅ rapport : ok');
 
-const { sansNotif } = require('../src/silencieux');
+const { sansNotif } = require('../src/core/silencieux');
 assert.strictEqual(sansNotif('salut').flags, 4096);
 assert.strictEqual(sansNotif({ content: 'x', flags: 64 }).flags, 64 | 4096);
 console.log('✅ silencieux : ok');
 
-const { imageSteam } = require('../src/jeux');
+const { imageSteam } = require('../src/community/jeux');
 assert.strictEqual(imageSteam('https://store.steampowered.com/app/1245620/ELDEN_RING/').url, 'https://cdn.cloudflare.steamstatic.com/steam/apps/1245620/header.jpg');
 assert.strictEqual(imageSteam('https://example.com/jeu'), undefined);
 assert.strictEqual(imageSteam(null), undefined);
 console.log('✅ image steam : ok');
 
-const jeux = require('../src/jeux');
+const jeux = require('../src/community/jeux');
 const st = jeux.__store();
 st.jeux = { '🎮-elden-ring': 'c1' }; st.wish = { m9: { nom: 'Hollow Knight: Silksong', lien: 'https://store.steampowered.com/app/1030300/x/' } }; st.wishId = 'w1';
 const guild = { id: 'g', channels: { cache: new Map([['c1', { id: 'c1', topic: 'Elden Ring · https://store.steampowered.com/app/1245620/ER/' }]]) } };

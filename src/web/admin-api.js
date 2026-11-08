@@ -18,7 +18,7 @@ function mount(app, ctx) {
     catch (err) { res.status(400).json({ error: err.message }); }
   };
   const A = '/api/admin';
-  app.param('id', (req, res, next, id) => /^[w-]{1,64}$/.test(id) ? next() : res.status(400).json({ error: 'Identifiant invalide' }));
+  app.param('id', (req, res, next, id) => /^[\w-]{1,64}$/.test(id) ? next() : res.status(400).json({ error: 'Identifiant invalide' }));
 
   // ── Aperçu ──
   app.get(A + '/overview', wrap(async () => {
@@ -83,7 +83,7 @@ function mount(app, ctx) {
   // Kick / ban : action Discord réelle + historique en base
   for (const type of ['kick', 'ban']) app.post(A + `/members/:id/${type}`, wrap(async req => {
     const raison = String(req.body.reason || 'Dashboard').slice(0, 400), g = guild(), id = req.params.id;
-    if (!/^d{17,20}$/.test(id)) throw new Error('Identifiant Discord invalide');
+    if (!/^\d{17,20}$/.test(id)) throw new Error('Identifiant Discord invalide');
     const user = await ctx.client.users.fetch(id);
     if (type === 'kick') await g.members.kick(id, raison); else await g.bans.create(id, { reason: raison });
     await (type === 'kick' ? db.kickMember : db.banMember)(user, raison, 'dashboard');

@@ -48,28 +48,31 @@ const cfg = () => ({
 
 // ---------- Lecture du fichier sur le serveur ----------
 
-async function readViaFtp(c) {
+// `since` : mtime déjà lu -> si le fichier n'a pas bougé, on ne le retélécharge pas (data = null).
+async function readViaFtp(c, since) {
   const ftp = require('basic-ftp');
   const client = new ftp.Client(15000);
   try {
     await client.access({ host: c.host, port: c.port, user: c.user, password: c.pass, secure: false });
+    let mtime = null;
+    try { mtime = (await client.lastMod(c.path)).getTime(); } catch { /* MDTM non supporté */ }
+    if (mtime && mtime === since) return { data: null, mtime };
     const chunks = [];
     const sink = new Writable({ write(chunk, _enc, cb) { chunks.push(chunk); cb(); } });
     await client.downloadTo(sink, c.path);
-    let mtime = null;
-    try { mtime = (await client.lastMod(c.path)).getTime(); } catch { /* MDTM non supporté */ }
     return { data: Buffer.concat(chunks).toString('utf8'), mtime };
   } finally {
     client.close();
   }
 }
 
-async function readViaSftp(c) {
+async function readViaSftp(c, since) {
   const SftpClient = require('ssh2-sftp-client');
   const sftp = new SftpClient();
   try {
     await sftp.connect({ host: c.host, port: c.port, username: c.user, password: c.pass, readyTimeout: 15000 });
     const stat = await sftp.stat(c.path);
+    if (stat.modifyTime && stat.modifyTime === since) return { data: null, mtime: stat.modifyTime };
     const buf = await sftp.get(c.path);
     return { data: buf.toString('utf8'), mtime: stat.modifyTime };
   } finally {
@@ -240,7 +243,7 @@ let modsCache = { at: 0, lines: [] };
 // Titres et versions lus dans le log de démarrage du serveur ; à défaut, noms des zips de /profile/mods.
 async function fetchMods(c) {
   if (Date.now() - modsCache.at < 600000) return modsCache.lines;
-  if (c.source !== 'sftp') throw new Error('Liste des mods disponible uniquement en SFTP.');
+  if (c.source !== 'sftp') return fetchModsFtp(c);
   const SftpClient = require('ssh2-sftp-client');
   const sftp = new SftpClient();
   try {
@@ -257,6 +260,27 @@ async function fetchMods(c) {
     return modsCache.lines;
   } finally {
     await sftp.end().catch(() => {});
+  }
+}
+
+async function fetchModsFtp(c) {
+  const ftp = require('basic-ftp');
+  const client = new ftp.Client(15000);
+  try {
+    await client.access({ host: c.host, port: c.port, user: c.user, password: c.pass, secure: false });
+    const root = c.path.split('/modSettings/')[0];
+    const logs = (await client.list(root)).filter((f) => /^log_.*\.txt$/.test(f.name)).sort((a, b) => (b.modifiedAt || 0) - (a.modifiedAt || 0));
+    let lines = [];
+    if (logs[0]) {
+      const chunks = [];
+      await client.downloadTo(new Writable({ write(ch, _e, cb) { chunks.push(ch); cb(); } }), `${root}/${logs[0].name}`);
+      lines = [...Buffer.concat(chunks).toString('utf8').matchAll(/adding mod (.+?);(.+?);.*?;FS25_/g)].map((m) => `${m[1]} ${m[2]}`);
+    }
+    if (!lines.length) lines = (await client.list(`${root}/mods`)).filter((f) => /\.zip$/i.test(f.name)).map((f) => f.name.replace(/\.zip$/i, ''));
+    modsCache = { at: Date.now(), lines: [...new Set(lines)].sort((a, b) => a.localeCompare(b, 'fr')) };
+    return modsCache.lines;
+  } finally {
+    client.close();
   }
 }
 
@@ -328,6 +352,7 @@ async function startFs25Bridge(client) {
   const activeHelpers = new Map();
   const minMove = parseInt(process.env.FS25_LOG_MIN || '500', 10); // ignore les petits mouvements
   let prevFarms = null;
+  let lastMtime = null, lastEmbedKey = null, lastEditAt = 0; // évite téléchargements et éditions inutiles
   let wasUp = null; // null = pas encore observé (le 1er relevé ne génère aucune annonce)
   const setUp = (up) => { if (wasUp !== null && up !== wasUp) logTo(connChannel, [up ? "🟢 **Serveur démarré**" : "🔴 **Serveur arrêté**"]); wasUp = up; };
   const joined = new Map(); // joueur -> heure de connexion observée (le 1er relevé après un redémarrage du bot ne génère aucune annonce)
@@ -337,25 +362,33 @@ async function startFs25Bridge(client) {
     running = true;
     let embed;
     try {
-      const { data, mtime } = c.source === 'sftp' ? await readViaSftp(c) : await readViaFtp(c);
-      lastStatus = parseStatus(data);
+      const { data, mtime } = c.source === 'sftp' ? await readViaSftp(c, lastMtime) : await readViaFtp(c, lastMtime);
       setUp(isOnline(mtime, c));
-      const connexions = presenceEvents(joined, lastStatus.players); // aussi au 1er relevé : il mémorise les joueurs déjà présents
-      const banque = prevFarms ? moneyEvents(prevFarms, lastStatus.farms, minMove) : [];
-      prevFarms = new Map(lastStatus.farms.map((f) => [f.name, f]));
-      logTo(connChannel, connexions);
-      logTo(helperChannel, helperEvents(activeHelpers, lastStatus.helpers));
-      logTo(bankChannel, banque);
-      await processAchievements(lastStatus, succesChannel).catch((e) => console.warn(`[FS25] Succès : ${e.message}`));
+      if (data !== null || !lastStatus) { // fichier inchangé (data === null) : rien à recalculer
+        lastMtime = mtime;
+        lastStatus = parseStatus(data);
+        const connexions = presenceEvents(joined, lastStatus.players); // aussi au 1er relevé : il mémorise les joueurs déjà présents
+        const banque = prevFarms ? moneyEvents(prevFarms, lastStatus.farms, minMove) : [];
+        prevFarms = new Map(lastStatus.farms.map((f) => [f.name, f]));
+        logTo(connChannel, connexions);
+        logTo(helperChannel, helperEvents(activeHelpers, lastStatus.helpers));
+        logTo(bankChannel, banque);
+        await processAchievements(lastStatus, succesChannel).catch((e) => console.warn(`[FS25] Succès : ${e.message}`));
+      }
       embed = buildEmbed(lastStatus, mtime, c);
     } catch (err) {
       console.warn(`[FS25] Lecture impossible : ${err.message}`);
+      lastMtime = null;
       setUp(false);
       embed = offlineEmbed(c, err.message);
     }
     try {
+      const json = panneauEmbed(embed.toJSON());
+      const key = JSON.stringify({ ...json, timestamp: 0 });
+      if (key === lastEmbedKey && Date.now() - lastEditAt < 300000) return; // identique : pas d'appel Discord (au pire rafraîchi toutes les 5 min)
       const message = await ensureStatusMessage(channel);
-      await message.edit({ embeds: [panneauEmbed(embed.toJSON())], components: [] }); // le bouton « Liste des mods » est dans le HUB INFORMATIONS
+      await message.edit({ embeds: [json], components: [] }); // le bouton « Liste des mods » est dans le HUB INFORMATIONS
+      lastEmbedKey = key; lastEditAt = Date.now();
     } catch (err) {
       if (err.code === 10008) statusMsg = null; // message supprimé -> recréé au prochain tour
       else console.warn(`[FS25] Envoi Discord impossible : ${err.message}`);
