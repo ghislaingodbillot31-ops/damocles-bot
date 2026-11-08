@@ -34,7 +34,8 @@ function niveaux(max, nb = NB_NIVEAUX) {
     if (!out.length || r > out[out.length - 1]) out.push(r);
   }
   out[out.length - 1] = max;
-  return out;
+  // Barème 25 niveaux : un niveau sur deux de la courbe à 50, le dernier = max
+  return [...out.filter((_, i) => i % 2 === 0).slice(0, -1), max];
 }
 
 const C = {
