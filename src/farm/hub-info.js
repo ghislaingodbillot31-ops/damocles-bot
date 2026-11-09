@@ -64,11 +64,12 @@ function set(input) {
 function buildMessage() {
   const c = get();
   const actifs = c.boutons.filter(b => b.actif);
+  // 5 boutons maximum par rangée, répartis équitablement (6 → 3+3, 7 → 4+3)
+  const rows = Math.ceil(actifs.length / 5), per = Math.ceil(actifs.length / rows);
   return {
     ...panneau({ embeds: [{ title: c.titre, description: c.description, color: c.couleur, footer: { text: 'MonCopainBot' } }] }),
-    // 5 boutons maximum par rangée
-    components: Array.from({ length: Math.ceil(actifs.length / 5) }, (_, i) => new ActionRowBuilder().addComponents(
-      actifs.slice(i * 5, i * 5 + 5).map(b => new ButtonBuilder().setCustomId('hubinfo_' + b.key).setLabel(b.label).setStyle(STYLES[b.style])),
+    components: Array.from({ length: rows }, (_, i) => new ActionRowBuilder().addComponents(
+      actifs.slice(i * per, i * per + per).map(b => new ButtonBuilder().setCustomId('hubinfo_' + b.key).setLabel(b.label).setStyle(STYLES[b.style])),
     )),
   };
 }

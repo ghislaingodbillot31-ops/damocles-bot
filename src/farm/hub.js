@@ -114,10 +114,10 @@ function panneauHub() {
         new ButtonBuilder().setCustomId('hub_expl').setLabel('🌾 Mon exploitation').setStyle(ButtonStyle.Success),
         new ButtonBuilder().setCustomId('hub_contrat').setLabel('📋 Créer un contrat').setStyle(ButtonStyle.Primary),
         new ButtonBuilder().setCustomId('hub_besoin').setLabel('📦 Besoin').setStyle(ButtonStyle.Primary),
-        new ButtonBuilder().setCustomId('hub_annuaire').setLabel('📖 Annuaire · ON').setStyle(ButtonStyle.Secondary),
-        new ButtonBuilder().setCustomId('hub_boutique').setLabel('🛒 Boutique').setStyle(ButtonStyle.Secondary),
       ),
       new ActionRowBuilder().addComponents(
+        new ButtonBuilder().setCustomId('hub_annuaire').setLabel('📖 Annuaire · ON').setStyle(ButtonStyle.Secondary),
+        new ButtonBuilder().setCustomId('hub_boutique').setLabel('🛒 Boutique').setStyle(ButtonStyle.Secondary),
         new ButtonBuilder().setCustomId('hub_marche').setLabel('🏪 Marché').setStyle(ButtonStyle.Success),
       ),
     ],
