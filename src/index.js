@@ -86,6 +86,7 @@ client.once(Events.ClientReady, async () => {
   tempvoice.startTempVoice(client);
   require('./community/temptext').startTempText(client);
   require('./community/suggestions').startSuggestions(client);
+  require('./community/maps').startMaps(client);
   require('./community/bugs').startBugs(client);
   require('./moderation/invitations').startInvitations(client);
   require('./community/jeux').startJeux(client);
@@ -314,6 +315,7 @@ client.on(Events.InteractionCreate, async interaction => {
       if (cid === 'text_create_modal' || cid.startsWith('text_rename_modal_')) { await require('./community/temptext').handleTextModal(interaction); return; }
       if (cid === 'sugg_modal' || cid === 'modprop_modal') { await require('./community/suggestions')[cid.split('_')[0] === 'sugg' ? 'jeu' : 'mods'].handleSuggModal(interaction); return; }
       if (/^(sugg|modprop)_(ok|no)modal_\d+$/.test(cid)) { await require('./community/suggestions')[cid.startsWith('sugg') ? 'jeu' : 'mods'].handleSuggDecisionModal(interaction); return; }
+      if (cid === 'map_modal')                  { await require('./community/maps').handleModal(interaction); return; }
       if (/^bug_modal(_en)?$/.test(cid))        { await require('./community/bugs').handleBugModal(interaction); return; }
       if (/^bug_nomodal_\d+$/.test(cid))        { await require('./community/bugs').handleBugRefus(interaction); return; }
       if (cid.startsWith('event_bingo_modal_')) { await require('./community/evenements').handleBingoModal(interaction); return; }
@@ -384,6 +386,12 @@ client.on(Events.InteractionCreate, async interaction => {
     if (id === 'text_create')                 { await require('./community/temptext').handleTextCreate(interaction); return; }
     if (/^text_(rename|lock|delete)_/.test(id)) { await require('./community/temptext').handleTextControl(interaction); return; }
   } catch (err) { console.error('Erreur bouton vocal :', err.message); }
+
+  // HUB des cartes
+  try {
+    if (id === 'map_new')               { await require('./community/maps').handleNew(interaction); return; }
+    if (/^maprate_\d+_[1-5]$/.test(id)) { await require('./community/maps').handleRate(interaction); return; }
+  } catch (err) { console.error('Erreur bouton cartes :', err.stack || err.message); }
 
   // Boîte à idées
   try {
