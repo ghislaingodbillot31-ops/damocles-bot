@@ -27,13 +27,17 @@
   .box { background:var(--panel); border-radius:8px; padding:14px; margin-bottom:12px; }
   .row { display:flex; gap:8px; align-items:center; flex-wrap:wrap; margin:6px 0; } .row > label { min-width:150px; color:var(--mut); }
   .tag { padding:1px 7px; border-radius:10px; background:var(--panel2); font-size:12px; } .ok { color:var(--ok); } .err { color:var(--err); } .mut { color:var(--mut); }
+  main > h1 { font-size:22px; margin:0 0 12px; } #main > h2 { display:none; }
+  .pills button { padding:6px 14px; } a.card { color:inherit; text-decoration:none; cursor:pointer; } a.card:hover { outline:1px solid var(--acc); }
+  a.card.hot { outline:1px solid var(--err); } a.card.hot b { color:var(--err); } a.card.zero { opacity:.55; }
+  nav a .n { float:right; background:var(--err); color:#fff; border-radius:10px; padding:0 7px; font-size:11px; }
   #toast { position:fixed; bottom:16px; right:16px; background:var(--panel2); border:1px solid var(--line); padding:10px 14px; border-radius:8px; display:none; max-width:420px; }
   @media (max-width:800px) { body { grid-template-columns:1fr; } nav { position:static; height:auto; display:flex; flex-wrap:wrap; } }
 </style>
 </head>
 <body>
-<nav id="nav"><h1>🛠️ Administration</h1></nav>
-<main id="main">Chargement…</main>
+<nav id="nav"><h1>🛠️ MonCopainBot</h1></nav>
+<main><h1 id="titre"></h1><div class="pills" id="pills"></div><div id="main">Chargement…</div></main>
 <div id="toast"></div>
 <script>
 const $ = s => document.querySelector(s);
@@ -55,10 +59,15 @@ const TABS = {
   async apercu(m) {
     const o = await api('/overview'), s = o.stats, a = o.enAttente;
     const c = (v, l) => `<div class="card"><b>${esc(v)}</b><span>${l}</span></div>`;
-    m.innerHTML = `<h2>📊 Aperçu</h2><div class="cards">${c(o.bot, 'Bot')}${c(o.ping + ' ms', 'Ping')}${c(fmtUp(o.uptime), 'En ligne depuis')}
-      ${c(o.membresDiscord, 'Membres Discord')}${c(s.present, 'Présents (base)')}${c(s.left, 'Partis')}${c(s.banned, 'Bannis')}${c(s.warned, 'Avertis')}
-      ${c(o.xpMembres, 'Membres avec XP')}${c(o.exploitations, 'Exploitations')}</div>
-      <h3>En attente de décision (à traiter dans Discord)</h3><div class="cards">${c(a.bugs, '🐞 Bugs')}${c(a.suggestions, '💡 Idées du jeu')}${c(a.mods, '🛠️ Mods')}${c(a.boutique, '🛒 Échanges boutique')}</div>`;
+    const go = (to, v, l) => `<a class="card go ${v ? 'hot' : 'zero'}" data-go="${to}"><b>${v}</b><span>${l}</span></a>`;
+    const tot = a.bugs + a.suggestions + a.mods + a.boutique;
+    m.innerHTML = `<h2>Accueil</h2><h3 style="margin-top:0">${tot ? '⚠️ À traiter (' + tot + ')' : '✅ Rien à traiter'}</h3>
+      <div class="cards">${go('bugs', a.bugs, '🐞 Bugs')}${go('suggestions', a.suggestions, '💡 Idées du jeu')}${go('mods', a.mods, '🛠️ Mods proposés')}${go('boutique', a.boutique, '🛒 Échanges boutique')}</div>
+      <p class="mut">Les décisions se prennent avec les boutons dans les salons Discord staff.</p>
+      <h3>Le bot</h3><div class="cards">${c(o.bot, 'Connecté en tant que')}${c(o.ping + ' ms', 'Ping')}${c(fmtUp(o.uptime), 'En ligne depuis')}</div>
+      <h3>Les membres</h3><div class="cards">${c(o.membresDiscord, 'Sur Discord')}${c(s.present, 'Présents (base)')}${c(s.left, 'Partis')}${c(s.banned, 'Bannis')}${c(s.warned, 'Avertis')}</div>
+      <h3>Le serveur FS25</h3><div class="cards">${c(o.exploitations, 'Exploitations')}${c(o.xpMembres, 'Membres avec XP')}</div>`;
+    m.onclick = e => { const g = e.target.closest('[data-go]'); if (g) show(g.dataset.go); };
   },
 
   async membres(m) {
@@ -104,16 +113,6 @@ const TABS = {
     $('#go').onclick = () => { page = 0; load(); }; $('#ev').onchange = $('#go').onclick; $('#q').onkeydown = e => e.key === 'Enter' && $('#go').onclick();
     $('#pr').onclick = () => { if (page > 0) { page--; load(); } }; $('#nx').onclick = () => { page++; load(); };
     load();
-  },
-
-  async fs25(m) {
-    const d = await api('/fs25'), t = d.totaux, c = (v, l) => `<div class="card"><b>${v}</b><span>${l}</span></div>`;
-    m.innerHTML = `<h2>🚜 FS25 · Exploitations</h2><div class="cards">${c(t.exploitations, 'Exploitations')}${c(t.ouvriers, 'Ouvriers')}${c(t.coExploitants, 'Co-exploitants')}${c(t.produits, 'Produits en vente')}</div>
-      <h3>Activités</h3>${table(['Activité', 'Exploitations'], d.activites.map(([a, n]) => `<tr><td>${esc(a)}</td><td>${n}</td></tr>`))}
-      <h3>Détail</h3>${table(['Exploitation', 'Activités', 'Équipe', 'Produits', 'Créée'], d.exploitations.map(e => `<tr><td><b>${esc(e.nom)}</b><br><span class="mut">${esc(e.ownerTag)}</span></td>
-        <td>${[e.activitePrincipale, e.activiteSecondaire, e.activiteSupplementaire].filter(Boolean).map(esc).join('<br>')}</td>
-        <td>${(e.ouvrierTags || []).length ? 'Ouvriers : ' + e.ouvrierTags.map(esc).join(', ') + '<br>' : ''}${(e.coExploitantTags || []).length ? 'Co : ' + e.coExploitantTags.map(esc).join(', ') : ''}</td>
-        <td>${(e.produits || []).map(esc).join('<br>') || '<span class="mut">—</span>'}</td><td>${date(e.createdAt)}</td></tr>`))}`;
   },
 
   async roles(m) {
@@ -163,13 +162,6 @@ const TABS = {
     $('#cd').onclick = run(async () => { const r = await api('/boutique/cooldowns', 'POST'); toast(r.reset + ' délai(s) remis à zéro'); }, 'Fait ✔', false);
   },
 
-  async retours(m) {
-    const t = TABS.retours.t || 'bugs', P = [['bugs', '🐞 Bugs'], ['suggestions', '💡 Idées'], ['mods', '🛠️ Mods']];
-    const z = document.createElement('div'); await TABS[t](z);
-    m.innerHTML = '<h2>💬 Retours des joueurs</h2><div class="pills">' + P.map(([k, l]) => `<button data-p="${k}" class="${k === t ? 'on' : ''}">${l}</button>`).join('') + '</div>' + z.innerHTML.replace(/<h2>.*?<\/h2>/, '');
-    const del = z.onclick; m.onclick = e => { const p = e.target.closest('[data-p]'); if (p) { TABS.retours.t = p.dataset.p; return show('retours'); } const b = e.target.closest('button[data-n]'); if (b && confirm('Supprimer définitivement la proposition n°' + b.dataset.n + ' (message Discord + enregistrement) ?')) run(() => api('/' + t + '/' + b.dataset.n, 'DELETE'), 'Supprimée')(); };
-  },
-
   async donnees(m) {
     const T = await api('/db'); let k = TABS.donnees.k || T[0].k;
     const rows = await api('/db/' + k);
@@ -189,11 +181,15 @@ const TABS = {
   async mods(m) { await listeDecisions(m, '🛠️ Propositions de mods', '/mods', ['Titre', 'Texte']); },
 
   async exploitations(m) {
-    const l = await api('/exploitations'), f = document.createElement('div'); await TABS.fs25(f);
-    m.innerHTML = f.innerHTML.replace(/<h2>.*?<\/h2>/, '<h2>🚜 Exploitations FS25 (' + l.length + ')</h2>') + '<h3>Gérer</h3>' + table(['Nom', 'Propriétaire', 'Activités', 'Équipe', ''], l.map(e => `<tr><td>${esc(e.nom)}</td><td>${esc(e.ownerTag)}</td>
-      <td>${[e.activitePrincipale, e.activiteSecondaire, e.activiteSupplementaire].filter(Boolean).map(esc).join('<br>')}</td>
-      <td>${(e.ouvriers || []).length} ouvrier(s), ${(e.coExploitants || []).length} co-exploitant(s)</td><td><button class="d" data-id="${e.id}">Supprimer</button></td></tr>`));
-    m.onclick = async e => { const b = e.target.closest('button[data-id]'); if (b && confirm('Supprimer cette exploitation ?')) run(() => api('/exploitations/' + b.dataset.id, 'DELETE'), 'Supprimée')(); };
+    const [d, l] = await Promise.all([api('/fs25'), api('/exploitations')]), t = d.totaux, c = (v, k) => `<div class="card"><b>${v}</b><span>${k}</span></div>`;
+    const id = Object.fromEntries(l.map(e => [e.nom, e.id]));
+    m.innerHTML = `<h2>Exploitations</h2><div class="cards">${c(t.exploitations, 'Exploitations')}${c(t.ouvriers, 'Ouvriers')}${c(t.coExploitants, 'Co-exploitants')}${c(t.produits, 'Produits en vente')}</div>
+      <h3>Répartition par activité</h3><div class="row">${d.activites.map(([a, n]) => `<span class="tag">${esc(a)} · ${n}</span>`).join('') || '<span class="mut">—</span>'}</div>
+      <h3>Toutes les exploitations</h3>${table(['Exploitation', 'Activités', 'Équipe', 'Produits', 'Créée', ''], d.exploitations.map(e => `<tr><td><b>${esc(e.nom)}</b><br><span class="mut">${esc(e.ownerTag)}</span></td>
+        <td>${[e.activitePrincipale, e.activiteSecondaire, e.activiteSupplementaire].filter(Boolean).map(esc).join('<br>')}</td>
+        <td>${(e.ouvrierTags || []).length ? 'Ouvriers : ' + e.ouvrierTags.map(esc).join(', ') + '<br>' : ''}${(e.coExploitantTags || []).length ? 'Co : ' + e.coExploitantTags.map(esc).join(', ') : '<span class="mut">—</span>'}</td>
+        <td>${(e.produits || []).map(esc).join('<br>') || '<span class="mut">—</span>'}</td><td>${date(e.createdAt)}</td><td>${id[e.nom] ? `<button class="d" data-id="${id[e.nom]}">Supprimer</button>` : ''}</td></tr>`))}`;
+    m.onclick = e => { const b = e.target.closest('button[data-id]'); if (b && confirm('Supprimer cette exploitation ?')) run(() => api('/exploitations/' + b.dataset.id, 'DELETE'), 'Supprimée')(); };
   },
 
   async hub(m) {
@@ -256,18 +252,31 @@ async function listeDecisions(m, titre, path) {
   m.onclick = e => { const b = e.target.closest('button[data-n]'); if (b && confirm('Supprimer définitivement la proposition n°' + b.dataset.n + ' (message Discord + enregistrement) ?')) run(() => api(path + '/' + b.dataset.n, 'DELETE'), 'Supprimée')(); };
 }
 
-const NAV = [['apercu', '🏠 Accueil'], ['_Membres'], ['membres', '👥 Membres'], ['logs', '📋 Historique'], ['_FS25'], ['exploitations', '🚜 Exploitations'], ['_Communauté'],
-  ['xp', '🎚️ Niveaux & XP'], ['boutique', '🛒 Boutique'], ['retours', '💬 Retours joueurs'], ['_Discord'], ['roles', '🎭 Rôles HUB'], ['hub', '📌 HUB info'], ['messages', '📢 Messages récurrents'], ['_Système'], ['donnees', '🗄️ Base de données'], ['reglages', '⚙️ Réglages'], ['actions', '🔧 Actions']];
-let cur = location.hash.slice(1) in TABS ? location.hash.slice(1) : 'apercu';
+const SECTIONS = [
+  ['🏠 Accueil', [['apercu', 'Vue d’ensemble']]],
+  ['👥 Membres', [['membres', 'Liste des membres'], ['logs', 'Historique']]],
+  ['🚜 Exploitations', [['exploitations', 'Toutes les exploitations']]],
+  ['🏆 Communauté', [['xp', 'Niveaux & XP'], ['boutique', '🛒 Boutique'], ['bugs', '🐞 Bugs'], ['suggestions', '💡 Idées'], ['mods', '🛠️ Mods']]],
+  ['📌 Discord', [['hub', 'HUB d’information'], ['roles', 'Rôles'], ['messages', 'Messages récurrents']]],
+  ['⚙️ Système', [['reglages', 'Réglages'], ['actions', 'Actions'], ['donnees', 'Base de données']]],
+];
+const sectionDe = t => SECTIONS.findIndex(([, tabs]) => tabs.some(x => x[0] === t));
+let cur = sectionDe(location.hash.slice(1)) >= 0 ? location.hash.slice(1) : 'apercu';
 async function show(t) {
   cur = t; location.hash = t;
-  document.querySelectorAll('nav a').forEach(a => a.classList.toggle('sel', a.dataset.t === t));
+  const i = sectionDe(t), [titre, tabs] = SECTIONS[i];
+  document.querySelectorAll('nav a[data-s]').forEach(a => a.classList.toggle('sel', +a.dataset.s === i));
+  $('#titre').textContent = titre;
+  $('#pills').innerHTML = tabs.length > 1 ? tabs.map(([k, l]) => `<button data-tab="${k}" class="${k === t ? 'on' : ''}">${l}</button>`).join('') : '';
   const m = $('#main'); m.onclick = null; m.innerHTML = 'Chargement…';
   try { await TABS[t](m); } catch (e) { m.innerHTML = `<p class="err">${esc(e.message)}</p>`; }
 }
-$('#nav').insertAdjacentHTML('beforeend', NAV.map(([k, l]) => l ? `<a data-t="${k}">${l}</a>` : `<div class="g">${k.slice(1)}</div>`).join('') + '<a href="/" style="margin-top:16px;color:var(--mut)">← Éditeur d\'embeds</a>');
-$('#nav').onclick = e => { const a = e.target.closest('a[data-t]'); if (a) show(a.dataset.t); };
-fetch('/api/me').then(r => r.json()).then(j => j.ok ? show(cur) : (location.href = '/'));
+$('#nav').insertAdjacentHTML('beforeend', SECTIONS.map(([l, tabs], i) => `<a data-s="${i}" data-first="${tabs[0][0]}">${l}<span class="n" hidden></span></a>`).join('') + '<a href="/" style="margin-top:16px;color:var(--mut)">✏️ Éditeur d’embeds</a>');
+$('#nav').onclick = e => { const a = e.target.closest('a[data-first]'); if (a) show(a.dataset.first); };
+$('#pills').onclick = e => { const b = e.target.closest('[data-tab]'); if (b) show(b.dataset.tab); };
+// pastille rouge « à traiter » sur Communauté
+const pastille = () => api('/overview').then(o => { const n = o.enAttente.bugs + o.enAttente.suggestions + o.enAttente.mods + o.enAttente.boutique, e = document.querySelector('nav a[data-s="3"] .n'); e.textContent = n; e.hidden = !n; }).catch(() => {});
+fetch('/api/me').then(r => r.json()).then(j => j.ok ? (show(cur), pastille()) : (location.href = '/'));
 </script>
 </body>
 </html>
