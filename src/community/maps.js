@@ -38,6 +38,15 @@ function panelPayload() {
     embeds: [{
       title: '🗺️  PROPOSER UNE CARTE',
       description: [
+        '📋 **CONDITIONS DE LA CARTE**',
+        '',
+        'La carte proposée doit avoir :',
+        '> • Un **charme naturel** avec du **caractère**.',
+        '> • Un minimum de **100 champs**.',
+        '> • Des **espaces plats** pour construire sa ferme (environ **8 maximum**).',
+        '> • Des **routes** qui desservent les champs pour la circulation.',
+        '> • Un minimum de **relief**.',
+        '',
         'Une carte à faire découvrir ? Clique sur **Proposer une carte**, indique son **nom** et son **lien**.',
         '',
         'Chaque joueur peut ensuite la **noter de 1 à 5** avec les boutons sous la carte (ton vote reste modifiable).',
