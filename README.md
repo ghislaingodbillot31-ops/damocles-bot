@@ -14,5 +14,5 @@ Données : `./data` (créées au premier lancement).
 - `moderation/` : vérification, anti-raid/spam/doublons, règlement, rôles, accueil, invitations, tickets
 - `community/` : niveaux, anniversaires, événements, jeux, suggestions, bugs, salons temporaires
 - `farm/` : exploitations, hub, boutique, marché, pont FS25
-- `web/` : tableau de bord et API admin · `commands/` : commandes slash · `multifruit/` : mini-jeu
+- `web/` : tableau de bord et API admin · `commands/` : commandes slash
 Graphe du code : `graphify-out/graph.html`.

@@ -29,7 +29,6 @@ const levels                                           = require('./community/le
 const boutique                                         = require('./farm/boutique');
 const { postRolesHeader }                              = require('./moderation/roles');
 const cron                                             = require('node-cron');
-const multifruit                                       = require('./multifruit');
 
 const VERIFICATION_ROLE_ID = process.env.VERIFICATION_ROLE_ID;
 const REGLEMENT_ROLE_ID    = process.env.REGLEMENT_ROLE_ID;
@@ -97,6 +96,7 @@ client.once(Events.ClientReady, async () => {
   require('./moderation/publiclog').demarrer(client).catch(() => {});
   levels.startLevels(client);
   boutique.startBoutique(client);
+  require('./farm/hub2').init(client);
   // une seule version de chaque panneau : une fois les panneaux republiés, on supprime les anciens
   setTimeout(() => require('./core/nettoyage').nettoyerTout(client).catch(() => {}), 60_000);
 
@@ -231,7 +231,6 @@ client.on(Events.MessageCreate, async message => {
 
 // ── Interactions ──────────────────────────────────────────────────────────────
 client.on(Events.InteractionCreate, async interaction => {
-  if (await multifruit.handle(interaction)) return; // jeu Multifruit (customId « mf: »)
 
   if (interaction.isAutocomplete()) {
     if (interaction.commandName === 'succes') await require('./commands/succes').autocomplete(interaction).catch(() => {});
@@ -284,6 +283,7 @@ client.on(Events.InteractionCreate, async interaction => {
   }
 
   // Select menu (texte)
+  if (interaction.isStringSelectMenu() && interaction.customId.startsWith('nv_')) { await require('./farm/hub2').handle(interaction); return; }
   if (interaction.isStringSelectMenu()) {
     const cid = interaction.customId;
     try {
@@ -331,6 +331,7 @@ client.on(Events.InteractionCreate, async interaction => {
 
   if (!interaction.isButton()) return;
   const id = interaction.customId;
+  if (id.startsWith('nv_')) { await require('./farm/hub2').handle(interaction); return; }
 
   // Boutons HUB des exploitants
   try {

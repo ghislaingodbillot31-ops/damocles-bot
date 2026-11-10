@@ -404,6 +404,12 @@ async function startFs25Bridge(client) {
 
 module.exports = {
   startFs25Bridge,
+  // Une lecture unique du statut (sans journaux ni annonces) : sert à rafraîchir un seul salon
+  lireStatutUneFois: async () => {
+    const c = cfg();
+    const { data } = await (c.source === 'sftp' ? readViaSftp : readViaFtp)(c, null);
+    return parseStatus(data);
+  },
   ensureStatusMessage,
   isStatusChannel,
   moneyEvents,
