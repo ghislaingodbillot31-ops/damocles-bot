@@ -254,7 +254,8 @@ async function handleContratAccepter(interaction) {
   await interaction.update(reserveMessage(data));
 
   // 2) Créer le salon privé de négociation — accès à TOUS les membres des 2 exploitations
-  const parentId = interaction.message.channel?.parentId || null;
+  // Catégorie dédiée « NÉGOCIATIONS » (créée au besoin) : les salons de négociation ne se mélangent plus aux salons habituels
+  const parentId = (await categorieNego(interaction.guild)) || interaction.message.channel?.parentId || null;
   const invites = [...new Set([...exp.memberIds(demandeurExploit), ...exp.memberIds(accepteurExploit)])]
     .filter(id => id && id !== interaction.guild.id && id !== interaction.client.user.id);
   const overwrites = [
@@ -264,11 +265,13 @@ async function handleContratAccepter(interaction) {
   const adminRole = interaction.guild.roles.cache.find(r => r.permissions.has(PermissionFlagsBits.Administrator) && !r.managed);
   if (adminRole) overwrites.push({ id: adminRole.id, allow: [PermissionFlagsBits.ViewChannel, PermissionFlagsBits.SendMessages, PermissionFlagsBits.ReadMessageHistory] });
 
-  const slug = accepteurExploit.nom.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '').slice(0, 20) || 'nego';
+  const slugDe = n => String(n || '').toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '').replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '').slice(0, 14);
+  const slug = [slugDe(demandeurExploit?.nom || data.exploit?.nom), slugDe(accepteurExploit.nom)].filter(Boolean).join('-x-') || 'nego';
   let negoChannel;
   try {
     negoChannel = await interaction.guild.channels.create({
-      name: (isBesoin(data) ? '📦・besoin-' : '📋・contrat-') + slug,
+      name: '🤝・nego-' + (isBesoin(data) ? 'besoin-' : 'contrat-') + slug,
+      topic: ('🤝 Négociation · ' + LABEL(data) + ' · ' + (demandeurExploit?.nom || data.exploit?.nom) + ' ↔ ' + accepteurExploit.nom + ' · ' + objetShort(data)).slice(0, 1000),
       type: ChannelType.GuildText,
       parent: parentId,
       permissionOverwrites: overwrites,
@@ -339,6 +342,16 @@ async function handleContratAccepter(interaction) {
   }
 
   await interaction.followUp({ content: '✅ Salon de négociation créé : <#' + negoChannel.id + '>', flags: 64 });
+}
+
+// Catégorie « 🤝 NÉGOCIATIONS » : retrouvée par son nom, créée si absente (null si impossible → salon dans la catégorie de l'annonce)
+async function categorieNego(guild) {
+  const NOM = '🤝 NÉGOCIATIONS';
+  const existante = guild.channels.cache.find(c => c.type === ChannelType.GuildCategory && c.name === NOM);
+  if (existante) return existante.id;
+  try {
+    return (await guild.channels.create({ name: NOM, type: ChannelType.GuildCategory, reason: 'Salons de négociation des contrats et besoins' })).id;
+  } catch { return null; }
 }
 
 // Ligne des 3 boutons de décision (okDisabled = accord déjà confirmé)

@@ -41,10 +41,12 @@ function headPayload() {
       footer: { text: 'MonCopainBot' },
     }],
     components: [new ActionRowBuilder().addComponents(
+      new ButtonBuilder().setCustomId('hub_expl').setLabel('🌾 Exploitation').setStyle(ButtonStyle.Success), // créer / gérer sa fiche (flux hub.js) : la case du salon liste est mise à jour ensuite
       new ButtonBuilder().setCustomId('nv_succes').setLabel('🏆 Succès').setStyle(ButtonStyle.Primary),
       new ButtonBuilder().setCustomId('nv_act').setLabel('🛒 Activité').setStyle(ButtonStyle.Success),
       new ButtonBuilder().setCustomId('nv_usine').setLabel('🏭 Usine').setStyle(ButtonStyle.Success),
       new ButtonBuilder().setCustomId('nv_class').setLabel('📊 Classement').setStyle(ButtonStyle.Secondary),
+    ), new ActionRowBuilder().addComponents(
       new ButtonBuilder().setCustomId('hubinfo_parametre').setLabel(require('./hub-info').get().boutons.find(b => b.key === 'parametre').label).setStyle(ButtonStyle.Secondary), // texte réglé avec /bouton-info
     )],
   });
@@ -74,6 +76,20 @@ const commercePayload = () => panneau({
   )],
 });
 
+// Fiche de l'exploitation (créée avec le bouton Exploitation) liée à la ferme du jeu par son nom
+function ficheExploitation(farm) {
+  const e = exp.getAll().find(x => x.nom?.toLowerCase() === farm.name.trim().toLowerCase());
+  if (!e) return null;
+  const liste = ids => ids?.length ? ids.map(i => '<@' + i + '>').join(' ') : '—';
+  const acts = [e.activitePrincipale, e.activiteSecondaire, e.activiteSupplementaire].filter(Boolean).join(' · ') || '—';
+  return { couleur: e.couleur, texte: [
+    '**Exploitant :** <@' + e.ownerId + '>' + (e.coExploitants?.length ? '  ·  **Co :** ' + liste(e.coExploitants) : ''),
+    '**Activités :** ' + acts,
+    '**Recrutement :** ' + (e.recrute ? 'OUI' : 'NON') + '  ·  **Ouvriers :** ' + liste(e.ouvriers),
+    '**Créée le :** ' + new Date(e.createdAt).toLocaleDateString('fr-FR', { day: '2-digit', month: 'long', year: 'numeric' }),
+  ].join('\n') };
+}
+
 function fermePayload(farm) {
   const f = N.lire(farm);
   const p = N.points(f);
@@ -82,6 +98,7 @@ function fermePayload(farm) {
     ? '**Niveau max** ' + barre(1, 0, 1) + ' ' + f.score
     : barre(f.score, C.PALIERS[f.niveau - 1], suiv) + ' ' + f.score + '/' + suiv;
   const acts = f.activites.map(id => C.parId[id].emoji + ' ' + C.parId[id].nom).join(' · ') || '_Aucune_';
+  const fiche = ficheExploitation(farm);
   return panneau({ embeds: [{
     title: '🌾 ' + farm.name,
     description: '👥 ' + exploitants(farm) + '  ·  ⭐ **Niv. ' + f.niveau + '/20** ' + prog,
@@ -90,8 +107,9 @@ function fermePayload(farm) {
       { name: '💰 Solde', value: fmt(farm.money) + ' €', inline: true },
       { name: '🏦 Crédit', value: farm.loan > 0 ? fmt(farm.loan) + ' €' : '—', inline: true },
       { name: '🧰 Activités · 🏭 ' + f.usines + ' usine' + (f.usines > 1 ? 's' : ''), value: acts },
+      { name: '📋 Exploitation', value: (fiche ? fiche.texte : '_Pas encore de fiche : clique sur **🌾 Exploitation** dans le HUB._').slice(0, 1024) },
     ],
-    color: 0x2ECC71,
+    color: fiche?.couleur ?? 0x2ECC71,
   }], allowedMentions: { parse: [] } });
 }
 
@@ -355,4 +373,13 @@ async function handle(i) {
   }
 }
 
-module.exports = { init: c => { client = c; }, traiter, maj, handle };
+// Après chaque clic / menu / formulaire du flux « Exploitation » (hub_expl*), les cases du salon liste sont rafraîchies
+function init(c) {
+  client = c;
+  c.on('interactionCreate', i => {
+    if (!String(i.customId || '').startsWith('hub_expl')) return;
+    for (const d of [3000, 12000]) setTimeout(() => maj().catch(() => {}), d); // 2 passes : le flux peut finir après la 1re
+  });
+}
+
+module.exports = { init, traiter, maj, handle };
