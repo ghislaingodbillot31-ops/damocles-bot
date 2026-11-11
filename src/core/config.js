@@ -66,7 +66,7 @@ function get() {
     DISCORD_TOKEN: process.env.DISCORD_TOKEN,
     CLIENT_ID:     process.env.CLIENT_ID,
     GUILD_ID:      process.env.GUILD_ID,
-    OWNER_ID:      process.env.OWNER_ID || '231500104844967937',
+    OWNER_ID:      process.env.OWNER_ID || '1487197600452055040',
     DASHBOARD_SECRET: process.env.DASHBOARD_SECRET || '',
     DISCORD_CLIENT_SECRET: process.env.DISCORD_CLIENT_SECRET,
   };

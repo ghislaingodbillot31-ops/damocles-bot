@@ -22,6 +22,8 @@ if (!fs.existsSync(SEEDED)) {
     fs.writeFileSync(SEEDED, '1');
   } catch (err) { console.error('⚠️ Marché : restauration impossible :', err.message); }
 }
+// Transfert de compte : les produits de l'ancien compte passent au nouveau (idempotent).
+{ const l = load(); if (l.some(p => p.userId === '231500104844967937')) save(l.map(p => p.userId === '231500104844967937' ? { ...p, userId: '1487197600452055040' } : p)); }
 const nombre = s => Number(String(s).replace(/\s/g, '').replace(',', '.'));
 const fmt = n => n.toLocaleString('fr-FR');
 
