@@ -47,6 +47,15 @@ function simple(payload) {
 
 const EPHEMERE = 64;
 
+// Texte réglé avec /bouton-info pour un bouton dynamique : ajouté en tête du premier embed de la réponse au clic (une seule fois par clic)
+function avecIntro(payload, intro) {
+  const [e0, ...reste] = payload.embeds, o = e0.toJSON ? e0.toJSON() : { ...e0 };
+  const d = o.description || '', { SEP } = require('../core/embed-format');
+  const corps = d.startsWith(SEP) ? d.slice(SEP.length).replace(/^\n/, '') : d;
+  const description = ((d.startsWith(SEP) ? SEP + '\n' : '') + intro + '\n\n' + corps).slice(0, 4096);
+  return { ...payload, embeds: [{ ...o, description }, ...reste] };
+}
+
 // Applique la simplification aux réponses éphémères des interactions (reply, editReply, followUp, update)
 function installer() {
   for (const nom of ['CommandInteraction', 'MessageComponentInteraction', 'ModalSubmitInteraction']) {
@@ -56,6 +65,10 @@ function installer() {
       const origine = proto[m];
       if (typeof origine !== 'function') continue;
       proto[m] = function (payload, ...suite) {
+        if (payload && typeof payload === 'object' && payload.embeds?.length && !this._intro && this.isButton?.()) {
+          const intro = require('./hub-info').getIntro(this.customId);
+          if (intro) { this._intro = true; payload = avecIntro(payload, intro); }
+        }
         // reply/followUp : éphémère si le drapeau est posé ; editReply : si la réponse différée l'était ; update : si le message l'est
         const eph = m === 'update' ? (this.message?.flags?.has?.(EPHEMERE) ?? false)
           : m === 'editReply' ? !!this.ephemeral || (typeof payload === 'object' && !!(Number(payload?.flags) & EPHEMERE))
@@ -67,4 +80,4 @@ function installer() {
   }
 }
 
-module.exports = { installer, simple, simplifier };
+module.exports = { installer, simple, simplifier, avecIntro };

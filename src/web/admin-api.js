@@ -159,11 +159,7 @@ function mount(app, ctx) {
   // ── HUB d'information ──
   app.get(A + '/hubinfo', wrap(() => hubInfo.get()));
   app.put(A + '/hubinfo', wrap(req => hubInfo.set(req.body)));
-  app.post(A + '/hubinfo/publier', wrap(async () => { // reposte tout le HUB (info + exploitants)
-    const hub = require('../farm/hub'), ch = await salon(hub.HUB_CHANNEL);
-    if (!ch) throw new Error('Salon du HUB introuvable');
-    await hub.postHub(ch);
-  }));
+  app.post(A + '/hubinfo/publier', wrap(() => require('../farm/hub2').maj(undefined, true))); // republie les HUB du salon des exploitants
 
   // ── Messages récurrents ──
   app.get(A + '/scheduled', wrap(() => sched.getAll()));

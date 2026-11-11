@@ -296,6 +296,7 @@ async function handleModsButton(interaction) {
     }
     if (cur) embeds.push(cur);
     await interaction.editReply({
+      natif: true,
       embeds: embeds.map((d, i) => new EmbedBuilder().setColor(0x6aa84f).setDescription(d)
         .setTitle(i === 0 ? `📦 Mods du serveur (${lines.length})` : null)),
     });

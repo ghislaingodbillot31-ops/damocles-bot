@@ -26,13 +26,13 @@ const objetShort = data => data.kind === 'besoin'
 async function startContratFlow(interaction) {
   const exploit = exp.getByMember(interaction.user.id);
   if (!exploit) {
-    await interaction.reply({ embeds: [{ description: '❌ Tu n\'es membre d\'aucune exploitation. Crée-la ou fais-toi ajouter depuis le **HUB des exploitants**.', color: 0xE74C3C }], flags: 64 });
+    await interaction.reply({ natif: true, embeds: [{ description: '❌ Tu n\'es membre d\'aucune exploitation. Crée-la ou fais-toi ajouter depuis le **HUB des exploitants**.', color: 0xE74C3C }], flags: 64 });
     autoClean(interaction);
     return;
   }
 
   await interaction.reply({
-    embeds: [{ title: '📋 Nouveau contrat', description: 'Que veux-tu faire ?\n\n> 🙋 **Je propose** : tu offres tes services aux autres joueurs.\n> 🔎 **Je recherche** : tu cherches un joueur pour réaliser une action.', color: 0x5865F2 }],
+    natif: true, embeds: [{ title: '📋 Nouveau contrat', description: 'Que veux-tu faire ?\n\n> 🙋 **Je propose** : tu offres tes services aux autres joueurs.\n> 🔎 **Je recherche** : tu cherches un joueur pour réaliser une action.', color: 0x5865F2 }],
     components: [new ActionRowBuilder().addComponents(
       new ButtonBuilder().setCustomId('contrat_mode_propose').setLabel('🙋 Je propose').setStyle(ButtonStyle.Success),
       new ButtonBuilder().setCustomId('contrat_mode_recherche').setLabel('🔎 Je recherche').setStyle(ButtonStyle.Primary),
@@ -139,7 +139,7 @@ async function handleContratModal(interaction) {
   await agrilog(interaction.guild, '🆕 **' + exploit.nom + (mode === 'propose' ? '** propose ses services : ' : '** recherche un joueur : ') + travail);
 
   await interaction.reply({
-    embeds: [{ description: '✅ Contrat publié dans <#' + CONTRAT_CHANNEL + '> !', color: 0x2ECC71 }],
+    natif: true, embeds: [{ description: '✅ Contrat publié dans <#' + CONTRAT_CHANNEL + '> !', color: 0x2ECC71 }],
     flags: 64,
   });
   autoClean(interaction);
@@ -362,7 +362,7 @@ async function handleContratDealOk(interaction) {
   const embed = interaction.message.embeds[0];
 
   await interaction.update({
-    embeds: [{
+    natif: true, embeds: [{
       ...embed.data,
       title: '✅ ACCORD CONFIRMÉ',
       color: 0x2ECC71,
@@ -380,7 +380,7 @@ async function handleContratDealOk(interaction) {
 // Ferme le salon de négociation même si la session est perdue (bot redémarré)
 async function ackSansData(interaction, titre) {
   await interaction.update({
-    embeds: [{ title: titre, description: 'La session a été perdue (le bot a redémarré). Ce salon sera supprimé dans 10 secondes.', color: 0x95A5A6 }],
+    natif: true, embeds: [{ title: titre, description: 'La session a été perdue (le bot a redémarré). Ce salon sera supprimé dans 10 secondes.', color: 0x95A5A6 }],
     components: [],
   }).catch(() => {});
   setTimeout(() => interaction.channel?.delete().catch(() => {}), 10000);
@@ -395,7 +395,7 @@ async function handleContratDealRefuse(interaction) {
 
   // 1) Acquitter le clic tout de suite (avant tout appel réseau lent)
   await interaction.update({
-    embeds: [{ title: '❌ ' + LABEL(data) + ' REFUSÉ', description: 'L\'annonce redevient disponible. Ce salon sera supprimé dans quelques secondes.', color: 0xE74C3C }],
+    natif: true, embeds: [{ title: '❌ ' + LABEL(data) + ' REFUSÉ', description: 'L\'annonce redevient disponible. Ce salon sera supprimé dans quelques secondes.', color: 0xE74C3C }],
     components: [],
   });
   setTimeout(() => interaction.channel.delete().catch(() => {}), 8000);
@@ -427,7 +427,7 @@ async function handleContratDealDone(interaction) {
 
   // 1) Acquitter le clic tout de suite
   await interaction.update({
-    embeds: [{ title: '🏁 ' + LABEL(data) + ' TERMINÉ', description: 'L\'annonce a été retirée. Ce salon sera supprimé dans 10 secondes.', color: 0x2ECC71 }],
+    natif: true, embeds: [{ title: '🏁 ' + LABEL(data) + ' TERMINÉ', description: 'L\'annonce a été retirée. Ce salon sera supprimé dans 10 secondes.', color: 0x2ECC71 }],
     components: [],
   });
   setTimeout(() => interaction.channel.delete().catch(() => {}), 10000);
@@ -468,7 +468,7 @@ async function handleContratSupprimer(interaction) {
   delSession('msg_' + interaction.message.id);
 
   await interaction.message.delete().catch(() => {});
-  await interaction.reply({ embeds: [{ description: '🗑️ Annonce supprimée.', color: 0x95A5A6 }], flags: 64 });
+  await interaction.reply({ natif: true, embeds: [{ description: '🗑️ Annonce supprimée.', color: 0x95A5A6 }], flags: 64 });
   autoClean(interaction);
 
   if (data) {
@@ -480,7 +480,7 @@ async function handleContratSupprimer(interaction) {
 async function handleBesoinButton(interaction) {
   const exploit = exp.getByMember(interaction.user.id);
   if (!exploit) {
-    await interaction.reply({ embeds: [{ description: '❌ Tu n\'es membre d\'aucune exploitation. Crée-la ou fais-toi ajouter depuis le **HUB des exploitants**.', color: 0xE74C3C }], flags: 64 });
+    await interaction.reply({ natif: true, embeds: [{ description: '❌ Tu n\'es membre d\'aucune exploitation. Crée-la ou fais-toi ajouter depuis le **HUB des exploitants**.', color: 0xE74C3C }], flags: 64 });
     autoClean(interaction);
     return;
   }
@@ -520,7 +520,7 @@ async function handleBesoinModal(interaction) {
 
   await agrilog(interaction.guild, '🆕 **' + exploit.nom + '** recherche : ' + objetShort(data));
 
-  await interaction.reply({ embeds: [{ description: '✅ Besoin publié dans <#' + CONTRAT_CHANNEL + '> !', color: 0x2ECC71 }], flags: 64 });
+  await interaction.reply({ natif: true, embeds: [{ description: '✅ Besoin publié dans <#' + CONTRAT_CHANNEL + '> !', color: 0x2ECC71 }], flags: 64 });
   autoClean(interaction);
 }
 

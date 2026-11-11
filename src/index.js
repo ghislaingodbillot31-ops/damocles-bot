@@ -107,15 +107,6 @@ client.once(Events.ClientReady, async () => {
     console.error('⚠️ Erreur en-tête des rôles :', err.message);
   }
 
-  // Publier le HUB des exploitants
-  try {
-    const hubChannel = client.channels.cache.get(hub.HUB_CHANNEL);
-    if (hubChannel) await hub.postHub(hubChannel);
-    console.log('🌾 HUB des exploitants publié');
-  } catch (err) {
-    console.error('⚠️ Erreur publication HUB :', err.message);
-  }
-
   // Ré-attribuer le rôle Exploitant aux exploitants existants
   try {
     const guild = (client.guilds.cache.get(process.env.GUILD_ID) || client.guilds.cache.first());
@@ -252,6 +243,7 @@ client.on(Events.InteractionCreate, async interaction => {
       'banid':        './commands/banid',
       'sanction':     './commands/sanction',
       'bouton':       './commands/bouton',
+      'bouton-info':  './commands/bouton-info',
       'analyse':      './commands/analyse',
       'invite':       './commands/invite',
       'succes':       './commands/succes',
@@ -306,7 +298,8 @@ client.on(Events.InteractionCreate, async interaction => {
     const cid = interaction.customId;
     try {
       if (cid === 'verif_modal')                { await require('./moderation/codeverif').handleModal(interaction); return; }
-      if (cid === 'anniv_modal')                { await require('./community/birthday').handleModal(interaction); return; }
+      if (cid.startsWith('boutoninfo_'))        { await require('./commands/bouton-info').handleModal(interaction); return; }
+      if (cid === 'anniv_modal')              { await require('./community/birthday').handleModal(interaction); return; }
       if (cid === 'hub_expl_creer_modal')       { await hub.handleHubExplCreerModal(interaction); return; }
       if (cid.startsWith('hub_expl_nom_'))      { await hub.handleHubExplNom(interaction);        return; }
       if (cid.startsWith('contrat_modal_'))     { await contrat.handleContratModal(interaction);  return; }

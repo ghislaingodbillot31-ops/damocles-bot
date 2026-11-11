@@ -159,7 +159,7 @@ function decisionRow(reqId) {
 // ── Bouton « 🛒 Boutique » ────────────────────────────────────────────────────
 async function handleBoutique(interaction) {
   await interaction.reply({
-    ...panneau({ embeds: [{
+    natif: true, ...panneau({ embeds: [{
       title: '🛒 BOUTIQUE LE COIN DES COPAINS',
       description: 'Échange tes points de classement contre des avantages.\nRéservé aux membres d\'une exploitation.',
       color: 0x1ABC9C,
@@ -178,7 +178,7 @@ async function handleMonnaie(interaction) {
   const exploit = exp.getByMember(uid);
   if (!exploit) {
     await interaction.reply({
-      ...panneau({ embeds: [{
+      natif: true, ...panneau({ embeds: [{
         title: '💰 Monnaie FS25',
         description: 'Réservé aux membres d\'une exploitation (exploitant, co-exploitant ou ouvrier). Crée ou rejoins une exploitation depuis le HUB.',
         color: 0xE74C3C,
@@ -216,7 +216,7 @@ async function handleMonnaie(interaction) {
   }
 
   await interaction.reply({
-    ...panneau({ embeds: [{ title: '💰 MONNAIE FS25', description: lignes.join('\n'), color: 0xF1C40F }] }),
+    natif: true, ...panneau({ embeds: [{ title: '💰 MONNAIE FS25', description: lignes.join('\n'), color: 0xF1C40F }] }),
     components: [new ActionRowBuilder().addComponents(
       new ButtonBuilder().setCustomId('hub_boutique_echange').setLabel('💱 Demander un échange').setStyle(ButtonStyle.Success).setDisabled(disabled),
     )],
@@ -322,7 +322,7 @@ async function handleModal(interaction) {
   await agrilog(interaction.guild, '💱 <@' + uid + '> a demandé un échange de ' + n + ' points (' + (n * TAUX) + ' €)');
 
   await interaction.reply({
-    ...panneau({ embeds: [{
+    natif: true, ...panneau({ embeds: [{
       title: '💱 Demande envoyée',
       description: 'Ta demande d\'échange de **' + n + ' points** (' + (n * TAUX) + ' € en jeu) a été transmise au staff dans ton ticket : <#' + ticket.id + '>\nTu recevras un message privé une fois la décision prise.',
       color: 0x2ECC71,
@@ -390,7 +390,7 @@ async function handleDecision(interaction) {
     logLine = '❌ Échange refusé : <@' + req.userId + '> · ' + req.points + ' points · par <@' + staffId + '>';
   }
 
-  await interaction.update({ content: '', ...panneau({ embeds: [embed] }), components: [] }).catch(() => {});
+  await interaction.update({ natif: true, content: '', ...panneau({ embeds: [embed] }), components: [] }).catch(() => {});
 
   if (refresh) await levels.refreshLeaderboard().catch(() => {});
 

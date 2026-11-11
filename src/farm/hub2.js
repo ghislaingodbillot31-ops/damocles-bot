@@ -41,13 +41,38 @@ function headPayload() {
       footer: { text: 'MonCopainBot' },
     }],
     components: [new ActionRowBuilder().addComponents(
-      new ButtonBuilder().setCustomId('nv_succes').setLabel('🏆 Mes succès').setStyle(ButtonStyle.Primary),
-      new ButtonBuilder().setCustomId('nv_act').setLabel('🛒 Acheter une activité').setStyle(ButtonStyle.Success),
-      new ButtonBuilder().setCustomId('nv_usine').setLabel('🏭 Acheter une usine').setStyle(ButtonStyle.Success),
+      new ButtonBuilder().setCustomId('nv_succes').setLabel('🏆 Succès').setStyle(ButtonStyle.Primary),
+      new ButtonBuilder().setCustomId('nv_act').setLabel('🛒 Activité').setStyle(ButtonStyle.Success),
+      new ButtonBuilder().setCustomId('nv_usine').setLabel('🏭 Usine').setStyle(ButtonStyle.Success),
       new ButtonBuilder().setCustomId('nv_class').setLabel('📊 Classement').setStyle(ButtonStyle.Secondary),
+      new ButtonBuilder().setCustomId('hubinfo_parametre').setLabel(require('./hub-info').get().boutons.find(b => b.key === 'parametre').label).setStyle(ButtonStyle.Secondary), // texte réglé avec /bouton-info
     )],
   });
 }
+
+// Panneau INFORMATIONS (message séparé) : Règlement, Google Drive, Mot de passe, Mods. Textes réglés avec /bouton-info, clics gérés par hub-info.js.
+const infoPayload = () => require('./hub-info').buildMessage(['reglement', 'drive', 'motdepasse', 'mods']);
+
+// HUB « Commerce & Contrat » (message séparé) : mêmes boutons et mêmes fonctions que l'ancien HUB des exploitants (hub_* gérés dans index.js).
+const commercePayload = () => panneau({
+  embeds: [{
+    title: '🤝  COMMERCE & CONTRAT',
+    description: [
+      '📋  **Contrat** · propose tes services ou cherche un joueur',
+      '📦  **Besoin** · recherche une matière première',
+      '🏪  **Marché** · vends tes produits, consulte ceux des autres',
+      '🛒  **Boutique** · points de classement contre argent en jeu',
+    ].join('\n'),
+    color: 0xF1C40F,
+    footer: { text: 'MonCopainBot' },
+  }],
+  components: [new ActionRowBuilder().addComponents(
+    new ButtonBuilder().setCustomId('hub_contrat').setLabel('📋 Contrat').setStyle(ButtonStyle.Primary),
+    new ButtonBuilder().setCustomId('hub_besoin').setLabel('📦 Besoin').setStyle(ButtonStyle.Primary),
+    new ButtonBuilder().setCustomId('hub_marche').setLabel('🏪 Marché').setStyle(ButtonStyle.Success),
+    new ButtonBuilder().setCustomId('hub_boutique').setLabel('🛒 Boutique').setStyle(ButtonStyle.Secondary),
+  )],
+});
 
 function fermePayload(farm) {
   const f = N.lire(farm);
@@ -108,20 +133,31 @@ async function maj(st = status(), force = false) {
     const tete = await get(hub.head);
     const existants = new Map();
     for (const v of voulus) { const m = await getCase(hub.farms[v.cle]?.msgId); if (m) existants.set(v.cle, m); }
-    const complet = !force && tete && voulus.every(v => existants.has(v.cle));
+    // Statut FS25 : s'il est dans ce salon, il doit rester EN TÊTE (avant le HUB) et n'est jamais supprimé par le nettoyage
+    const bridge = require('./fs25-bridge');
+    const stat = bridge.isStatusChannel(channel) ? await bridge.ensureStatusMessage(channel).catch(() => null) : null;
+    const infoMsg = await get(hub.info);
+    const comMsg = await get(hub.commerce);
+    const complet = !force && tete && infoMsg && comMsg && voulus.every(v => existants.has(v.cle)) && (!stat || BigInt(stat.id) < BigInt(tete.id));
 
     if (!complet) {
       // Salons dédiés : on retire tout ce que le bot y a posté (évite les doublons si les ids connus sont perdus)
       for (const c of new Set([channel, liste])) {
         const vus = await c.messages.fetch({ limit: 100 }).catch(() => new Map());
-        for (const m of vus.values()) if (m.author.id === client.user.id) await m.delete().catch(() => {});
+        for (const m of vus.values()) if (m.author.id === client.user.id && m.id !== stat?.id) await m.delete().catch(() => {});
       }
       hub.farms = {};
       hub.head = (await channel.send(headPayload())).id;
+      hub.info = (await channel.send(infoPayload())).id;
+      hub.commerce = (await channel.send(commercePayload())).id;
       for (const v of voulus) hub.farms[v.cle] = { msgId: (await liste.send(v.payload)).id, h: JSON.stringify(v.payload) };
     } else {
       const hh = JSON.stringify(headPayload());
       if (hub.headH !== hh) { await tete.edit(headPayload()).catch(() => {}); hub.headH = hh; }
+      const ih = JSON.stringify(infoPayload());
+      if (hub.infoH !== ih) { await infoMsg.edit(infoPayload()).catch(() => {}); hub.infoH = ih; }
+      const ch = JSON.stringify(commercePayload());
+      if (hub.commerceH !== ch) { await comMsg.edit(commercePayload()).catch(() => {}); hub.commerceH = ch; }
       for (const v of voulus) {
         const h = JSON.stringify(v.payload);
         if (hub.farms[v.cle].h !== h) { await existants.get(v.cle).edit(v.payload).catch(() => {}); hub.farms[v.cle].h = h; }
@@ -149,7 +185,7 @@ async function traiter(st, annonces) {
 }
 
 // ── Interactions ──────────────────────────────────────────────────────────────
-const rep = (i, payload) => i.isStringSelectMenu() || /^nv_(oui|non)/.test(i.customId) ? i.update({ content: '', embeds: [], components: [], ...payload }) : i.reply({ ...payload, flags: 64 });
+const rep = (i, payload) => i.isStringSelectMenu() || /^nv_(oui|non)/.test(i.customId) ? i.update({ natif: true, content: '', embeds: [], components: [], ...payload }) : i.reply({ natif: true, ...payload, flags: 64 });
 const estStaff = i => i.member?.permissions?.has(PermissionFlagsBits.Administrator) || require('../moderation/tickets').estSupport(i.member);
 
 // Fermes proposées au joueur : celles qui portent le nom de son exploitation, sinon toutes (le staff valide)
@@ -277,7 +313,7 @@ async function handle(i) {
 
     if (id === 'nv_class') {
       const lignes = N.classement(st).map((x, k) => (['🥇', '🥈', '🥉'][k] || '`' + (k + 1) + '.`') + ' **' + x.farm.name + '** · niv. ' + x.f.niveau + ' · ' + x.f.score + ' succès');
-      return i.reply({ ...panneau({ embeds: [{ title: '📊 Classement des exploitations', description: lignes.join('\n') || '_Aucune exploitation._', color: 0xF1C40F }] }), flags: 64 });
+      return i.reply({ natif: true, ...panneau({ embeds: [{ title: '📊 Classement des exploitations', description: lignes.join('\n') || '_Aucune exploitation._', color: 0xF1C40F }] }), flags: 64 });
     }
 
     // Boutons / menus qui commencent par choisir une ferme

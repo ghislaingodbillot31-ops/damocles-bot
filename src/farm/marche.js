@@ -48,7 +48,7 @@ function vue(uid) {
     new StringSelectMenuBuilder().setCustomId('marche_prix').setPlaceholder('💰 Modifier le prix d\'un de mes produits')
       .addOptions(miens.map(p => ({ label: `${p.nom} (${fmt(p.prix)} €)`.slice(0, 100), value: p.id }))),
   ));
-  return { ...panneau({ embeds: [embed] }), components: rows };
+  return { ...panneau({ embeds: [embed] }), components: rows, natif: true };
 }
 
 async function handlePrix(i) {

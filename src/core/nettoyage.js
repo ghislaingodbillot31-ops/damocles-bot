@@ -2,7 +2,7 @@
 // qui viennent d'être placés (le plus récent de chaque type est gardé). Les messages des joueurs ne sont jamais touchés.
 // Salons « stricts » : uniquement des panneaux. Salons « souples » (propositions, bugs, tickets) : seuls les doublons
 // de panneau partent, car ils contiennent aussi des messages à suivre (sugg_ok_12…).
-const STRICTS = ['ANTISPAM_CHANNEL_ID', 'INVITE_HUB_CHANNEL_ID', 'HUB_CHANNEL_ID', 'REGLEMENT_CHANNEL_ID', 'BIRTHDAY_CHANNEL_ID', 'TEMPVOICE_PANEL_CHANNEL_ID', 'ROLES_CHANNEL_ID'];
+const STRICTS = ['ANTISPAM_CHANNEL_ID', 'INVITE_HUB_CHANNEL_ID', 'REGLEMENT_CHANNEL_ID', 'BIRTHDAY_CHANNEL_ID', 'TEMPVOICE_PANEL_CHANNEL_ID', 'ROLES_CHANNEL_ID'];
 const SOUPLES = ['SUGG_CHANNEL_ID', 'MODS_CHANNEL_ID', 'BUG_HUB_CHANNEL_ID', 'TICKET_CHANNEL_ID'];
 
 // Signature d'un panneau : ses boutons (sans numéro), ou le titre de l'embed

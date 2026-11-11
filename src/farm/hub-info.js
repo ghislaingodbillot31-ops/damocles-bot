@@ -12,7 +12,14 @@ const STYLES = {
   Success: ButtonStyle.Success, Danger: ButtonStyle.Danger,
 };
 
+// Boutons dont le contenu est dynamique (liste, formulaire, données du joueur) : le texte réglé avec /bouton-info s'affiche EN TÊTE de leur embed.
+const DYN = {
+  hub_contrat: '📋 Contrat', hub_besoin: '📦 Besoin', hub_marche: '🏪 Marché', hub_boutique: '🛒 Boutique',
+  nv_succes: '🏆 Succès', nv_act: '🛒 Activité', nv_usine: '🏭 Usine', nv_class: '📊 Classement', hubinfo_mods: '📦 Mods',
+};
+
 const DEFAUT = {
+  intros: {},
   titre: '📌  LE COIN DES COPAINS  ·  INFORMATIONS',
   description: 'Tout ce qu\'il faut savoir avant de jouer. Clique sur un bouton pour afficher les détails (visible par toi seul).',
   couleur: 0x3498DB,
@@ -21,9 +28,9 @@ const DEFAUT = {
     { key: 'exploitant', actif: true, label: '🌾 Exploitant', style: 'Success',   titre: '🌾  Devenir exploitant',   message: '', couleur: 0x2ECC71, image: '' },
     { key: 'activite',   actif: true, label: '🚜 Activité',   style: 'Secondary', titre: '🚜  Les activités',        message: '', couleur: 0xE67E22, image: '' },
     { key: 'parametre',  actif: true, label: '⚙️ Paramètre',  style: 'Secondary', titre: '⚙️  Paramètres de la partie', message: '', couleur: 0x95A5A6, image: '' },
-    { key: 'drive',      actif: true, label: '📁 Google Drive', style: 'Primary', titre: '📁  Google Drive',         message: '', couleur: 0x4285F4, image: '' },
-    { key: 'motdepasse', actif: true, label: '🔑 Mot de passe', style: 'Danger',    titre: '🔑  Mot de passe du serveur', message: '', couleur: 0xE74C3C, image: '' },
-    { key: 'mods',      actif: true, label: '📦 Liste des mods', style: 'Secondary', titre: '📦  Mods du serveur', message: '', couleur: 0x6AA84F, image: '' }, // contenu dynamique : liste lue sur le serveur
+    { key: 'drive',      actif: true, label: '📁 Drive', style: 'Primary', titre: '📁  Google Drive',         message: '', couleur: 0x4285F4, image: '' },
+    { key: 'motdepasse', actif: true, label: '🔑 Password', style: 'Danger',    titre: '🔑  Mot de passe du serveur', message: '', couleur: 0xE74C3C, image: '' },
+    { key: 'mods',      actif: true, label: '📦 Mods', style: 'Secondary', titre: '📦  Mods du serveur', message: '', couleur: 0x6AA84F, image: '' }, // contenu dynamique : liste lue sur le serveur
   ],
 };
 
@@ -39,7 +46,10 @@ function set(input) {
   const cur = get();
   const txt = (v, max, def) => (typeof v === 'string' ? v.slice(0, max) : def);
   const col = (v, def) => (Number.isInteger(v) && v >= 0 && v <= 0xFFFFFF ? v : def);
+  const intros = { ...(cur.intros || {}) };
+  for (const [k, v] of Object.entries(input.intros || {})) if (DYN[k] && typeof v === 'string') { if (v.trim()) intros[k] = v.slice(0, 2000); else delete intros[k]; }
   const next = {
+    intros,
     titre:       txt(input.titre, 256, cur.titre),
     description: txt(input.description, 4000, cur.description),
     couleur:     col(input.couleur, cur.couleur),
@@ -61,9 +71,9 @@ function set(input) {
   return next;
 }
 
-function buildMessage() {
+function buildMessage(keys) {
   const c = get();
-  const actifs = c.boutons.filter(b => b.actif);
+  const actifs = c.boutons.filter(b => b.actif && (!keys || keys.includes(b.key)));
   // 5 boutons maximum par rangée, répartis équitablement (6 → 3+3, 7 → 4+3)
   const rows = Math.ceil(actifs.length / 5), per = Math.ceil(actifs.length / rows);
   return {
@@ -84,7 +94,9 @@ async function handleButton(interaction) {
   }
   const embed = { title: b.titre || b.label, description: b.message, color: b.couleur, footer: { text: 'MonCopainBot' } };
   if (b.image) embed.image = { url: b.image };
-  await interaction.reply({ ...panneau({ embeds: [embed] }), flags: 64 });
+  await interaction.reply({ ...panneau({ embeds: [embed] }), flags: 64, natif: true }); // natif : sinon simple.js aplatit l'embed en texte
 }
 
-module.exports = { get, set, buildMessage, handleButton };
+const getIntro = id => (DYN[id] && get().intros[id]) || '';
+
+module.exports = { get, set, buildMessage, handleButton, DYN, getIntro };

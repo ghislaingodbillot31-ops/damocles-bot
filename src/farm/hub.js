@@ -1,5 +1,4 @@
 const fs = require('fs');
-const { noter } = require('./panneau-sync');
 const ids = require('../core/ids');
 const {
   ActionRowBuilder, ButtonBuilder, ButtonStyle,
@@ -11,7 +10,6 @@ const { agrilog } = require('../core/agrilog');
 const { panneau } = require('../core/embed-format');
 
 // ── Config ────────────────────────────────────────────────────────────────────
-const HUB_CHANNEL        = ids('HUB_CHANNEL_ID'); // salon du hub
 const EXPLOITANT_ROLE_ID = ids('EXPLOITANT_ROLE_ID');
 
 const ACTIVITES = [
@@ -66,64 +64,6 @@ function autoClean(interaction, delay = 4000) {
   setTimeout(() => { interaction.deleteReply().catch(() => {}); }, delay);
 }
 
-// ── Message HUB (publié au démarrage) ───────────────────────────────────────
-const HUB_MSG_FILE = require('../core/paths').dataPath('hub-messages.json');
-async function postHub(channel) {
-  const saved = (() => { try { return JSON.parse(fs.readFileSync(HUB_MSG_FILE, 'utf-8')); } catch { return {}; } })();
-  // Statut FS25 en direct : message du pont, placé EN PREMIER dans le salon s'il est configuré ici.
-  const bridge = require('./fs25-bridge');
-  const status = bridge.isStatusChannel(channel) ? await bridge.ensureStatusMessage(channel).catch(() => null) : null;
-  const nettoyer = async () => {
-    try {
-      const msgs = await channel.messages.fetch({ limit: 100 });
-      for (const [, m] of msgs) {
-        if (m.author.id === channel.client.user.id && m.id !== status?.id) await m.delete().catch(() => {});
-      }
-    } catch {}
-  };
-  // Mise à jour en place si les messages existent encore ET dans le bon ordre (statut, infos, HUB) ; sinon on nettoie et on republie
-  const [i0, p0] = await Promise.all([saved.info, saved.main].map(id => id && channel.messages.fetch(id).catch(() => null)));
-  const enPlace = !!(i0 && p0 && (!status || BigInt(status.id) < BigInt(i0.id)));
-  if (!enPlace) await nettoyer();
-  const info = require('./hub-info').buildMessage();
-  const payload = panneauHub();
-  const i = enPlace ? i0 : await channel.send(info);
-  const p = enPlace ? p0 : await channel.send(payload);
-  if (enPlace) { await i.edit(info); await p.edit(payload); }
-  noter(channel, 'HUB des exploitants', enPlace ? 'modifié' : 'republié');
-  try { fs.writeFileSync(HUB_MSG_FILE, JSON.stringify({ info: i.id, main: p.id })); } catch {}
-}
-
-function panneauHub() {
-  return panneau({
-    embeds: [{
-      title: '🌾  LE COIN DES COPAINS  ·  HUB DES EXPLOITANTS',
-      description: [
-        '🌾  **Mon exploitation** · crée et gère ta fiche',
-        '📋  **Créer un contrat** · propose tes services ou cherche un joueur',
-        '📦  **Besoin** · recherche une matière première',
-        '📖  **Annuaire** · liste des exploitations du serveur',
-        '🛒  **Boutique** · points de classement contre argent en jeu',
-        '🏪  **Marché** · vends tes produits, consulte ceux des autres',
-      ].join('\n'),
-      color: 0x2ECC71,
-      footer: { text: 'MonCopainBot' },
-    }],
-    components: [
-      new ActionRowBuilder().addComponents(
-        new ButtonBuilder().setCustomId('hub_expl').setLabel('🌾 Mon exploitation').setStyle(ButtonStyle.Success),
-        new ButtonBuilder().setCustomId('hub_contrat').setLabel('📋 Créer un contrat').setStyle(ButtonStyle.Primary),
-        new ButtonBuilder().setCustomId('hub_besoin').setLabel('📦 Besoin').setStyle(ButtonStyle.Primary),
-      ),
-      new ActionRowBuilder().addComponents(
-        new ButtonBuilder().setCustomId('hub_annuaire').setLabel('📖 Annuaire · ON').setStyle(ButtonStyle.Secondary),
-        new ButtonBuilder().setCustomId('hub_boutique').setLabel('🛒 Boutique').setStyle(ButtonStyle.Secondary),
-        new ButtonBuilder().setCustomId('hub_marche').setLabel('🏪 Marché').setStyle(ButtonStyle.Success),
-      ),
-    ],
-  });
-}
-
 // ═══ BOUTON « Mon exploitation » ════════════════════════════════════════════
 async function handleHubExpl(interaction) {
   const uid  = interaction.user.id;
@@ -131,7 +71,7 @@ async function handleHubExpl(interaction) {
 
   if (!list.length) {
     await interaction.reply({
-      embeds: [{ title: '🌾 Créer mon exploitation', description: 'Tu n\'as pas encore d\'exploitation. Clique ci-dessous pour en créer une !', color: 0x5865F2 }],
+      natif: true, embeds: [{ title: '🌾 Créer mon exploitation', description: 'Tu n\'as pas encore d\'exploitation. Clique ci-dessous pour en créer une !', color: 0x5865F2 }],
       components: [new ActionRowBuilder().addComponents(
         new ButtonBuilder().setCustomId('hub_expl_creer').setLabel('🌾 Créer mon exploitation').setStyle(ButtonStyle.Success),
       )],
@@ -142,10 +82,10 @@ async function handleHubExpl(interaction) {
   }
 
   // Une carte distincte (couleur, menu) par exploitation gérée
-  await interaction.reply({ ...manageMenu(list[0], uid, { i: 1, n: list.length }), flags: 64 });
+  await interaction.reply({ natif: true, ...manageMenu(list[0], uid, { i: 1, n: list.length }), flags: 64 });
   autoClean(interaction, 120000);
   for (const [k, e] of list.slice(1).entries()) {
-    const m = await interaction.followUp({ ...manageMenu(e, uid, { i: k + 2, n: list.length }), flags: 64 });
+    const m = await interaction.followUp({ natif: true, ...manageMenu(e, uid, { i: k + 2, n: list.length }), flags: 64 });
     setTimeout(() => interaction.webhook.deleteMessage(m.id).catch(() => {}), 120000);
   }
 }
@@ -243,7 +183,7 @@ async function handleHubExplCreerModal(interaction) {
     .addOptions(ACTIVITES);
 
   await interaction.reply({
-    embeds: [{ title: '🌾 ' + nom + ' créée !', description: '✅ Rôle **Exploitant** attribué.\n\nChoisis ton **activité principale** :', color: 0x2ECC71 }],
+    natif: true, embeds: [{ title: '🌾 ' + nom + ' créée !', description: '✅ Rôle **Exploitant** attribué.\n\nChoisis ton **activité principale** :', color: 0x2ECC71 }],
     components: [new ActionRowBuilder().addComponents(menu)],
     flags: 64,
   });
@@ -254,7 +194,7 @@ async function handleHubExplCreerModal(interaction) {
 async function handleHubExplManage(interaction) {
   const ownerId = interaction.customId.replace('hub_expl_manage_', '');
   const exploit = exp.getByOwner(ownerId);
-  if (!exploit) { await interaction.update({ embeds: [{ description: '❌ Exploitation introuvable.', color: 0xE74C3C }], components: [] }); return; }
+  if (!exploit) { await interaction.update({ natif: true, embeds: [{ description: '❌ Exploitation introuvable.', color: 0xE74C3C }], components: [] }); return; }
 
   if (!canManage(interaction, exploit)) {
     await interaction.reply({ content: '❌ Seul un exploitant (ou un admin) peut gérer cette exploitation.', flags: 64 });
@@ -295,7 +235,7 @@ async function handleHubExplManage(interaction) {
         { label: '❌ Non', value: 'non' },
       ]);
     await interaction.update({
-      embeds: [{ title: '🧑‍🌾 Recrutement · ' + exploit.nom, description: 'Est-ce que ton exploitation recrute ?', color: 0x5865F2 }],
+      natif: true, embeds: [{ title: '🧑‍🌾 Recrutement · ' + exploit.nom, description: 'Est-ce que ton exploitation recrute ?', color: 0x5865F2 }],
       components: [new ActionRowBuilder().addComponents(menu)],
     });
     return;
@@ -307,7 +247,7 @@ async function handleHubExplManage(interaction) {
       .setPlaceholder('Choisis une couleur...')
       .addOptions(PRESET_COLORS.map(c => ({ label: c.label, value: String(c.value) })));
     await interaction.update({
-      embeds: [{ title: '🎨 Couleur · ' + exploit.nom, description: 'Choisis la couleur des embeds de ton exploitation (fiche, annuaire, annonces).', color: exploit.couleur ?? DEFAULT_COLOR }],
+      natif: true, embeds: [{ title: '🎨 Couleur · ' + exploit.nom, description: 'Choisis la couleur des embeds de ton exploitation (fiche, annuaire, annonces).', color: exploit.couleur ?? DEFAULT_COLOR }],
       components: [new ActionRowBuilder().addComponents(menu)],
     });
     return;
@@ -319,7 +259,7 @@ async function handleHubExplManage(interaction) {
       .setPlaceholder('Choisis le 2ᵉ exploitant...')
       .setMaxValues(1);
     await interaction.update({
-      embeds: [{ title: '🤝 Ajouter un co-exploitant · ' + exploit.nom,
+      natif: true, embeds: [{ title: '🤝 Ajouter un co-exploitant · ' + exploit.nom,
         description: 'Le co-exploitant aura **les mêmes droits que toi** : contrats, besoins, fiche, ouvriers, couleur.\nIl **ne pourra pas** te retirer, supprimer l\'exploitation, ni ajouter/retirer un autre co-exploitant.', color: 0x2ECC71 }],
       components: [new ActionRowBuilder().addComponents(menu)],
     });
@@ -332,7 +272,7 @@ async function handleHubExplManage(interaction) {
       .setPlaceholder('Retirer le co-exploitant...')
       .addOptions(exploit.coExploitants.map((id, i) => ({ label: exploit.coExploitantTags[i] || id, value: id })));
     await interaction.update({
-      embeds: [{ title: '➖ Retirer le co-exploitant · ' + exploit.nom, color: 0xE74C3C }],
+      natif: true, embeds: [{ title: '➖ Retirer le co-exploitant · ' + exploit.nom, color: 0xE74C3C }],
       components: [new ActionRowBuilder().addComponents(menu)],
     });
     return;
@@ -344,7 +284,7 @@ async function handleHubExplManage(interaction) {
       .setPlaceholder('Tague le joueur à ajouter comme ouvrier...')
       .setMaxValues(1);
     await interaction.update({
-      embeds: [{ title: '➕ Ajouter un ouvrier · ' + exploit.nom, description: 'Sélectionne le joueur (tu peux le chercher avec @).', color: 0x2ECC71 }],
+      natif: true, embeds: [{ title: '➕ Ajouter un ouvrier · ' + exploit.nom, description: 'Sélectionne le joueur (tu peux le chercher avec @).', color: 0x2ECC71 }],
       components: [new ActionRowBuilder().addComponents(menu)],
     });
     return;
@@ -356,7 +296,7 @@ async function handleHubExplManage(interaction) {
       .setPlaceholder('Choisis l\'ouvrier à retirer...')
       .addOptions(exploit.ouvriers.map((id, i) => ({ label: exploit.ouvrierTags[i] || id, value: id })));
     await interaction.update({
-      embeds: [{ title: '➖ Retirer un ouvrier · ' + exploit.nom, color: 0xE74C3C }],
+      natif: true, embeds: [{ title: '➖ Retirer un ouvrier · ' + exploit.nom, color: 0xE74C3C }],
       components: [new ActionRowBuilder().addComponents(menu)],
     });
     return;
@@ -368,7 +308,7 @@ async function handleHubExplManage(interaction) {
     .setPlaceholder('Choisis une activité...')
     .addOptions(ACTIVITES);
   await interaction.update({
-    embeds: [{ title: '✏️ ' + exploit.nom, description: 'Choisis la nouvelle activité :', color: 0x5865F2 }],
+    natif: true, embeds: [{ title: '✏️ ' + exploit.nom, description: 'Choisis la nouvelle activité :', color: 0x5865F2 }],
     components: [new ActionRowBuilder().addComponents(menu)],
   });
 }
@@ -393,14 +333,14 @@ async function handleHubExplSetAct(interaction) {
       .setPlaceholder('Choisis ton activité secondaire...')
       .addOptions(ACTIVITES);
     await interaction.update({
-      embeds: [{ title: '✅ Activité principale enregistrée', description: 'Choisis ton **activité secondaire** :', color: 0x2ECC71 }],
+      natif: true, embeds: [{ title: '✅ Activité principale enregistrée', description: 'Choisis ton **activité secondaire** :', color: 0x2ECC71 }],
       components: [new ActionRowBuilder().addComponents(menu)],
     });
     return;
   }
 
   await interaction.update({
-    embeds: [{ description: mode === 'setup'
+    natif: true, embeds: [{ description: mode === 'setup'
       ? '🎉 Exploitation configurée ! Utilise **📖 Annuaire** pour voir toutes les exploitations.'
       : '✅ Activité mise à jour.', color: 0x2ECC71 }],
     components: [],
@@ -430,28 +370,28 @@ async function handleHubExplNom(interaction) {
 async function handleHubExplOuvAdd(interaction) {
   const exploitId = interaction.customId.replace('hub_expl_ouvadd_', '');
   const exploit   = Object.values(exp.load()).find(e => e.id === exploitId);
-  if (!exploit) { await interaction.update({ embeds: [{ description: '❌ Exploitation introuvable.', color: 0xE74C3C }], components: [] }); return; }
+  if (!exploit) { await interaction.update({ natif: true, embeds: [{ description: '❌ Exploitation introuvable.', color: 0xE74C3C }], components: [] }); return; }
 
   const id     = interaction.values[0];
   const member = interaction.guild.members.cache.get(id) || await interaction.guild.members.fetch(id).catch(() => null);
   if (!member) {
-    await interaction.update({ embeds: [{ description: '❌ Joueur introuvable sur le serveur.', color: 0xE74C3C }], components: [] });
+    await interaction.update({ natif: true, embeds: [{ description: '❌ Joueur introuvable sur le serveur.', color: 0xE74C3C }], components: [] });
     autoClean(interaction);
     return;
   }
   if (member.user.bot) {
-    await interaction.update({ embeds: [{ description: '❌ Impossible d\'ajouter un bot.', color: 0xE74C3C }], components: [] });
+    await interaction.update({ natif: true, embeds: [{ description: '❌ Impossible d\'ajouter un bot.', color: 0xE74C3C }], components: [] });
     autoClean(interaction);
     return;
   }
   if (exploit.ouvriers?.includes(id)) {
-    await interaction.update({ embeds: [{ description: '❌ **' + member.user.username + '** est déjà ouvrier.', color: 0xE74C3C }], components: [] });
+    await interaction.update({ natif: true, embeds: [{ description: '❌ **' + member.user.username + '** est déjà ouvrier.', color: 0xE74C3C }], components: [] });
     autoClean(interaction);
     return;
   }
 
   exp.addOuvrier(exploit.id, id, member.user.tag);
-  await interaction.update({ embeds: [{ description: '✅ **' + member.user.username + '** ajouté comme ouvrier à **' + exploit.nom + '**.', color: 0x2ECC71 }], components: [] });
+  await interaction.update({ natif: true, embeds: [{ description: '✅ **' + member.user.username + '** ajouté comme ouvrier à **' + exploit.nom + '**.', color: 0x2ECC71 }], components: [] });
   autoClean(interaction);
 }
 
@@ -459,12 +399,12 @@ async function handleHubExplOuvAdd(interaction) {
 async function handleHubExplRecrute(interaction) {
   const exploitId = interaction.customId.replace('hub_expl_recrute_', '');
   const exploit   = Object.values(exp.load()).find(e => e.id === exploitId);
-  if (!exploit) { await interaction.update({ embeds: [{ description: '❌ Exploitation introuvable.', color: 0xE74C3C }], components: [] }); return; }
+  if (!exploit) { await interaction.update({ natif: true, embeds: [{ description: '❌ Exploitation introuvable.', color: 0xE74C3C }], components: [] }); return; }
 
   const recrute = interaction.values[0] === 'oui';
   exp.updateExploitation(exploitId, { recrute });
   await interaction.update({
-    embeds: [{ description: recrute ? '✅ Recrutement **ouvert**.' : '✅ Recrutement **fermé**.', color: 0x2ECC71 }],
+    natif: true, embeds: [{ description: recrute ? '✅ Recrutement **ouvert**.' : '✅ Recrutement **fermé**.', color: 0x2ECC71 }],
     components: [],
   });
   autoClean(interaction);
@@ -474,10 +414,10 @@ async function handleHubExplRecrute(interaction) {
 async function handleHubExplOuvDel(interaction) {
   const exploitId = interaction.customId.replace('hub_expl_ouvdel_', '');
   const exploit   = exp.getById(exploitId);
-  if (!exploit) { await interaction.update({ embeds: [{ description: '❌ Exploitation introuvable.', color: 0xE74C3C }], components: [] }); return; }
+  if (!exploit) { await interaction.update({ natif: true, embeds: [{ description: '❌ Exploitation introuvable.', color: 0xE74C3C }], components: [] }); return; }
 
   exp.removeOuvrier(exploit.id, interaction.values[0]);
-  await interaction.update({ embeds: [{ description: '✅ Ouvrier retiré de **' + exploit.nom + '**.', color: 0x2ECC71 }], components: [] });
+  await interaction.update({ natif: true, embeds: [{ description: '✅ Ouvrier retiré de **' + exploit.nom + '**.', color: 0x2ECC71 }], components: [] });
   autoClean(interaction);
 }
 
@@ -485,7 +425,7 @@ async function handleHubExplOuvDel(interaction) {
 async function handleHubExplCouleur(interaction) {
   const exploitId = interaction.customId.replace('hub_expl_couleur_', '');
   const exploit   = exp.getById(exploitId);
-  if (!exploit) { await interaction.update({ embeds: [{ description: '❌ Exploitation introuvable.', color: 0xE74C3C }], components: [] }); return; }
+  if (!exploit) { await interaction.update({ natif: true, embeds: [{ description: '❌ Exploitation introuvable.', color: 0xE74C3C }], components: [] }); return; }
   if (!canManage(interaction, exploit)) {
     await interaction.reply({ content: '❌ Réservé aux exploitants.', flags: 64 });
     autoClean(interaction);
@@ -493,7 +433,7 @@ async function handleHubExplCouleur(interaction) {
   }
   const couleur = parseInt(interaction.values[0], 10);
   exp.updateExploitation(exploitId, { couleur });
-  await interaction.update({ embeds: [{ description: '✅ Couleur de l\'exploitation mise à jour.', color: couleur }], components: [] });
+  await interaction.update({ natif: true, embeds: [{ description: '✅ Couleur de l\'exploitation mise à jour.', color: couleur }], components: [] });
   autoClean(interaction);
 }
 
@@ -501,29 +441,29 @@ async function handleHubExplCouleur(interaction) {
 async function handleHubExplCoAdd(interaction) {
   const exploitId = interaction.customId.replace('hub_expl_coadd_', '');
   const exploit   = exp.getById(exploitId);
-  if (!exploit) { await interaction.update({ embeds: [{ description: '❌ Exploitation introuvable.', color: 0xE74C3C }], components: [] }); return; }
+  if (!exploit) { await interaction.update({ natif: true, embeds: [{ description: '❌ Exploitation introuvable.', color: 0xE74C3C }], components: [] }); return; }
   if (interaction.user.id !== exploit.ownerId) {
     await interaction.reply({ content: '❌ Seul le créateur peut ajouter un co-exploitant.', flags: 64 });
     autoClean(interaction);
     return;
   }
   if ((exploit.coExploitants?.length || 0) >= 1) {
-    await interaction.update({ embeds: [{ description: '❌ Il y a déjà un co-exploitant. Retire-le d\'abord.', color: 0xE74C3C }], components: [] });
+    await interaction.update({ natif: true, embeds: [{ description: '❌ Il y a déjà un co-exploitant. Retire-le d\'abord.', color: 0xE74C3C }], components: [] });
     autoClean(interaction);
     return;
   }
 
   const id = interaction.values[0];
   const member = interaction.guild.members.cache.get(id) || await interaction.guild.members.fetch(id).catch(() => null);
-  if (!member)               { await interaction.update({ embeds: [{ description: '❌ Joueur introuvable sur le serveur.', color: 0xE74C3C }], components: [] }); autoClean(interaction); return; }
-  if (member.user.bot)       { await interaction.update({ embeds: [{ description: '❌ Impossible d\'ajouter un bot.', color: 0xE74C3C }], components: [] }); autoClean(interaction); return; }
-  if (id === exploit.ownerId){ await interaction.update({ embeds: [{ description: '❌ Tu es déjà le créateur.', color: 0xE74C3C }], components: [] }); autoClean(interaction); return; }
+  if (!member)               { await interaction.update({ natif: true, embeds: [{ description: '❌ Joueur introuvable sur le serveur.', color: 0xE74C3C }], components: [] }); autoClean(interaction); return; }
+  if (member.user.bot)       { await interaction.update({ natif: true, embeds: [{ description: '❌ Impossible d\'ajouter un bot.', color: 0xE74C3C }], components: [] }); autoClean(interaction); return; }
+  if (id === exploit.ownerId){ await interaction.update({ natif: true, embeds: [{ description: '❌ Tu es déjà le créateur.', color: 0xE74C3C }], components: [] }); autoClean(interaction); return; }
 
   const wasOuvrier = (exploit.ouvriers || []).includes(id);
   exp.addCoExploitant(exploit.id, id, member.user.tag);
   await member.roles.add(EXPLOITANT_ROLE_ID).catch(() => {});
 
-  await interaction.update({ embeds: [{
+  await interaction.update({ natif: true, embeds: [{
     description: '✅ **' + member.user.username + '** est maintenant **co-exploitant** de **' + exploit.nom + '**'
       + (wasOuvrier ? ' *(retiré de la liste des ouvriers)*' : '') + '.\nMêmes droits que toi.',
     color: 0x2ECC71 }], components: [] });
@@ -536,7 +476,7 @@ async function handleHubExplCoAdd(interaction) {
 async function handleHubExplCoDel(interaction) {
   const exploitId = interaction.customId.replace('hub_expl_codel_', '');
   const exploit   = exp.getById(exploitId);
-  if (!exploit) { await interaction.update({ embeds: [{ description: '❌ Exploitation introuvable.', color: 0xE74C3C }], components: [] }); return; }
+  if (!exploit) { await interaction.update({ natif: true, embeds: [{ description: '❌ Exploitation introuvable.', color: 0xE74C3C }], components: [] }); return; }
   if (interaction.user.id !== exploit.ownerId) {
     await interaction.reply({ content: '❌ Seul le créateur peut retirer le co-exploitant.', flags: 64 });
     autoClean(interaction);
@@ -544,7 +484,7 @@ async function handleHubExplCoDel(interaction) {
   }
   const coId = interaction.values[0];
   exp.removeCoExploitant(exploit.id, coId);
-  await interaction.update({ embeds: [{ description: '✅ Co-exploitant retiré de **' + exploit.nom + '**. *(Le rôle Discord Exploitant est conservé.)*', color: 0x2ECC71 }], components: [] });
+  await interaction.update({ natif: true, embeds: [{ description: '✅ Co-exploitant retiré de **' + exploit.nom + '**. *(Le rôle Discord Exploitant est conservé.)*', color: 0x2ECC71 }], components: [] });
   autoClean(interaction);
 
   await agrilog(interaction.guild, '➖ **' + exploit.nom + '** : <@' + coId + '> retiré des co-exploitants par <@' + interaction.user.id + '>');
@@ -628,7 +568,7 @@ function renderAnnuaire(admin) {
 // ═══ BOUTON « Annuaire » (ON = affiche la liste, OFF = l'efface) ═══
 async function handleHubAnnuaire(interaction) {
   const { empty, ...view } = renderAnnuaire(isAdmin(interaction));
-  await interaction.reply({ ...view, flags: 64 });
+  await interaction.reply({ natif: true, ...view, flags: 64 });
   autoClean(interaction, empty ? 30000 : 15 * 60 * 1000);
 }
 
@@ -655,7 +595,7 @@ async function handleHubAnnuaireDel(interaction) {
   }
 
   await interaction.update({
-    embeds: [{
+    natif: true, embeds: [{
       title: '⚠️ Confirmer la suppression',
       description: 'Supprimer définitivement **' + exploit.nom + '** (créateur <@' + exploit.ownerId + '>) ?\n'
         + 'Action **irréversible** : co-exploitants et ouvriers seront perdus.',
@@ -682,13 +622,13 @@ async function handleHubAnnuaireDelYes(interaction) {
     await agrilog(interaction.guild, '🗑️ Exploitation supprimée : **' + exploit.nom + '** (créateur <@' + exploit.ownerId + '>) · par <@' + interaction.user.id + '>');
   }
   const { empty, ...view } = renderAnnuaire(true);
-  await interaction.update({ ...view });
+  await interaction.update({ natif: true, ...view });
 }
 
 // Étape 2b : annulation → retour à l'annuaire sans rien supprimer.
 async function handleHubAnnuaireDelNo(interaction) {
   const { empty, ...view } = renderAnnuaire(isAdmin(interaction));
-  await interaction.update({ ...view });
+  await interaction.update({ natif: true, ...view });
 }
 
 // ── Helpers ─────────────────────────────────────────────────────────────────
@@ -699,8 +639,7 @@ function canManage(interaction, exploit) {
 }
 
 module.exports = {
-  HUB_CHANNEL, EXPLOITANT_ROLE_ID, ACTIVITES,
-  postHub: async channel => { await postHub(channel); await require('../core/nettoyage').epurer(channel.client, channel.id); },
+  EXPLOITANT_ROLE_ID, ACTIVITES,
   handleHubExpl, handleHubExplCreer, handleHubExplCreerModal,
   handleHubExplManage, handleHubExplSetAct, handleHubExplNom,
   handleHubExplOuvAdd, handleHubExplOuvDel, handleHubAnnuaire, handleHubAnnuaireOff,

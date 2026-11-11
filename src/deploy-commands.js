@@ -6,6 +6,7 @@ const commands = [
   require('./commands/banid').data.toJSON(),
   require('./commands/sanction').data.toJSON(),
   require('./commands/bouton').data.toJSON(),
+  require('./commands/bouton-info').data.toJSON(),
   require('./commands/analyse').data.toJSON(),
   require('./commands/anniversaire').data.toJSON(),
   require('./commands/verifier').data.toJSON(),
