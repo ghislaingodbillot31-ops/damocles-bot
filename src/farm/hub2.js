@@ -254,18 +254,51 @@ function selectsActivites(farm, cat = null) {
   };
 }
 
-async function demander(i, farm, genre, actId) {
+// Menu des niveaux d'industrie : le niveau ACTUEL (informatif) et le SUIVANT, jamais au-delà.
+const nomNiv = n => n ? 'Nv ' + n + ' · ' + C.NIVEAUX_INDUSTRIE[n - 1] + ' (' + n + ' usine' + (n > 1 ? 's' : '') + ')' : 'Aucune usine';
+function selectsUsine(farm) {
+  const f = N.lire(farm), p = N.points(f), actuel = f.usines, suivant = actuel + 1;
+  const max = suivant > C.NIVEAUX_INDUSTRIE.length;
+  const options = [{ label: ('✅ Niveau actuel : ' + nomNiv(actuel)).slice(0, 100), value: 'cur' }];
+  if (!max) options.push({ label: ('🔓 Débloquer : ' + nomNiv(suivant)).slice(0, 100), value: String(suivant), description: ('💠 ' + (actuel + 2) + ' pts · tu as ' + p.dispo + ' pts').slice(0, 100) });
+  return {
+    content: '',
+    embeds: [{
+      title: '🏭 Usines · ' + farm.name,
+      description: '**Niveau actuel :** ' + nomNiv(actuel) + '\n'
+        + (max ? '🏆 Niveau maximum atteint.' : '**Niveau suivant :** ' + nomNiv(suivant) + ' · 💠 **' + (actuel + 2) + ' pts**  (tu as **' + p.dispo + '**)')
+        + '\n\nTu ne peux demander que le niveau **suivant** : on débloque les niveaux un par un.',
+      color: 0xE67E22,
+    }],
+    components: [new ActionRowBuilder().addComponents(
+      new StringSelectMenuBuilder().setCustomId('nv_niv_' + farm.id).setPlaceholder('🏭 Choisir un niveau d\'usine').addOptions(options))],
+  };
+}
+
+async function demander(i, farm, genre, actId, niveau) {
   const f = N.lire(farm), p = N.points(f);
   const act = actId && C.parId[actId];
+  if (!act && niveau !== f.usines + 1) return rep(i, { content: '❌ Tu ne peux demander que le niveau d\'usine suivant (' + (f.usines >= C.NIVEAUX_INDUSTRIE.length ? 'niveau maximum atteint' : 'Nv ' + (f.usines + 1)) + ').' });
   const cout = act ? act.cout : f.usines + 2;
-  const quoi = act ? act.emoji + ' ' + act.nom : '🏭 Usine n°' + (f.usines + 1);
+  const quoi = act ? act.emoji + ' ' + act.nom : '🏭 Usine ' + nomNiv(niveau);
   if (act && f.activites.includes(actId)) return rep(i, { content: '❌ Ton exploitation possède déjà cette activité.' });
   if (cout > p.dispo) return rep(i, { content: '❌ Il te faut **' + cout + ' pts** pour ' + quoi + ', tu en as **' + p.dispo + '**.' });
   const db = N.db();
   if (Object.values(db.demandes).some(d => d.statut === 'attente' && d.farmId === farm.id && d.quoi === (actId || 'usine')))
     return rep(i, { content: '⏳ Une demande identique est déjà en attente du staff.' });
 
-  await (i.isStringSelectMenu() || i.customId.startsWith('nv_oui_') ? i.deferUpdate() : i.deferReply({ flags: 64 }));
+  await (i.isStringSelectMenu() || i.customId.startsWith('nv_oui') ? i.deferUpdate() : i.deferReply({ flags: 64 }));
+  if (!act) { // usine : niveau débloqué automatiquement (points déjà vérifiés), pas de ticket, juste un log
+    N.fiche(farm).usines += 1;
+    N.save();
+    await i.editReply({ content: '✅ Niveau débloqué : ' + quoi + ' (−' + cout + ' pt' + (cout > 1 ? 's' : '') + ')', embeds: [], components: [] });
+    try {
+      const ch = await i.guild.channels.fetch('1567011774912532671');
+      await ch.send({ embeds: [{ title: '🏭 Niveau d\'usine débloqué', description: '<@' + i.user.id + '> a débloqué **' + nomNiv(niveau) + '** pour **' + farm.name + '**.',
+        fields: [{ name: 'Coût', value: cout + ' pt' + (cout > 1 ? 's' : ''), inline: true }, { name: 'Points restants', value: String(p.dispo - cout), inline: true }], color: 0xE67E22, timestamp: new Date().toISOString() }], allowedMentions: { parse: [] } });
+    } catch (e) { console.error('⚠️ Log usine :', e.message); }
+    return maj();
+  }
   let ticket;
   try {
     ticket = await require('../moderation/tickets').ouvrirSalon(i.guild, i.member, {
@@ -276,7 +309,7 @@ async function demander(i, farm, genre, actId) {
     return i.editReply({ content: '⚠️ Impossible d\'ouvrir le ticket. Préviens un administrateur.', components: [] });
   }
   const n = db.next++;
-  db.demandes[n] = { userId: i.user.id, farmId: farm.id, quoi: actId || 'usine', cout, statut: 'attente' };
+  db.demandes[n] = { userId: i.user.id, farmId: farm.id, quoi: actId || 'usine', niveau: act ? undefined : niveau, cout, statut: 'attente' };
   N.save();
   await ticket.send({
     ...panneau({ embeds: [{
@@ -311,6 +344,7 @@ async function decider(i) {
   if (oui === 'ok') {
     const f = N.fiche(farm);
     if (d.quoi !== 'usine' && f.activites.includes(d.quoi)) note = 'déjà possédée';
+    else if (d.quoi === 'usine' && d.niveau !== undefined && d.niveau !== f.usines + 1) note = 'niveau d\'usine ' + d.niveau + ' non débloquable (niveau actuel : ' + f.usines + ')';
     else if (d.cout > N.points(f).dispo) note = 'points insuffisants (' + N.points(f).dispo + ' dispo)';
     else if (d.quoi === 'usine') f.usines += 1; else f.activites.push(d.quoi);
     if (note) return i.reply({ content: '❌ Validation impossible : ' + note + '.', flags: 64 });
@@ -345,9 +379,23 @@ async function handle(i) {
     } else if (id.startsWith('nv_ferme_')) {
       genre = id.slice(9);
       farm = st.farms.find(f => String(f.id) === i.values[0]);
-    } else if (/^nv_(cat|achat|oui)_/.test(id)) {
+    } else if (/^nv_(cat|achat|niv|oui|ouiu)_/.test(id)) {
       farm = st.farms.find(f => String(f.id) === id.split('_')[2]);
       if (!farm) return;
+      if (id.startsWith('nv_ouiu_')) return await demander(i, farm, 'usine', null, Number(id.split('_')[3]));
+      if (id.startsWith('nv_niv_')) {
+        const choix = i.values[0], f = N.lire(farm);
+        if (choix === 'cur') return await rep(i, { content: 'ℹ️ C\'est ton niveau actuel : ' + nomNiv(f.usines) + '.' });
+        if (Number(choix) !== f.usines + 1) return await rep(i, { ...selectsUsine(farm), content: '❌ Tu ne peux demander que le niveau suivant.' });
+        return await i.update({
+          natif: true, content: 'Débloquer ce niveau d\'usine ?\n🏭 **' + nomNiv(Number(choix)) + '** · 💠 **' + (f.usines + 2) + ' pts** pour **' + farm.name + '**',
+          embeds: [],
+          components: [new ActionRowBuilder().addComponents(
+            new ButtonBuilder().setCustomId('nv_ouiu_' + farm.id + '_' + choix).setLabel('Oui').setStyle(ButtonStyle.Success),
+            new ButtonBuilder().setCustomId('nv_non').setLabel('Non').setStyle(ButtonStyle.Danger),
+          )],
+        });
+      }
       if (id.startsWith('nv_cat_')) return await rep(i, selectsActivites(farm, Number(i.values[0])));
       if (id.startsWith('nv_oui_')) return await demander(i, farm, 'act', id.split('_')[3]);
       // activité choisie : confirmation Oui / Non
@@ -366,7 +414,7 @@ async function handle(i) {
     if (!farm) return i.reply({ content: '⏳ Ferme introuvable.', flags: 64 });
 
     if (genre === 'succes') return rep(i, { embeds: [require('./fs25-succes').progressEmbed(farm, st)] });
-    if (genre === 'usine') return await demander(i, farm, 'usine', null);
+    if (genre === 'usine') return await rep(i, selectsUsine(farm));
     return rep(i, selectsActivites(farm));
   } catch (e) {
     console.error('Erreur HUB exploitants :', e.stack || e.message);
