@@ -149,17 +149,36 @@ function manageMenu(exploit, viewerId, pos) {
 }
 
 // ── Bouton « Créer mon exploitation » → modale ──────────────────────────────
-async function handleHubExplCreer(interaction) {
-  const modal = new ModalBuilder().setCustomId('hub_expl_creer_modal').setTitle('Créer mon exploitation');
-  modal.addComponents(new ActionRowBuilder().addComponents(
-    new TextInputBuilder().setCustomId('nom').setLabel('Nom de ton exploitation').setStyle(TextInputStyle.Short).setPlaceholder('Ex: Ferme des Collines').setRequired(true),
-  ));
-  await interaction.showModal(modal);
+// Fermes du serveur FS25 pas encore prises par une exploitation (le nom de la ferme = le nom de l'exploitation)
+function fermesLibres() {
+  const st = require('./fs25-succes').getStatus();
+  if (!st) return null;
+  const prises = exp.getAll().map(e => e.nom.trim().toLowerCase());
+  return st.farms.filter(f => !require('./niveaux').estForet(f) && !prises.includes(f.name.trim().toLowerCase()));
 }
 
-// ── Modale création ─────────────────────────────────────────────────────────
+async function handleHubExplCreer(interaction) {
+  if (exp.getByOwner(interaction.user.id)) return interaction.reply({ content: '❌ Tu as déjà une exploitation.', flags: 64 });
+  const libres = fermesLibres();
+  if (!libres) return interaction.reply({ content: '⏳ Pas encore de données du serveur FS25, réessaie dans une minute.', flags: 64 });
+  if (!libres.length) return interaction.reply({ content: '❌ Aucune exploitation libre en jeu. Crée d\'abord ta ferme sur le serveur FS25.', flags: 64 });
+  await interaction.reply({
+    natif: true,
+    embeds: [{ title: '🌾 Créer mon exploitation', description: 'Choisis **ta ferme** dans la liste des exploitations présentes en jeu :', color: 0x5865F2 }],
+    components: [new ActionRowBuilder().addComponents(
+      new StringSelectMenuBuilder().setCustomId('hub_expl_creerfarm').setPlaceholder('🌾 Quelle exploitation est la tienne ?')
+        .addOptions(libres.slice(0, 25).map(f => ({ label: f.name.slice(0, 100), value: String(f.id) })))),
+    ],
+    flags: 64,
+  });
+  autoClean(interaction, 120000);
+}
+
+// ── Menu : ferme choisie → création ─────────────────────────────────────────
 async function handleHubExplCreerModal(interaction) {
-  const nom = interaction.fields.getTextInputValue('nom').trim();
+  const farm = fermesLibres()?.find(f => String(f.id) === interaction.values[0]);
+  if (!farm) return interaction.update({ content: '❌ Cette exploitation n\'est plus disponible.', embeds: [], components: [] });
+  const nom = farm.name.trim();
 
   if (exp.getByOwner(interaction.user.id)) {
     await interaction.reply({ content: '❌ Tu as déjà une exploitation.', flags: 64 });

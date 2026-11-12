@@ -66,6 +66,7 @@ client.once(Events.ClientReady, async () => {
   console.log('✅ Bot connecté : ' + client.user.tag);
   console.log('📡 Serveurs : ' + client.guilds.cache.size);
   setClient(client);
+  contrat.demarrerNettoyage(client);
   require('./core/embed-format').setClient(client);
   const members = await db.getAllMembers();
   console.log('💾 DB : ' + members.length + ' membres');
@@ -279,6 +280,7 @@ client.on(Events.InteractionCreate, async interaction => {
   if (interaction.isStringSelectMenu()) {
     const cid = interaction.customId;
     try {
+      if (cid === 'hub_expl_creerfarm')        { await hub.handleHubExplCreerModal(interaction); return; }
       if (cid.startsWith('hub_expl_manage_'))  { await hub.handleHubExplManage(interaction);  return; }
       if (cid.startsWith('hub_expl_setact_'))  { await hub.handleHubExplSetAct(interaction);  return; }
       if (cid.startsWith('hub_expl_ouvdel_'))  { await hub.handleHubExplOuvDel(interaction);  return; }

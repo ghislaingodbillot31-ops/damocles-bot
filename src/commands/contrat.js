@@ -537,6 +537,33 @@ async function handleBesoinModal(interaction) {
   autoClean(interaction);
 }
 
+// ── Expiration : une annonce disparaît 4 jours (IRL) après sa publication ───
+// Basé sur la date du message Discord → rétroactif pour les annonces déjà publiées.
+// Les annonces en négociation / accord confirmé sont épargnées.
+const DUREE_ANNONCE = 4 * 24 * 3600 * 1000;
+async function nettoyerAnnonces(client) {
+  try {
+    const channel = await client.channels.fetch(CONTRAT_CHANNEL).catch(() => null);
+    if (!channel) return;
+    let avant, retires = 0;
+    for (let page = 0; page < 10; page++) { // ponytail: 1000 derniers messages max, largement suffisant pour un salon d'annonces
+      const lot = await channel.messages.fetch({ limit: 100, ...(avant && { before: avant }) });
+      if (!lot.size) break;
+      avant = lot.last().id;
+      for (const m of lot.values()) {
+        if (m.author.id !== client.user.id || Date.now() - m.createdTimestamp < DUREE_ANNONCE) continue;
+        const s = contratSession.get('msg_' + m.id);
+        if (s && (s.status === 'nego' || s.status === 'confirme')) continue;
+        await m.delete().catch(() => {});
+        delSession('msg_' + m.id);
+        retires++;
+      }
+    }
+    if (retires) console.log('🧹 ' + retires + ' annonce(s) expirée(s) retirée(s)');
+  } catch (e) { console.error('⚠️ Nettoyage annonces :', e.message); }
+}
+module.exports.demarrerNettoyage = client => { nettoyerAnnonces(client); setInterval(() => nettoyerAnnonces(client), 3600 * 1000); };
+
 module.exports.handleContratMode       = handleContratMode;
 module.exports.handleContratModal       = handleContratModal;
 module.exports.handleContratAccepter    = handleContratAccepter;
