@@ -46,6 +46,7 @@ function panelPayload() {
         '> • Des **espaces plats** pour construire sa ferme (environ **8 maximum**).',
         '> • Des **routes** qui desservent les champs pour la circulation.',
         '> • Un minimum de **relief**.',
+        '> • **10 mods maximum** en dépendance.',
         '',
         'Une carte à faire découvrir ? Clique sur **Proposer une carte**, indique son **nom** et son **lien**.',
         '',
@@ -107,7 +108,8 @@ async function handleNew(interaction) {
   const champ = (id, label, ph) => new ActionRowBuilder().addComponents(
     new TextInputBuilder().setCustomId(id).setLabel(label).setStyle(TextInputStyle.Short).setMaxLength(id === 'nom' ? 80 : 300).setRequired(true).setPlaceholder(ph));
   await interaction.showModal(new ModalBuilder().setCustomId('map_modal').setTitle('Proposer une carte')
-    .addComponents(champ('nom', 'Nom de la carte', 'Ex : Riverbend Springs'), champ('lien', 'Lien de la carte', 'https://...')));
+    .addComponents(champ('nom', 'Nom de la carte', 'Ex : Riverbend Springs'), champ('lien', 'Lien de la carte', 'https://...'),
+      champ('mods', 'Mods en dépendance (10 maximum)', 'Ex : 4 (0 si aucun)')));
 }
 
 async function handleModal(interaction) {
@@ -115,6 +117,9 @@ async function handleModal(interaction) {
   const lien = interaction.fields.getTextInputValue('lien').trim();
   const rep = c => interaction.reply({ content: c, flags: 64 }).then(() => setTimeout(() => interaction.deleteReply().catch(() => {}), 6000));
   if (!/^https?:\/\/\S+$/i.test(lien)) return rep('❌ Le lien doit commencer par `http://` ou `https://`.');
+  const mods = interaction.fields.getTextInputValue('mods').trim();
+  if (!/^\d{1,3}$/.test(mods)) return rep('❌ Indique le nombre de mods en dépendance (un nombre, 0 si aucun).');
+  if (Number(mods) > 10) return rep('❌ Carte refusée : **' + mods + ' mods** en dépendance, la limite est de **10**.');
   const channel = await salon(interaction.client);
   if (!channel) return rep('⚠️ Salon des cartes introuvable.');
 
