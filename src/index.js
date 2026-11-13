@@ -387,6 +387,7 @@ client.on(Events.InteractionCreate, async interaction => {
   try {
     if (id === 'map_new')               { await require('./community/maps').handleNew(interaction); return; }
     if (/^maprate_\d+_[1-5]$/.test(id)) { await require('./community/maps').handleRate(interaction); return; }
+    if (/^mapvoters_\d+$/.test(id))     { await require('./community/maps').handleVoters(interaction); return; }
   } catch (err) { console.error('Erreur bouton cartes :', err.stack || err.message); }
 
   // Boîte à idées

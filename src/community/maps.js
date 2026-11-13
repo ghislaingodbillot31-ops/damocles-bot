@@ -91,9 +91,20 @@ function cartePayload(n, s) {
     }] }),
     components: [new ActionRowBuilder().addComponents(
       [1, 2, 3, 4, 5].map(i => new ButtonBuilder().setCustomId('maprate_' + n + '_' + i).setLabel(i + ' ⭐').setStyle(ButtonStyle.Secondary)),
+    ), new ActionRowBuilder().addComponents(
+      new ButtonBuilder().setCustomId('mapvoters_' + n).setLabel('👥 Voir les votants').setStyle(ButtonStyle.Primary),
     )],
     allowedMentions: { parse: [] },
   };
+}
+
+async function handleVoters(interaction) {
+  const n = interaction.customId.split('_')[1];
+  const s = store.items[n];
+  if (!s) return interaction.reply({ content: 'ℹ️ Cette carte n\'existe plus.', flags: 64 });
+  const votes = Object.entries(s.votes || {}).sort((a, b) => b[1] - a[1]);
+  const txt = votes.length ? votes.map(([u, note]) => '<@' + u + '> — **' + note + '**/5 ' + '⭐'.repeat(note)).join('\n') : '_Personne n\'a encore voté._';
+  await interaction.reply({ content: '👥 **Votants · ' + s.nom + '**\n' + txt, flags: 64, allowedMentions: { parse: [] } });
 }
 
 async function majJournal(channel) {
@@ -157,6 +168,11 @@ async function startMaps(client) {
     if (panel && journal) {
       await panel.edit(panelPayload()).catch(() => {});
       await journal.edit(journalPayload()).catch(() => {});
+      // Ajoute le bouton « votants » aux cartes déjà publiées
+      for (const [n, s] of Object.entries(store.items)) {
+        const m = s.msgId && await channel.messages.fetch(s.msgId).catch(() => null);
+        if (m) await m.edit(cartePayload(n, s)).catch(() => {});
+      }
     } else {
       // Ordre cassé ou premier lancement : on reposte tout dans le bon ordre
       for (const id of [store.panelMsgId, store.journalMsgId, ...Object.values(store.items).map(s => s.msgId)])
@@ -170,4 +186,4 @@ async function startMaps(client) {
   } catch (err) { console.error('⚠️ Cartes :', err.message); }
 }
 
-module.exports = { startMaps, handleNew, handleModal, handleRate };
+module.exports = { startMaps, handleNew, handleModal, handleRate, handleVoters };
