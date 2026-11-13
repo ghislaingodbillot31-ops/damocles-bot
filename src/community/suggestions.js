@@ -158,7 +158,7 @@ function suggPayload(n, s) {
 // ── Bouton « Faire une proposition » ──────────────────────────────────────────
 async function handleSuggNew(interaction) {
   const last = derniere.get(interaction.user.id) || 0;
-  const reste = COOLDOWN_MS - (Date.now() - last);
+  const reste = JEU ? COOLDOWN_MS - (Date.now() - last) : 0; // mods : aucun délai entre deux propositions
   if (reste > 0) {
     await interaction.reply({ content: '⏳ Attends encore ' + Math.ceil(reste / 60000) + ' min avant une nouvelle proposition.', flags: 64 });
     autoClean(interaction);
@@ -219,7 +219,7 @@ async function handleSuggModal(interaction) {
   save();
   derniere.set(interaction.user.id, Date.now());
 
-  await interaction.reply({ content: '✅ Ta proposition ' + (JEU ? '' : 'de mod ') + 'n°' + n + ' est publiée · Your suggestion #' + n + ' is posted. Tu recevras la décision du staff en MP · You will get the decision by DM.', flags: 64 });
+  await interaction.reply({ content: '✅ Ta proposition ' + (JEU ? '' : 'de mod ') + 'n°' + n + ' est publiée · Your suggestion #' + n + ' is posted. ' + (JEU ? 'Tu recevras la décision du staff en MP · You will get the decision by DM.' : 'La décision du staff sera publiée dans les logs.'), flags: 64 });
   autoClean(interaction, 8000);
   await agrilog(interaction.guild, (JEU ? '💡 <@' + s.userId + '> propose **' : '🛠️ <@' + s.userId + '> propose le mod **') + titre + '** (n°' + n + ')');
 }
@@ -256,14 +256,14 @@ async function handleSuggDecisionModal(interaction) {
   save();
 
   // Une fois traitée, la proposition disparaît du salon (la décision part en MP et dans les logs)
-  await interaction.reply({ content: (valide ? '✅ Proposition n°' + num + ' validée.' : '❌ Proposition n°' + num + ' refusée.') + ' Le joueur est prévenu en MP.', flags: 64 });
+  await interaction.reply({ content: (valide ? '✅ Proposition n°' + num + ' validée.' : '❌ Proposition n°' + num + ' refusée.') + (JEU ? ' Le joueur est prévenu en MP.' : ''), flags: 64 });
   autoClean(interaction);
   const channel = await salon(interaction.client);
   const msg = interaction.message || (channel && s.msgId && await channel.messages.fetch(s.msgId).catch(() => null));
   if (msg) await msg.delete().catch(() => {});
 
   let mp = true;
-  try {
+  if (JEU) try {
     const user = await interaction.client.users.fetch(s.userId);
     await user.send(panneau({ embeds: [{
       title: JEU ? (valide ? '✅ Ta proposition a été validée · Suggestion accepted' : '❌ Ta proposition a été refusée · Suggestion declined')
@@ -284,15 +284,16 @@ async function handleSuggDecisionModal(interaction) {
     }] }));
   } catch { mp = false; /* MP fermés */ }
 
-  // Mod refusé : le motif est aussi affiché dans le salon des mods
-  if (!valide && !JEU) {
-    const fs25 = interaction.client.channels.cache.get(ids('MODS_CHANNEL_ID'));
-    await fs25?.send({ ...panneau({ embeds: [{
-      title: '❌ Mod refusé · ' + s.titre,
-      description: 'Proposé par <@' + s.userId + '> · refusé par <@' + s.decidedBy + '>',
-      fields: [{ name: '💬 Raison du refus', value: s.commentaire || 'Non précisé' }],
-      color: 0xE74C3C,
-    }] }), allowedMentions: { parse: [] } }).catch(console.error);
+  // Mods : décision publiée dans le salon de logs (raison ajoutée si refus), aucun MP
+  if (!JEU) {
+    const logs = await interaction.client.channels.fetch('1567011774912532671').catch(() => null);
+    await logs?.send({ embeds: [{
+      title: valide ? '✅ Mod accepté · ' + s.titre : '❌ Mod refusé · ' + s.titre,
+      description: 'Proposé par <@' + s.userId + '> · ' + (valide ? 'accepté' : 'refusé') + ' par <@' + s.decidedBy + '>',
+      fields: valide ? [] : [{ name: '💬 Raison du refus', value: s.commentaire || 'Non précisée' }],
+      color: valide ? 0x2ECC71 : 0xE74C3C,
+      timestamp: new Date().toISOString(),
+    }], allowedMentions: { parse: [] } }).catch(console.error);
   }
 
   await agrilog(interaction.guild, (valide ? '✅' : '❌') + ' Proposition n°' + num + ' ' + (valide ? 'validée' : 'refusée')

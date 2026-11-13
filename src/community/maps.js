@@ -93,9 +93,23 @@ function cartePayload(n, s) {
       [1, 2, 3, 4, 5].map(i => new ButtonBuilder().setCustomId('maprate_' + n + '_' + i).setLabel(i + ' ⭐').setStyle(ButtonStyle.Secondary)),
     ), new ActionRowBuilder().addComponents(
       new ButtonBuilder().setCustomId('mapvoters_' + n).setLabel('👥 Voir les votants').setStyle(ButtonStyle.Primary),
+      new ButtonBuilder().setCustomId('mapdel_' + n).setLabel('🗑️ Supprimer (admin)').setStyle(ButtonStyle.Danger),
     )],
     allowedMentions: { parse: [] },
   };
+}
+
+async function handleDelete(interaction) {
+  if (!interaction.memberPermissions?.has('Administrator'))
+    return interaction.reply({ content: '❌ Réservé aux administrateurs.', flags: 64 });
+  const n = interaction.customId.split('_')[1];
+  const s = store.items[n];
+  if (!s) return interaction.reply({ content: 'ℹ️ Cette carte n\'existe plus.', flags: 64 });
+  delete store.items[n];
+  save();
+  await interaction.message.delete().catch(() => {});
+  await majJournal(interaction.channel);
+  await interaction.reply({ content: '🗑️ Carte **' + s.nom + '** supprimée.', flags: 64 }).then(() => setTimeout(() => interaction.deleteReply().catch(() => {}), 6000));
 }
 
 async function handleVoters(interaction) {
@@ -186,4 +200,4 @@ async function startMaps(client) {
   } catch (err) { console.error('⚠️ Cartes :', err.message); }
 }
 
-module.exports = { startMaps, handleNew, handleModal, handleRate, handleVoters };
+module.exports = { startMaps, handleNew, handleModal, handleRate, handleVoters, handleDelete };

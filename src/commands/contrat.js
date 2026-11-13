@@ -316,30 +316,7 @@ async function handleContratAccepter(interaction) {
     components: [dealRow(mId, false)],
   }));
 
-  // DM best-effort à chaque membre — un DM fermé ne bloque pas les autres.
-  const dmEmbed = {
-    title: '🤝 ' + LABEL(data) + ' · négociation ouverte',
-    description: [
-      '**' + accepteurExploit.nom + '** ' + verb + ' **' + (demandeurExploit?.nom || data.exploit.nom) + '**.',
-      objetShort(data),
-      '',
-      '➡️ Salon : ' + negoChannel.toString(),
-    ].join('\n'),
-    color: 0xF39C12,
-  };
-  const echecsDM = [];
-  for (const id of invites) {
-    try {
-      const u = await interaction.client.users.fetch(id);
-      await u.send({ embeds: [dmEmbed] });
-    } catch { echecsDM.push(id); }
-  }
-  if (echecsDM.length) {
-    await negoChannel.send({
-      content: '⚠️ Injoignable(s) en MP (DM fermés) : ' + echecsDM.map(id => '<@' + id + '>').join(', ') + '. Pensez à les prévenir ici.',
-      allowedMentions: { parse: [] },
-    }).catch(() => {});
-  }
+  // Aucun MP : les membres sont pingés dans le salon de négociation.
 
   await interaction.followUp({ content: '✅ Salon de négociation créé : <#' + negoChannel.id + '>', flags: 64 });
 }
