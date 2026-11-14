@@ -393,6 +393,35 @@ async function handleOpDecision(interaction) {
   await majSalaires(interaction.client);
 }
 
+// ── Contrôle des licences : un joueur connecté dans la ferme de l'association sans licence valide → alerte dans les logs ──
+// Une alerte par connexion (le joueur est oublié quand il se déconnecte ou quitte la ferme).
+const alertes = new Set();
+function sansLicence(status) {
+  const farm = status?.farms?.find(f => f.name === NOM);
+  if (!farm || !status.playerFarms) return null;
+  const valides = new Set(actifs().map(([, m]) => m.pseudo.toLowerCase()));
+  return status.playerFarms.filter(p => p.farm === farm.id && !valides.has(p.name.toLowerCase())).map(p => p.name);
+}
+
+async function verifierLicences(client) {
+  const fautifs = sansLicence(require('./fs25-bridge').getLastFs25Status());
+  if (!fautifs) return;
+  for (const n of [...alertes]) if (!fautifs.includes(n)) alertes.delete(n);
+  for (const nom of fautifs) {
+    if (alertes.has(nom)) continue;
+    alertes.add(nom);
+    const ancien = Object.entries(store.membres).find(([, m]) => m.pseudo.toLowerCase() === nom.toLowerCase());
+    const ch = await client.channels.fetch(LOGS_ID).catch(() => null);
+    await ch?.send({ embeds: [{
+      title: '🚫 Joueur sans licence · ' + NOM,
+      description: '**' + nom + '** est connecté dans la ferme **' + NOM + '** sans licence valide.\n'
+        + (ancien ? 'Licence de <@' + ancien[0] + '> expirée le ' + ts(ancien[1].fin, 'D') + '.' : 'Aucune licence enregistrée pour ce pseudo en jeu.')
+        + '\nIl n\'a pas le droit de travailler pour l\'association : adhésion de **' + euros(PRIX) + '** dans <#' + CHANNEL_ID + '>.',
+      color: 0xE74C3C, timestamp: new Date().toISOString(),
+    }], allowedMentions: { parse: [] } }).catch(err => console.error('⚠️ Alerte licence :', err.message));
+  }
+}
+
 async function publier(client, status) {
   load();
   if (status) dernierReleve = releve(status);
@@ -416,6 +445,7 @@ async function startAssociation(client) {
   catch (err) { console.error('⚠️ Association :', err.message); }
   setInterval(() => expirer(client).catch(() => {}), 6 * 3600_000).unref(); // logge et retire les licences expirées
   setInterval(() => majSalaires(client).catch(() => {}), 5 * 60_000).unref();
+  setInterval(() => verifierLicences(client).catch(() => {}), 60_000).unref();
 }
 
-module.exports = { startAssociation, publier, handle, releve, calcul, _store: () => store, _setReleve: r => { dernierReleve = r; } };
+module.exports = { startAssociation, publier, handle, releve, calcul, sansLicence, _store: () => store, _setReleve: r => { dernierReleve = r; } };

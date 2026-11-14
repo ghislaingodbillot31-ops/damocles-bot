@@ -130,6 +130,7 @@ function parseStatus(xml) {
       id: h.id, farm: unescapeXml(h.farm) || '?', job: unescapeXml(h.job) || 'Ouvrier IA', vehicle: unescapeXml(h.vehicle),
     })),
     players: allTags(xml, 'player').map((p) => unescapeXml(p.name)).filter((n) => n && n !== 'Server'),
+    playerFarms: allTags(xml, 'player').map((p) => ({ name: unescapeXml(p.name), farm: parseInt(p.farm || '0', 10) })),
   };
 }
 
