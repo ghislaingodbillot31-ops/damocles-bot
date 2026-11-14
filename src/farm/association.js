@@ -48,6 +48,7 @@ function panelPayload() {
         '> • Droit d\'entrée : **' + euros(PRIX) + '**',
         '> • Tu obtiens une **licence valable 1 an**',
         '> • La licence te permet d\'**utiliser les machines** de l\'association et de **faire de la sylviculture**',
+        '> • Chaque mois, tu verses entre **10 000 €** et **50 000 €** à l\'association, par virement depuis ta ferme',
         '',
         '## 📋 Comment rejoindre',
         '**1.** Clique sur **Rejoindre l\'association** : un ticket s\'ouvre avec le staff.',
@@ -105,7 +106,7 @@ async function log(client, title, uid, pseudo, extra, color) {
   const ch = await client.channels.fetch(LOGS_ID).catch(() => null);
   await ch?.send({ embeds: [{
     title, color, timestamp: new Date().toISOString(),
-    description: 'Joueur : <@' + uid + '> · pseudo en jeu **' + pseudo + '**' + (extra ? '\n' + extra : ''),
+    description: (uid !== '0' ? 'Joueur : <@' + uid + '> · pseudo en jeu **' + pseudo + '**\n' : '') + (extra || ''),
   }], allowedMentions: { parse: [] } }).catch(err => console.error('⚠️ Log association :', err.message));
 }
 
@@ -255,8 +256,6 @@ const dette    = uid => Math.round((store.credits ||= {})[uid] || 0);
 
 function salairesPayload() {
   const c = calcul();
-  const comptes = Object.keys({ ...(store.cagnottes || {}), ...(store.credits || {}) }).filter(u => cagnotte(u) || dette(u))
-    .sort((a, b) => cagnotte(b) - cagnotte(a));
   const description = !c ? '_En attente des données du serveur FS25 (ferme **' + NOM + '** introuvable)._' : [
     '## ⏱️ Période en cours',
     '💶 Revenus de la période : **' + euros(Math.round(c.revenu)) + '** · **' + (PART * 100) + ' %** répartis dans les cagnottes à la clôture',
@@ -266,15 +265,13 @@ function salairesPayload() {
       + ' · ' + Math.round(l.part * 100) + ' % · 🐷 +**' + euros(l.gain) + '**')
       : ['_Aucun licencié n\'a encore travaillé sur cette période._']),
     '',
-    '## 🐷 Cagnottes',
-    ...(comptes.length ? comptes.slice(0, 20).map(u => '<@' + u + '> · 🐷 **' + euros(cagnotte(u)) + '** disponibles' + (dette(u) ? ' · 💳 crédit à rembourser : **' + euros(dette(u)) + '**' : ''))
-      : ['_Aucune cagnotte pour le moment._']),
+    ...investissement(),
     '',
     '-# Travail compté : véhicule de l\'association moteur allumé, et coupe à la tronçonneuse. Sans travail, rien n\'est ajouté à la cagnotte.',
     '-# La cagnotte n\'est pas versée : elle te permet de demander un **crédit** à l\'association, à rembourser ensuite.',
   ].join('\n');
   return {
-    ...panneau({ embeds: [{ title: '🐷  TRAVAIL & CAGNOTTES', description, color: 0xF1C40F, footer: { text: 'MonCopainBot · mis à jour toutes les 5 min' }, timestamp: new Date().toISOString() }] }),
+    ...panneau({ embeds: [{ title: '🐷  TRAVAIL & INVESTISSEMENT', description, color: 0xF1C40F, footer: { text: 'MonCopainBot · mis à jour toutes les 5 min' }, timestamp: new Date().toISOString() }] }),
     components: [new ActionRowBuilder().addComponents(
       new ButtonBuilder().setCustomId('asso_credit').setLabel('💳 Demander un crédit').setStyle(ButtonStyle.Success),
       new ButtonBuilder().setCustomId('asso_remb').setLabel('💶 Rembourser').setStyle(ButtonStyle.Primary),
@@ -393,6 +390,64 @@ async function handleOpDecision(interaction) {
   await majSalaires(interaction.client);
 }
 
+// ── Virements des joueurs vers l'association (compteur « transfer_in » du mod, clé = ferme qui envoie) ──
+// virBase[ferme] = cumul déjà traité ; versements = historique { uid, pseudo, ferme, montant, at }.
+// Attribution : licencié connecté dans la ferme qui envoie, sinon licencié dont le pseudo = nom de la ferme.
+const VIR_MIN = 10000, VIR_MAX = 50000; // par mois civil (heure de Paris)
+const mois = t => new Date(t).toLocaleDateString('fr-CA', { timeZone: 'Europe/Paris' }).slice(0, 7);
+const duMois = uid => (store.versements || []).filter(v => v.uid === uid && mois(v.at) === mois(Date.now())).reduce((a, v) => a + v.montant, 0);
+const auTotal = uid => (store.versements || []).filter(v => v.uid === uid).reduce((a, v) => a + v.montant, 0);
+
+function nouveauxVirements(status) {
+  const farm = status?.farms?.find(f => f.name === NOM);
+  if (!farm) return [];
+  const cumuls = status.counters.filter(c => c.kind === 'transfer_in' && c.farm === farm.id);
+  store.virBase ||= {}; // compteurs du mod en mémoire : tout ce qui y est date de l'installation du mod
+  const membres = actifs();
+  const out = [];
+  for (const c of cumuls) {
+    if (c.value < (store.virBase[c.fillType] || 0)) store.virBase[c.fillType] = 0; // serveur FS25 redémarré : compteur remis à zéro
+    const montant = Math.round(c.value - (store.virBase[c.fillType] || 0));
+    if (montant < 1) continue;
+    store.virBase[c.fillType] = c.value;
+    const envoi = Number(c.fillType), ferme = status.farms.find(f => f.id === envoi)?.name || 'Ferme ' + envoi;
+    const connectes = new Set((status.playerFarms || []).filter(p => p.farm === envoi).map(p => p.name.toLowerCase()));
+    const m = membres.find(([, x]) => connectes.has(x.pseudo.toLowerCase())) || membres.find(([, x]) => x.pseudo.toLowerCase() === ferme.toLowerCase());
+    out.push({ uid: m?.[0] || null, pseudo: m?.[1].pseudo || null, ferme, montant, at: Date.now() });
+  }
+  if (out.length) { (store.versements ||= []).push(...out); save(); }
+  return out;
+}
+
+async function traiterVirements(client) {
+  const nouveaux = nouveauxVirements(require('./fs25-bridge').getLastFs25Status());
+  for (const v of nouveaux) {
+    const total = v.uid ? duMois(v.uid) : 0;
+    const etat = !v.uid ? '⚠️ Aucun licencié reconnu pour cette ferme (droit d\'entrée, ou pseudo en jeu différent ?) : non compté.'
+      : total > VIR_MAX ? '🚫 **Maximum dépassé** : ' + euros(total) + ' ce mois (max ' + euros(VIR_MAX) + ').'
+      : total < VIR_MIN ? '⏳ ' + euros(total) + ' ce mois · encore **' + euros(VIR_MIN - total) + '** pour le minimum de ' + euros(VIR_MIN) + '.'
+      : '✅ ' + euros(total) + ' ce mois · minimum atteint.';
+    await log(client, '💶 Virement reçu · ' + NOM, v.uid || '0', v.pseudo || '?', 'Montant : **' + euros(v.montant) + '** depuis la ferme **' + v.ferme + '**\n' + etat,
+      !v.uid || total > VIR_MAX ? 0xE67E22 : 0x2ECC71);
+  }
+  if (nouveaux.length) await majSalaires(client);
+}
+
+// Section « Investissement » : chaque licencié, ce qu'il a investi ce mois et au total (+ cagnotte / crédit s'il en a)
+function investissement() {
+  const lignes = actifs().map(([u, m]) => ({ u, m, mois: duMois(u), total: auTotal(u) })).sort((a, b) => b.total - a.total).slice(0, 20)
+    .map(x => (x.mois > VIR_MAX ? '🚫' : x.mois >= VIR_MIN ? '✅' : '⏳') + ' <@' + x.u + '> · `' + x.m.pseudo + '` · 💶 investi **' + euros(x.total) + '**'
+      + ' · ce mois ' + euros(x.mois) + (x.mois < VIR_MIN ? ' (manque ' + euros(VIR_MIN - x.mois) + ')' : x.mois > VIR_MAX ? ' (dépasse de ' + euros(x.mois - VIR_MAX) + ')' : '')
+      + (cagnotte(x.u) ? ' · 🐷 ' + euros(cagnotte(x.u)) : '') + (dette(x.u) ? ' · 💳 doit ' + euros(dette(x.u)) : ''));
+  const injecte = (store.versements || []).filter(v => v.uid).reduce((a, v) => a + v.montant, 0);
+  return [
+    '## 💼 Investissement',
+    '🏦 Total investi par les licenciés : **' + euros(injecte) + '** · de ' + euros(VIR_MIN) + ' à ' + euros(VIR_MAX) + ' par mois, par virement vers **' + NOM + '**',
+    '',
+    ...(lignes.length ? lignes : ['_Aucun licencié pour le moment._']),
+  ];
+}
+
 // ── Contrôle des licences : un joueur connecté dans la ferme de l'association sans licence valide → alerte dans les logs ──
 // Une alerte par connexion (le joueur est oublié quand il se déconnecte ou quitte la ferme).
 const alertes = new Set();
@@ -446,6 +501,7 @@ async function startAssociation(client) {
   setInterval(() => expirer(client).catch(() => {}), 6 * 3600_000).unref(); // logge et retire les licences expirées
   setInterval(() => majSalaires(client).catch(() => {}), 5 * 60_000).unref();
   setInterval(() => verifierLicences(client).catch(() => {}), 60_000).unref();
+  setInterval(() => traiterVirements(client).catch(() => {}), 60_000).unref();
 }
 
-module.exports = { startAssociation, publier, handle, releve, calcul, sansLicence, _store: () => store, _setReleve: r => { dernierReleve = r; } };
+module.exports = { startAssociation, publier, handle, releve, calcul, sansLicence, nouveauxVirements, duMois, _store: () => store, _setReleve: r => { dernierReleve = r; } };
