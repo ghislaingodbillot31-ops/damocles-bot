@@ -87,10 +87,10 @@ client.once(Events.ClientReady, async () => {
   require('./community/temptext').startTempText(client);
   require('./community/suggestions').startSuggestions(client);
   require('./community/maps').startMaps(client);
+  require('./farm/association').startAssociation(client);
   require('./community/bugs').startBugs(client);
   require('./moderation/invitations').startInvitations(client);
   require('./community/jeux').startJeux(client);
-  require('./community/evenements').startEvenements(client);
   require('./moderation/tickets').startTickets(client).catch(err => console.error('⚠️ Tickets :', err.message));
   require('./moderation/antispam').startAntiSpam(client);
   if (process.env.VERIF_MODE === 'code') require('./moderation/codeverif').publierPanneau(client).catch(() => {});
@@ -310,10 +310,10 @@ client.on(Events.InteractionCreate, async interaction => {
       if (cid === 'text_create_modal' || cid.startsWith('text_rename_modal_')) { await require('./community/temptext').handleTextModal(interaction); return; }
       if (cid === 'sugg_modal' || cid === 'modprop_modal') { await require('./community/suggestions')[cid.split('_')[0] === 'sugg' ? 'jeu' : 'mods'].handleSuggModal(interaction); return; }
       if (/^(sugg|modprop)_(ok|no)modal_\d+$/.test(cid)) { await require('./community/suggestions')[cid.startsWith('sugg') ? 'jeu' : 'mods'].handleSuggDecisionModal(interaction); return; }
+      if (cid.startsWith('asso_'))               { await require('./farm/association').handle(interaction); return; }
       if (cid === 'map_modal')                  { await require('./community/maps').handleModal(interaction); return; }
       if (/^bug_modal(_en)?$/.test(cid))        { await require('./community/bugs').handleBugModal(interaction); return; }
       if (/^bug_nomodal_\d+$/.test(cid))        { await require('./community/bugs').handleBugRefus(interaction); return; }
-      if (cid.startsWith('event_bingo_modal_')) { await require('./community/evenements').handleBingoModal(interaction); return; }
       if (cid === 'jeux_modal')                 { await require('./community/jeux').handleModal(interaction); return; }
       if (cid === 'jeux_wishmodal')             { await require('./community/jeux').handleWishModal(interaction); return; }
       if (cid.startsWith('marche_prixmodal_')) { await require('./farm/marche').handlePrixModal(interaction); return; }
@@ -383,6 +383,12 @@ client.on(Events.InteractionCreate, async interaction => {
     if (/^text_(rename|lock|delete)_/.test(id)) { await require('./community/temptext').handleTextControl(interaction); return; }
   } catch (err) { console.error('Erreur bouton vocal :', err.message); }
 
+  if (id.startsWith('asso_')) {
+    try { await require('./farm/association').handle(interaction); }
+    catch (err) { console.error('Erreur bouton association :', err.stack || err.message); }
+    return;
+  }
+
   // HUB des cartes
   try {
     if (id === 'map_new')               { await require('./community/maps').handleNew(interaction); return; }
@@ -400,7 +406,6 @@ client.on(Events.InteractionCreate, async interaction => {
   // Lien d'invitation (7 jours)
   try {
     if (id === 'lien_invite') { await require('./moderation/invitations').handleInviteButton(interaction); return; }
-    if (id === 'event_clic' || id.startsWith('event_chrono') || id.startsWith('event_bingo')) { await require('./community/evenements').handleButton(interaction); return; }
     if (id === 'jeux_new')    { await require('./community/jeux').handleButton(interaction); return; }
     if (id === 'jeux_wish')   { await require('./community/jeux').handleWishButton(interaction); return; }
     if (id === 'wish_y' || id === 'wish_n') { await require('./community/jeux').handleWishVote(interaction); return; }
