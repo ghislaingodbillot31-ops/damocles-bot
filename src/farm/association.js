@@ -57,6 +57,10 @@ function panelPayload() {
         '',
         'À l\'échéance, refais la même démarche pour renouveler ta licence (possible 30 jours avant la fin).',
         '',
+        '## 👑 Président',
+        'Le président est **élu par les licenciés**. Il gère les **achats** et les **parcelles à travailler**, selon le code de l\'association.',
+        '> • Il touche une **commission de ' + euros(COMMISSION) + ' par mois** de présidence',
+        '',
         '## 🐷 Travail et crédit',
         'Les licenciés ne sont pas payés : c\'est leur **travail** (transport, coupe des arbres, utilisation des machines) qui détermine leur crédit.',
         '> • Ton **crédit maximum** = ta part du travail de tous les licenciés × le **solde de l\'association**',
@@ -448,6 +452,7 @@ async function handleReglementModal(interaction) {
 // store.election = { finCandid, finVote, candidats: { uid: pseudo }, votes: { votant: candidat } } ; store.president = { uid, pseudo, at }
 // Candidatures 24 h (bouton « Me présenter »), puis vote 48 h (bouton « Voter », licenciés uniquement), puis clôture automatique.
 const H = 3600_000, CANDIDATURE = 24 * H, VOTE = 48 * H;
+const COMMISSION = 5000, MOIS_PRESIDENCE = 30 * 24 * H; // commission du président : 5 000 € par mois de présidence (30 jours)
 const phase = () => { const e = store.election; if (!e) return null; const t = Date.now(); return t < e.finCandid ? 'candidature' : t < e.finVote ? 'vote' : 'fini'; };
 const licencie = uid => (store.membres[uid]?.fin || 0) > Date.now();
 
@@ -456,8 +461,8 @@ function presidentLignes() {
   const noms = e ? Object.entries(e.candidats).map(([u, n]) => '> • <@' + u + '> · `' + n + '`') : [];
   return [
     '## 👑  PRÉSIDENT',
-    pres ? '👑 <@' + pres.uid + '> · `' + pres.pseudo + '` · élu ' + ts(pres.at, 'D') : '_Pas de président pour le moment._',
-    '-# Il gère les achats et les parcelles à travailler, selon le code de l\'association.',
+    pres ? '👑 <@' + pres.uid + '> · `' + pres.pseudo + '` · élu ' + ts(pres.at, 'D') + ' · prochaine commission ' + ts(pres.at + ((pres.mois || 0) + 1) * MOIS_PRESIDENCE, 'R') : '_Pas de président pour le moment._',
+    '-# Il gère les achats et les parcelles à travailler, selon le code de l\'association · commission : **' + euros(COMMISSION) + '** par mois de présidence',
     ...(ph === 'candidature' ? ['', '🗳️ **Élection · candidatures ouvertes** jusqu\'à ' + ts(e.finCandid, 'R') + ' (vote ensuite pendant 48 h)', ...(noms.length ? noms : ['_Aucun candidat pour le moment._'])]
       : ph === 'vote' ? ['', '🗳️ **Élection · vote ouvert** jusqu\'à ' + ts(e.finVote, 'R') + ' · ' + Object.keys(e.votes).length + ' vote(s)', ...noms] : []),
   ];
@@ -530,15 +535,28 @@ async function clotureElection(client) {
   for (const c of Object.values(e.votes)) voix[c] = (voix[c] || 0) + 1;
   const gagnant = Object.keys(e.candidats).sort((x, y) => (voix[y] || 0) - (voix[x] || 0))[0];
   store.election = null;
-  if (gagnant && voix[gagnant]) store.president = { uid: gagnant, pseudo: e.candidats[gagnant], at: Date.now() };
+  if (gagnant && voix[gagnant]) store.president = { uid: gagnant, pseudo: e.candidats[gagnant], at: Date.now(), mois: 0 };
   save();
   const resultat = Object.keys(e.candidats).map(u => '• <@' + u + '> · ' + (voix[u] || 0) + ' voix').join('\n') || '_Aucun candidat._';
   await log(client, '👑 Élection terminée · ' + NOM, '0', '', (gagnant && voix[gagnant] ? 'Nouveau président : <@' + gagnant + '> (' + voix[gagnant] + ' voix)' : 'Aucun vote : pas de changement de président.') + '\n' + resultat, 0xF1C40F);
   await majSalaires(client);
 }
 
+// Chaque mois de présidence écoulé : une ligne dans les logs admin, le staff verse la commission en jeu à la ferme du président
+async function commissionPresident(client) {
+  const pr = store.president;
+  if (!pr) return;
+  const dus = Math.floor((Date.now() - pr.at) / MOIS_PRESIDENCE);
+  for (pr.mois ||= 0; pr.mois < dus; ) {
+    pr.mois++;
+    await log(client, '💰 Commission du président · ' + NOM, pr.uid, pr.pseudo, 'mois ' + pr.mois + ' de présidence · **' + euros(COMMISSION) + '** à verser en jeu', 0xF1C40F);
+  }
+  save();
+}
+
 let phaseAffichee;
 async function suiviElection(client) {
+  await commissionPresident(client);
   const ph = phase();
   if (ph === 'fini') return clotureElection(client);
   if (ph !== phaseAffichee) { phaseAffichee = ph; await majSalaires(client); } // bascule candidatures -> vote : change le bouton
