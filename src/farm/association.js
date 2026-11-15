@@ -68,8 +68,9 @@ function panelPayload() {
       footer: { text: 'MonCopainBot' },
     }],
     components: [new ActionRowBuilder().addComponents(
-      new ButtonBuilder().setCustomId('asso_rejoindre').setLabel('🪓 Rejoindre l\'association').setStyle(ButtonStyle.Success),
+      new ButtonBuilder().setCustomId('asso_rejoindre').setLabel('🪓 Rejoindre').setStyle(ButtonStyle.Success),
       new ButtonBuilder().setCustomId('asso_licence').setLabel('🪪 Ma licence').setStyle(ButtonStyle.Secondary),
+      new ButtonBuilder().setCustomId('asso_admin').setLabel('⚙️ Administratif').setStyle(ButtonStyle.Secondary),
     )],
   });
 }
@@ -252,13 +253,10 @@ function salairesPayload() {
     ...(debiteurs.length ? debiteurs.slice(0, 20).map(([u]) => '• <@' + u + '> · `' + (store.membres[u]?.pseudo || '?') + '` · reste à payer **' + euros(dette(u)) + '**') : ['_Aucun crédit en cours._']),
   ].join('\n');
   return {
-    ...panneau({ embeds: [{ title: '🐷  LICENCE ET FINANCE', description, color: 0xF1C40F, footer: { text: 'MonCopainBot · mis à jour toutes les 5 min' }, timestamp: new Date().toISOString() }] }),
+    ...panneau({ embeds: [{ title: '💼  LICENCE ET FINANCE', description, color: 0xF1C40F, footer: { text: 'MonCopainBot · mis à jour toutes les 5 min' }, timestamp: new Date().toISOString() }] }),
     components: [new ActionRowBuilder().addComponents(
-      new ButtonBuilder().setCustomId('asso_credit').setLabel('💳 Demander un crédit').setStyle(ButtonStyle.Success),
-      new ButtonBuilder().setCustomId('asso_remb').setLabel('💶 Rembourser').setStyle(ButtonStyle.Primary),
-      new ButtonBuilder().setCustomId('asso_paie').setLabel('🐷 Clôturer la période (staff)').setStyle(ButtonStyle.Danger),
-      new ButtonBuilder().setCustomId('asso_admin').setLabel('⚙️ Administratif').setStyle(ButtonStyle.Secondary),
-      ...boutonsElection())],
+      new ButtonBuilder().setCustomId('asso_credit').setLabel('💳 Crédit').setStyle(ButtonStyle.Success),
+      new ButtonBuilder().setCustomId('asso_remb').setLabel('💶 Rembourser').setStyle(ButtonStyle.Primary))],
     allowedMentions: { parse: [] },
   };
 }
@@ -434,17 +432,21 @@ function presidentLignes() {
   ];
 }
 
-const boutonsElection = () => phase() === 'candidature' ? [new ButtonBuilder().setCustomId('asso_elec_candidat').setLabel('🙋 Me présenter').setStyle(ButtonStyle.Primary)]
-  : phase() === 'vote' ? [new ButtonBuilder().setCustomId('asso_elec_vote').setLabel('🗳️ Voter').setStyle(ButtonStyle.Primary)] : [];
-
-async function handleAdmin(interaction) {
-  if (!estStaff(interaction)) return rep(interaction, '❌ Réservé au staff.');
+// Panneau « Administratif » (message privé) : président, élection en cours, et les boutons qui vont avec
+function adminPanel(interaction, note) {
   const ph = phase();
-  await interaction.reply({ flags: 64, allowedMentions: { parse: [] },
-    content: '⚙️ **Administratif** · ' + (store.president ? 'Président : <@' + store.president.uid + '>' : 'pas de président') + '\n'
-      + (ph ? '🗳️ Une élection est déjà en cours (' + (ph === 'candidature' ? 'candidatures' : 'vote') + ').' : 'Aucune élection en cours.'),
-    components: [new ActionRowBuilder().addComponents(new ButtonBuilder().setCustomId('asso_elec_lancer').setLabel('🗳️ Lancer une élection').setStyle(ButtonStyle.Success).setDisabled(!!ph))] });
+  const btn = (id, label, style, actif) => new ButtonBuilder().setCustomId(id).setLabel(label).setStyle(style).setDisabled(!actif);
+  return {
+    embeds: [{ title: '⚙️  ADMINISTRATIF · ' + NOM, color: 0x8D6E63, description: [...presidentLignes(), ...(note ? ['', note] : [])].join('\n') }],
+    components: [new ActionRowBuilder().addComponents(
+      btn('asso_elec_lancer', '🗳️ Lancer une élection', ButtonStyle.Success, !ph && estStaff(interaction)),
+      btn('asso_elec_candidat', '🙋 Me présenter', ButtonStyle.Primary, ph === 'candidature'),
+      btn('asso_elec_vote', '🗳️ Voter', ButtonStyle.Primary, ph === 'vote'))],
+    allowedMentions: { parse: [] },
+  };
 }
+
+const handleAdmin = interaction => interaction.reply({ ...adminPanel(interaction), flags: 64 });
 
 async function handleLancer(interaction) {
   if (!estStaff(interaction)) return rep(interaction, '❌ Réservé au staff.');
@@ -453,7 +455,7 @@ async function handleLancer(interaction) {
   store.election = { finCandid: t + CANDIDATURE, finVote: t + CANDIDATURE + VOTE, candidats: {}, votes: {} };
   save();
   await log(interaction.client, '🗳️ Élection lancée · ' + NOM, '0', '', 'Lancée par <@' + interaction.user.id + '> · candidatures jusqu\'à ' + ts(store.election.finCandid, 'f') + ', vote jusqu\'à ' + ts(store.election.finVote, 'f') + '.', 0x3498DB);
-  await interaction.update({ content: '✅ Élection lancée : candidatures 24 h, puis vote 48 h.', components: [] });
+  await interaction.update(adminPanel(interaction, '✅ Élection lancée : candidatures 24 h, puis vote 48 h.'));
   await majSalaires(interaction.client);
 }
 
@@ -464,7 +466,7 @@ async function handleCandidat(interaction) {
   if (store.election.candidats[uid]) return rep(interaction, '✅ Tu es déjà candidat.');
   store.election.candidats[uid] = store.membres[uid].pseudo;
   save();
-  await rep(interaction, '🙋 Candidature enregistrée. Le vote s\'ouvre ' + ts(store.election.finCandid, 'R') + '.');
+  await interaction.update(adminPanel(interaction, '🙋 Candidature enregistrée. Le vote s\'ouvre ' + ts(store.election.finCandid, 'R') + '.'));
   await majSalaires(interaction.client);
 }
 
