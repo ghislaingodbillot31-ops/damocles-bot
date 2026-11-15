@@ -15,7 +15,7 @@ const NOM        = '[A] Le mechet';
 const PRIX       = 30000;
 const DUREE      = 365 * 24 * 3600_000; // licence d'un an (temps réel)
 const RENOUV     = 30 * 24 * 3600_000;  // renouvellement possible 30 jours avant l'échéance
-const LOGS_ID    = '1567011774912532671'; // salon de logs habituel
+const LOGS_ID    = '1571329280410001488'; // logs admin de l'association (logs sur une ligne + message « travail et crédits » mis à jour toutes les 5 min)
 
 // { panelMsgId, journalMsgId, membres: { userId: { pseudo, fin } }, demandes: { userId: { pseudo, ticketId, msgId } } }
 let store = { panelMsgId: null, journalMsgId: null, membres: {}, demandes: {} };
@@ -48,7 +48,7 @@ function panelPayload() {
         '> • Droit d\'entrée : **' + euros(PRIX) + '**',
         '> • Tu obtiens une **licence valable 1 an**',
         '> • La licence te permet d\'**utiliser les machines** de l\'association et de **faire de la sylviculture**',
-        '> • **Investissement** : tu peux injecter de l\'argent dans l\'association (virement depuis ta ferme) : ça te donne des **parts** pour obtenir des crédits plus facilement',
+        '> • **Investissement** : tu peux aussi injecter de l\'argent dans l\'association (virement depuis ta ferme)',
         '',
         '## 📋 Comment rejoindre',
         '**1.** Clique sur **Rejoindre l\'association** : un ticket s\'ouvre avec le staff.',
@@ -57,10 +57,11 @@ function panelPayload() {
         '',
         'À l\'échéance, refais la même démarche pour renouveler ta licence (possible 30 jours avant la fin).',
         '',
-        '## 🐷 Cagnotte et crédit',
-        'Les licenciés ne sont pas payés : leur travail remplit une **cagnotte**.',
-        '> • L\'argent gagné permet de **demander des crédits**, en fonction de ton **investissement**',
-        '> • Plus un joueur s\'investit, plus le **montant débloqué** peut être élevé',
+        '## 🐷 Travail et crédit',
+        'Les licenciés ne sont pas payés : c\'est leur **travail** (transport, coupe des arbres, utilisation des machines) qui détermine leur crédit.',
+        '> • Ton **crédit maximum** = ta part du travail de tous les licenciés × le **solde de l\'association**',
+        '> • Si tu as travaillé **2 fois plus** qu\'un autre membre, ton crédit peut être **2 fois plus important**',
+        '> • Ta part (%) est affichée dans la liste des licenciés',
         '> • Le crédit est à **rembourser sous 1 an maximum**',
         '> • Chaque **25 décembre**, un pourcentage (**5 %**) est redistribué aux exploitations ayant travaillé pour l\'association',
       ].join('\n'),
@@ -70,6 +71,7 @@ function panelPayload() {
     components: [new ActionRowBuilder().addComponents(
       new ButtonBuilder().setCustomId('asso_rejoindre').setLabel('🪓 Rejoindre').setStyle(ButtonStyle.Success),
       new ButtonBuilder().setCustomId('asso_licence').setLabel('🪪 Ma licence').setStyle(ButtonStyle.Secondary),
+      new ButtonBuilder().setCustomId('asso_reglement').setLabel('📜 Règlement').setStyle(ButtonStyle.Secondary),
       new ButtonBuilder().setCustomId('asso_admin').setLabel('⚙️ Administratif').setStyle(ButtonStyle.Secondary),
     )],
   });
@@ -183,8 +185,10 @@ async function handle(interaction) {
   if (id === 'asso_modal')      return handleModal(interaction);
   if (id === 'asso_rejoindre')  return handleRejoindre(interaction);
   if (id === 'asso_licence')    return handleLicence(interaction);
-  if (id === 'asso_paie')       return handlePaie(interaction);
   if (id === 'asso_admin')      return handleAdmin(interaction);
+  if (id === 'asso_reglement')       return handleReglement(interaction);
+  if (id === 'asso_reglement_edit')  return handleReglementEdit(interaction);
+  if (id === 'asso_reglement_modal') return handleReglementModal(interaction);
   if (id === 'asso_elec_lancer')   return handleLancer(interaction);
   if (id === 'asso_elec_candidat') return handleCandidat(interaction);
   if (id === 'asso_elec_vote')     return handleVoteBouton(interaction);
@@ -196,47 +200,38 @@ async function handle(interaction) {
 }
 
 // ── Démarrage : panneau puis journal, dans cet ordre ──────────────────────────
-// ── Salaires : temps de travail (mod DiscordBridge) × revenus de l'association sur la période ──
-// Compteurs du mod, cumulés depuis son installation : la période = valeur actuelle − valeur à la dernière paie.
-// Seuls les membres LICENCIÉS qui ont travaillé (véhicule de l'asso moteur allumé, ou tronçonneuse) sont comptés.
-const PART      = 0.5; // part des revenus de la période versée dans les cagnottes des travailleurs
-const HORS_REVENU = /^(TRANSFER|SHOP_|FIELD_SELL|LOAN)/; // dons, droits d'entrée, ventes de matériel/terrain : pas des revenus du travail
+// ── Travail et crédits : temps de travail (mod DiscordBridge) → part de chaque licencié → plafond de crédit ──
+// Compteurs du mod cumulés depuis son installation : véhicules de l'association moteur allumé (transport, machines…) + tronçonneuse (coupe).
+// Plafond de crédit d'un licencié = sa part du travail de tous les licenciés × solde de l'association − ce qu'il doit déjà.
 
 function releve(status) {
   const farm = status?.farms?.find(f => f.name === NOM);
   if (!farm) return null;
-  const work = {}; let revenu = 0;
+  const work = {}, detail = {}; // work[pseudo] = secondes au total ; detail[pseudo] = { v: véhicules, c: tronçonneuse }
   for (const c of status.counters) {
-    if (c.farm !== farm.id) continue;
-    if (c.kind === 'work_vehicle' || c.kind === 'work_chainsaw') work[c.fillType.toLowerCase()] = (work[c.fillType.toLowerCase()] || 0) + c.value;
-    if (c.kind === 'money_in' && !HORS_REVENU.test(c.fillType)) revenu += c.value;
+    if (c.farm !== farm.id || (c.kind !== 'work_vehicle' && c.kind !== 'work_chainsaw')) continue;
+    const k = c.fillType.toLowerCase();
+    work[k] = (work[k] || 0) + c.value;
+    (detail[k] ||= { v: 0, c: 0 })[c.kind === 'work_vehicle' ? 'v' : 'c'] += c.value;
   }
-  return { work, revenu, caisse: farm.money };
+  return { work, detail, caisse: farm.money };
 }
 
 let dernierReleve = null;
-function calcul() {
-  const r = dernierReleve;
-  if (!r) return null;
-  if (!store.paie) { store.paie = { at: Date.now(), ...r }; save(); } // 1re fois : la période commence maintenant
-  const base = store.paie;
-  const revenu = Math.max(0, r.revenu - base.revenu);
-  const lignes = actifs().map(([u, m]) => {
-    const k = m.pseudo.toLowerCase();
-    return { u, pseudo: m.pseudo, s: (r.work[k] || 0) - (base.work[k] || 0) };
-  }).filter(l => l.s >= 60).sort((a, b) => b.s - a.s); // moins d'une minute = pas de travail
-  const total = lignes.reduce((a, l) => a + l.s, 0);
-  for (const l of lignes) { l.part = l.s / total; l.gain = Math.round(revenu * PART * l.part); }
-  return { revenu, lignes };
-}
-
 const duree = s => Math.floor(s / 3600) + ' h ' + String(Math.floor(s / 60) % 60).padStart(2, '0');
-const MEDAILLES = ['🥇', '🥈', '🥉'];
 
-// Cagnottes et crédits : cagnottes[uid] = € disponibles pour un crédit, credits[uid] = € restant à rembourser,
-// ops[uid] = demande en cours { type: 'credit' | 'remb', montant, ticketId } (une seule à la fois).
-const cagnotte = uid => Math.round((store.cagnottes ||= {})[uid] || 0);
-const dette    = uid => Math.round((store.credits ||= {})[uid] || 0);
+// Crédits : credits[uid] = € restant à rembourser, ops[uid] = demande en cours { type: 'credit' | 'remb', montant, ticketId } (une seule à la fois).
+const dette = uid => Math.round((store.credits ||= {})[uid] || 0);
+const rafraichir = () => { dernierReleve = releve(require('./fs25-bridge').getLastFs25Status()) || dernierReleve; };
+
+// Part du travail de chaque licencié valide (cumul), triée du plus au moins actif
+function parts() {
+  const r = dernierReleve, w = r?.work || {};
+  const l = actifs().map(([u, m]) => ({ u, m, s: w[m.pseudo.toLowerCase()] || 0, d: r?.detail?.[m.pseudo.toLowerCase()] || { v: 0, c: 0 } }));
+  const total = l.reduce((x, y) => x + y.s, 0);
+  return l.map(x => ({ ...x, pct: total ? x.s / total : 0 })).sort((x, y) => y.s - x.s);
+}
+const creditMax = uid => Math.max(0, Math.round((dernierReleve?.caisse || 0) * (parts().find(x => x.u === uid)?.pct || 0)) - dette(uid));
 
 function salairesPayload() {
   const caisse = dernierReleve ? euros(Math.round(dernierReleve.caisse || 0)) : '_en attente des données du serveur FS25_';
@@ -262,24 +257,41 @@ function salairesPayload() {
 }
 
 async function majSalaires(client) {
-  dernierReleve = releve(require('./fs25-bridge').getLastFs25Status()) || dernierReleve;
+  rafraichir();
   const ch = await client.channels.fetch(CHANNEL_ID).catch(() => null);
   const m = ch && store.salairesMsgId && await ch.messages.fetch(store.salairesMsgId).catch(() => null);
   if (m) await m.edit(salairesPayload()).catch(() => {});
+  await majTravail(client);
 }
 
-// Staff : fige la période, ajoute la part de chaque travailleur à sa cagnotte, puis repart de zéro
-async function handlePaie(interaction) {
-  if (!estStaff(interaction)) return rep(interaction, '❌ Réservé au staff.');
-  const c = calcul();
-  if (!c) return rep(interaction, '⚠️ Pas de données du serveur FS25 pour le moment.');
-  for (const l of c.lignes) store.cagnottes[l.u] = cagnotte(l.u) + l.gain;
-  await log(interaction.client, '🐷 Période clôturée · ' + NOM, '0', '',
-    'par <@' + interaction.user.id + '> · revenus **' + euros(Math.round(c.revenu)) + '** · ajouté aux cagnottes (' + (PART * 100) + ' %) : **' + euros(c.lignes.reduce((a, l) => a + l.gain, 0)) + '**'
-    + (c.lignes.length ? ' · ' + c.lignes.map(l => '<@' + l.u + '> ' + duree(l.s) + ' +' + euros(l.gain)).join(', ') : ' · personne n\'a travaillé'), 0xF1C40F);
-  store.paie = { at: Date.now(), ...dernierReleve };
+// Message « travail et crédits » dans le salon des logs admin, édité sur place toutes les 5 min
+function travailPayload() {
+  const l = parts(), total = l.reduce((x, y) => x + y.s, 0);
+  const st = require('./fs25-bridge').getLastFs25Status();
+  const farm = st?.farms?.find(f => f.name === NOM);
+  const presents = (st?.playerFarms || []).filter(p => farm && p.farm === farm.id).map(p => p.name);
+  const lignes = l.map(x => '<@' + x.u + '> · `' + x.m.pseudo + '` · 🚜 ' + duree(x.d.v) + ' · 🪓 ' + duree(x.d.c) + ' · **' + Math.round(x.pct * 100) + ' %** · 💳 crédit dispo **' + euros(creditMax(x.u)) + '**' + (dette(x.u) ? ' (doit ' + euros(dette(x.u)) + ')' : ''));
+  return {
+    embeds: [{ title: '📊  TRAVAIL ET CRÉDITS · ' + NOM, color: 0x8D6E63, timestamp: new Date().toISOString(), footer: { text: 'MonCopainBot · mis à jour toutes les 5 min' },
+      description: [
+        '🏦 Caisse : **' + euros(Math.round(dernierReleve?.caisse || 0)) + '** · ⏱️ travail total des licenciés : **' + duree(total) + '**',
+        '🟢 Dans la ferme : ' + (presents.length ? presents.map(n => '`' + n + '`').join(', ') : '_personne_'),
+        '',
+        ...(lignes.length ? lignes.slice(0, 25) : ['_Aucun licencié._']),
+        '',
+        '-# 🚜 véhicules de l\'association moteur allumé (transport, machines…) · 🪓 coupe à la tronçonneuse · crédit dispo = part du travail × caisse − dette',
+      ].join('\n').slice(0, 4000) }],
+    allowedMentions: { parse: [] },
+  };
+}
+
+async function majTravail(client) {
+  const ch = await client.channels.fetch(LOGS_ID).catch(() => null);
+  if (!ch || !dernierReleve) return;
+  const m = store.travailMsgId && await ch.messages.fetch(store.travailMsgId).catch(() => null);
+  if (m) return void await m.edit(travailPayload()).catch(() => {});
+  store.travailMsgId = (await ch.send(travailPayload()).catch(() => null))?.id || null;
   save();
-  await interaction.update(salairesPayload());
 }
 
 // ── Crédit / remboursement : le joueur demande, le staff verse ou encaisse en jeu puis valide dans un ticket ──
@@ -287,10 +299,8 @@ const OP = {
   credit: { titre: 'Demande de crédit', label: 'Montant du crédit (€)', ok: '✅ Crédit versé en jeu', log: '💳 Crédit accordé' },
   remb:   { titre: 'Remboursement', label: 'Montant remboursé (€)', ok: '✅ Remboursement reçu en jeu', log: '💶 Remboursement reçu' },
 };
-// Plafond vérifié à la demande ET à la validation (la cagnotte ou la caisse a pu bouger entre-temps)
-const plafond = (type, uid) => type === 'credit'
-  ? Math.min(cagnotte(uid), Math.round(dernierReleve?.caisse ?? Infinity))
-  : dette(uid);
+// Plafond vérifié à la demande ET à la validation (la part du travail ou la caisse a pu bouger entre-temps)
+const plafond = (type, uid) => { rafraichir(); return type === 'credit' ? creditMax(uid) : dette(uid); };
 
 async function handleOpButton(interaction) {
   const type = interaction.customId.slice(5), uid = interaction.user.id;
@@ -299,7 +309,7 @@ async function handleOpButton(interaction) {
   if (op && await interaction.client.channels.fetch(op.ticketId).catch(() => null)) return rep(interaction, '⏳ Tu as déjà une demande en cours : <#' + op.ticketId + '>');
   const max = plafond(type, uid);
   if (max <= 0) return rep(interaction, type === 'credit'
-    ? '🐷 Ta cagnotte est vide (ou la caisse de l\'association aussi) : travaille pour l\'association pour la remplir.'
+    ? '💳 Aucun crédit disponible : il dépend de ta part du travail et du solde de l\'association. Travaille pour l\'association pour l\'augmenter.'
     : '💶 Tu n\'as aucun crédit à rembourser.');
   await interaction.showModal(new ModalBuilder().setCustomId('asso_opmodal_' + type).setTitle(OP[type].titre).addComponents(
     new ActionRowBuilder().addComponents(new TextInputBuilder().setCustomId('montant').setLabel((OP[type].label + ' · max ' + max).slice(0, 45))
@@ -330,7 +340,7 @@ async function handleOpModal(interaction) {
     ...panneau({ embeds: [{ ...demandeEmbed(uid, m, '⏳ En attente du staff.', 0xF1C40F, type === 'credit'
       ? 'Crédit demandé : **' + euros(montant) + '** · à verser en jeu par l\'association'
       : 'Remboursement : **' + euros(montant) + '** · à verser en jeu à la ferme **' + NOM + '**'), title: (type === 'credit' ? '💳 ' : '💶 ') + OP[type].titre + ' · ' + euros(montant),
-      fields: [{ name: '🐷 Cagnotte', value: euros(cagnotte(uid)), inline: true }, { name: '💳 Crédit en cours', value: euros(dette(uid)), inline: true }] }] }),
+      fields: [{ name: '⏱️ Part du travail', value: Math.round((parts().find(x => x.u === uid)?.pct || 0) * 100) + ' %', inline: true }, { name: '💳 Crédit en cours', value: euros(dette(uid)), inline: true }] }] }),
     components: [new ActionRowBuilder().addComponents(
       new ButtonBuilder().setCustomId('asso_opok_' + uid).setLabel(OP[type].ok).setStyle(ButtonStyle.Success),
       new ButtonBuilder().setCustomId('asso_opno_' + uid).setLabel('❌ Refuser').setStyle(ButtonStyle.Danger))],
@@ -348,13 +358,11 @@ async function handleOpDecision(interaction) {
   if (accepte && op.montant > plafond(op.type, uid)) return rep(interaction, '⚠️ Montant supérieur au maximum actuel (**' + euros(plafond(op.type, uid)) + '**) : refuse la demande.');
   delete store.ops[uid];
   if (accepte) {
-    const sens = op.type === 'credit' ? 1 : -1; // crédit : cagnotte → dette ; remboursement : dette → cagnotte
-    store.cagnottes[uid] = cagnotte(uid) - sens * op.montant;
-    store.credits[uid] = dette(uid) + sens * op.montant;
+    store.credits[uid] = dette(uid) + (op.type === 'credit' ? 1 : -1) * op.montant; // crédit : dette en plus ; remboursement : dette en moins
   }
   save();
   const pseudo = store.membres[uid]?.pseudo || '?';
-  const bilan = '🐷 Cagnotte : **' + euros(cagnotte(uid)) + '** · 💳 reste à rembourser : **' + euros(dette(uid)) + '**';
+  const bilan = '💳 Reste à rembourser : **' + euros(dette(uid)) + '** · crédit encore disponible : **' + euros(creditMax(uid)) + '**';
   const statut = (accepte ? OP[op.type].ok + ' · ' : '❌ Refusé · ') + 'par <@' + interaction.user.id + '>\n' + bilan;
   await log(interaction.client, (accepte ? OP[op.type].log : '❌ ' + OP[op.type].titre + ' refusée') + ' · ' + NOM, uid, pseudo,
     'Montant : **' + euros(op.montant) + '** · ' + (accepte ? 'validé' : 'refusé') + ' par <@' + interaction.user.id + '>\n' + bilan, accepte ? 0x2ECC71 : 0xE74C3C);
@@ -402,15 +410,38 @@ async function traiterVirements(client) {
   if (nouveaux.length) await majSalaires(client);
 }
 
-// Section « Investissement » : chaque licencié, ce qu'il a investi ce mois et au total (+ cagnotte / crédit s'il en a)
+// Section « Membres licenciés » : temps de travail, part (%) et plafond de crédit de chacun
 function investissement() {
-  const lignes = actifs().map(([u, m]) => ({ u, m, total: auTotal(u) })).sort((a, b) => b.total - a.total).slice(0, 40)
-    .map(x => '🌲' + ' <@' + x.u + '> · `' + x.m.pseudo + '` · 💶 investi total **' + euros(x.total) + '**'
-      + ' · jusqu\'au ' + ts(x.m.fin, 'D'));
+  const tous = parts();
+  const lignes = tous.slice(0, 20).map(x => '🌲 <@' + x.u + '> · `' + x.m.pseudo + '` · ⏱️ ' + duree(x.s) + ' · **' + Math.round(x.pct * 100) + ' %** du travail · 💳 jusqu\'à ' + euros(creditMax(x.u))
+    + ' · 💶 investi ' + euros(auTotal(x.u)));
   return [
     '## 🌲  MEMBRES LICENCIÉS',
     ...(lignes.length ? lignes : ['_Aucun membre licencié pour le moment._']),
+    ...(tous.length > 20 ? ['_… et ' + (tous.length - 20) + ' autres_'] : []),
   ];
+}
+
+// ── Règlement : texte libre (vide au départ), modifiable par le staff directement depuis Discord ──
+async function handleReglement(interaction) {
+  await interaction.reply({ flags: 64, allowedMentions: { parse: [] },
+    embeds: [{ title: '📜  RÈGLEMENT · ' + NOM, color: 0x8D6E63, description: store.reglement || '_Aucun règlement pour le moment._' }],
+    components: estStaff(interaction) ? [new ActionRowBuilder().addComponents(new ButtonBuilder().setCustomId('asso_reglement_edit').setLabel('✏️ Modifier le règlement').setStyle(ButtonStyle.Primary))] : [] });
+}
+
+async function handleReglementEdit(interaction) {
+  if (!estStaff(interaction)) return rep(interaction, '❌ Réservé au staff.');
+  await interaction.showModal(new ModalBuilder().setCustomId('asso_reglement_modal').setTitle('Règlement de l\'association').addComponents(
+    new ActionRowBuilder().addComponents(new TextInputBuilder().setCustomId('texte').setLabel('Texte du règlement (Markdown accepté)')
+      .setStyle(TextInputStyle.Paragraph).setMaxLength(4000).setRequired(false).setValue(store.reglement || ''))));
+}
+
+async function handleReglementModal(interaction) {
+  if (!estStaff(interaction)) return rep(interaction, '❌ Réservé au staff.');
+  store.reglement = interaction.fields.getTextInputValue('texte').trim();
+  save();
+  await log(interaction.client, '📜 Règlement modifié · ' + NOM, '0', '', 'par <@' + interaction.user.id + '> · ' + store.reglement.length + ' caractères', 0x95A5A6);
+  await rep(interaction, '✅ Règlement enregistré. Il s\'affiche avec le bouton **📜 Règlement** du HUB.');
 }
 
 // ── Élection du président ─────────────────────────────────────────────────────
@@ -554,16 +585,18 @@ async function publier(client, status) {
     for (const [k, p] of msgs) store[k] = (await ch.send(p())).id;
     save();
   }
+  await majTravail(client);
 }
 
 async function startAssociation(client) {
   try { await publier(client); console.log('🌲 Association · prêt (' + actifs().length + ' membre(s))'); }
   catch (err) { console.error('⚠️ Association :', err.message); }
   setInterval(() => expirer(client).catch(() => {}), 6 * 3600_000).unref(); // logge et retire les licences expirées
+  setTimeout(() => majSalaires(client).catch(() => {}), 60_000).unref(); // 1er relevé FS25 (les données arrivent juste après le démarrage)
   setInterval(() => majSalaires(client).catch(() => {}), 5 * 60_000).unref();
   setInterval(() => verifierLicences(client).catch(() => {}), 60_000).unref();
   setInterval(() => suiviElection(client).catch(() => {}), 60_000).unref(); // bascule candidatures -> vote -> clôture
   setInterval(() => traiterVirements(client).catch(() => {}), 60_000).unref();
 }
 
-module.exports = { startAssociation, publier, handle, releve, calcul, sansLicence, nouveauxVirements, duMois, _suivi: suiviElection, _store: () => store, _setReleve: r => { dernierReleve = r; } };
+module.exports = { startAssociation, publier, handle, releve, parts, creditMax, sansLicence, nouveauxVirements, duMois, _suivi: suiviElection, _store: () => store, _setReleve: r => { dernierReleve = r; } };
