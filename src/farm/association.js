@@ -1,6 +1,6 @@
 const fs = require('fs');
 const {
-  ActionRowBuilder, ButtonBuilder, ButtonStyle, ModalBuilder, TextInputBuilder, TextInputStyle, PermissionFlagsBits,
+  ActionRowBuilder, ButtonBuilder, ButtonStyle, ModalBuilder, TextInputBuilder, TextInputStyle, PermissionFlagsBits, StringSelectMenuBuilder,
 } = require('discord.js');
 const ids = require('../core/ids');
 const { panneau } = require('../core/embed-format');
@@ -48,7 +48,7 @@ function panelPayload() {
         '> • Droit d\'entrée : **' + euros(PRIX) + '**',
         '> • Tu obtiens une **licence valable 1 an**',
         '> • La licence te permet d\'**utiliser les machines** de l\'association et de **faire de la sylviculture**',
-        '> • Chaque mois, tu verses entre **10 000 €** et **50 000 €** à l\'association, par virement depuis ta ferme',
+        '> • **Investissement** : tu peux injecter de l\'argent dans l\'association (virement depuis ta ferme) : ça te donne des **parts** pour obtenir des crédits plus facilement',
         '',
         '## 📋 Comment rejoindre',
         '**1.** Clique sur **Rejoindre l\'association** : un ticket s\'ouvre avec le staff.',
@@ -59,9 +59,10 @@ function panelPayload() {
         '',
         '## 🐷 Cagnotte et crédit',
         'Les licenciés ne sont pas payés : leur travail remplit une **cagnotte**.',
-        '> • **' + (PART * 100) + ' %** des revenus de l\'association sont répartis selon le **temps de travail** de chacun',
-        '> • Ta cagnotte te permet de **demander un crédit** à l\'association, dans la limite de son montant',
-        '> • Le crédit est **à rembourser** : chaque remboursement reconstitue ta cagnotte',
+        '> • L\'argent gagné permet de **demander des crédits**, en fonction de ton **investissement**',
+        '> • Plus un joueur s\'investit, plus le **montant débloqué** peut être élevé',
+        '> • Le crédit est à **rembourser sous 1 an maximum**',
+        '> • Chaque **25 décembre**, un pourcentage (**5 %**) est redistribué aux exploitations ayant travaillé pour l\'association',
       ].join('\n'),
       color: 0x2E7D32,
       footer: { text: 'MonCopainBot' },
@@ -86,13 +87,15 @@ const demandeEmbed = (uid, d, statut, color = 0xF1C40F, objet = 'Droit d\'entré
   timestamp: new Date().toISOString(),
 });
 
-// Log dans le salon de logs : demande, versement validé, refus, expiration
+// Log dans le salon de logs, sur UNE ligne comme les autres logs : `▶` 📝 **Titre** · <@joueur> (`pseudo`) · détails · date
 async function log(client, title, uid, pseudo, extra, color) {
   const ch = await client.channels.fetch(LOGS_ID).catch(() => null);
-  await ch?.send({ embeds: [{
-    title, color, timestamp: new Date().toISOString(),
-    description: (uid !== '0' ? 'Joueur : <@' + uid + '> · pseudo en jeu **' + pseudo + '**\n' : '') + (extra || ''),
-  }], allowedMentions: { parse: [] } }).catch(err => console.error('⚠️ Log association :', err.message));
+  const [, emoji, texte] = title.match(/^(\S+)\s+([\s\S]*)$/) || [, '', title];
+  const now = new Date().toLocaleString('fr-FR', { timeZone: 'Europe/Paris' });
+  const ligne = ['`▶` ' + (emoji ? emoji + ' ' : '') + '**' + texte + '**' + (uid !== '0' ? ' · <@' + uid + '> (`' + pseudo + '`)' : ''),
+    extra && String(extra).replace(/\s*\n+\s*/g, ' · '), now].filter(Boolean).join(' · ');
+  await ch?.send({ embeds: [{ description: ligne.slice(0, 4000), color, footer: { text: 'MonCopainBot · Log' }, timestamp: new Date().toISOString() }],
+    allowedMentions: { parse: [] } }).catch(err => console.error('⚠️ Log association :', err.message));
 }
 
 // Licences arrivées à échéance : loggées une seule fois, puis retirées du journal
@@ -180,6 +183,11 @@ async function handle(interaction) {
   if (id === 'asso_rejoindre')  return handleRejoindre(interaction);
   if (id === 'asso_licence')    return handleLicence(interaction);
   if (id === 'asso_paie')       return handlePaie(interaction);
+  if (id === 'asso_admin')      return handleAdmin(interaction);
+  if (id === 'asso_elec_lancer')   return handleLancer(interaction);
+  if (id === 'asso_elec_candidat') return handleCandidat(interaction);
+  if (id === 'asso_elec_vote')     return handleVoteBouton(interaction);
+  if (id === 'asso_elec_choix')    return handleVoteChoix(interaction);
   if (id === 'asso_credit' || id === 'asso_remb') return handleOpButton(interaction);
   if (/^asso_opmodal_(credit|remb)$/.test(id))    return handleOpModal(interaction);
   if (/^asso_op(ok|no)_\d+$/.test(id))            return handleOpDecision(interaction);
@@ -233,6 +241,8 @@ function salairesPayload() {
   const caisse = dernierReleve ? euros(Math.round(dernierReleve.caisse || 0)) : '_en attente des données du serveur FS25_';
   const debiteurs = Object.entries(store.credits || {}).filter(([u]) => dette(u) > 0).sort((a, b) => dette(b[0]) - dette(a[0]));
   const description = [
+    ...presidentLignes(),
+    '',
     ...investissement(),
     '',
     '## 🏦 Caisse de l\'association',
@@ -242,11 +252,13 @@ function salairesPayload() {
     ...(debiteurs.length ? debiteurs.slice(0, 20).map(([u]) => '• <@' + u + '> · `' + (store.membres[u]?.pseudo || '?') + '` · reste à payer **' + euros(dette(u)) + '**') : ['_Aucun crédit en cours._']),
   ].join('\n');
   return {
-    ...panneau({ embeds: [{ title: '🐷  TRAVAIL & INVESTISSEMENT', description, color: 0xF1C40F, footer: { text: 'MonCopainBot · mis à jour toutes les 5 min' }, timestamp: new Date().toISOString() }] }),
+    ...panneau({ embeds: [{ title: '🐷  LICENCE ET FINANCE', description, color: 0xF1C40F, footer: { text: 'MonCopainBot · mis à jour toutes les 5 min' }, timestamp: new Date().toISOString() }] }),
     components: [new ActionRowBuilder().addComponents(
       new ButtonBuilder().setCustomId('asso_credit').setLabel('💳 Demander un crédit').setStyle(ButtonStyle.Success),
       new ButtonBuilder().setCustomId('asso_remb').setLabel('💶 Rembourser').setStyle(ButtonStyle.Primary),
-      new ButtonBuilder().setCustomId('asso_paie').setLabel('🐷 Clôturer la période (staff)').setStyle(ButtonStyle.Danger))],
+      new ButtonBuilder().setCustomId('asso_paie').setLabel('🐷 Clôturer la période (staff)').setStyle(ButtonStyle.Danger),
+      new ButtonBuilder().setCustomId('asso_admin').setLabel('⚙️ Administratif').setStyle(ButtonStyle.Secondary),
+      ...boutonsElection())],
     allowedMentions: { parse: [] },
   };
 }
@@ -264,18 +276,9 @@ async function handlePaie(interaction) {
   const c = calcul();
   if (!c) return rep(interaction, '⚠️ Pas de données du serveur FS25 pour le moment.');
   for (const l of c.lignes) store.cagnottes[l.u] = cagnotte(l.u) + l.gain;
-  const ch = await interaction.client.channels.fetch(LOGS_ID).catch(() => null);
-  await ch?.send({ embeds: [{
-    title: '🐷 Période clôturée · ' + NOM,
-    description: [
-      'Période : ' + ts(store.paie.at, 'f') + ' → ' + ts(Date.now(), 'f') + ' · clôturée par <@' + interaction.user.id + '>',
-      'Revenus : **' + euros(Math.round(c.revenu)) + '** · ajouté aux cagnottes (' + (PART * 100) + ' %) : **' + euros(c.lignes.reduce((a, l) => a + l.gain, 0)) + '**',
-      '',
-      ...(c.lignes.length ? c.lignes.map(l => '• <@' + l.u + '> · `' + l.pseudo + '` · ' + duree(l.s) + ' · +**' + euros(l.gain) + '** → cagnotte **' + euros(cagnotte(l.u)) + '**')
-        : ['_Personne n\'a travaillé sur cette période._']),
-    ].join('\n'),
-    color: 0xF1C40F, timestamp: new Date().toISOString(),
-  }], allowedMentions: { parse: [] } }).catch(err => console.error('⚠️ Log période :', err.message));
+  await log(interaction.client, '🐷 Période clôturée · ' + NOM, '0', '',
+    'par <@' + interaction.user.id + '> · revenus **' + euros(Math.round(c.revenu)) + '** · ajouté aux cagnottes (' + (PART * 100) + ' %) : **' + euros(c.lignes.reduce((a, l) => a + l.gain, 0)) + '**'
+    + (c.lignes.length ? ' · ' + c.lignes.map(l => '<@' + l.u + '> ' + duree(l.s) + ' +' + euros(l.gain)).join(', ') : ' · personne n\'a travaillé'), 0xF1C40F);
   store.paie = { at: Date.now(), ...dernierReleve };
   save();
   await interaction.update(salairesPayload());
@@ -364,7 +367,6 @@ async function handleOpDecision(interaction) {
 // ── Virements des joueurs vers l'association (compteur « transfer_in » du mod, clé = ferme qui envoie) ──
 // virBase[ferme] = cumul déjà traité ; versements = historique { uid, pseudo, ferme, montant, at }.
 // Attribution : licencié connecté dans la ferme qui envoie, sinon licencié dont le pseudo = nom de la ferme.
-const VIR_MIN = 10000, VIR_MAX = 50000; // par mois civil (heure de Paris)
 const mois = t => new Date(t).toLocaleDateString('fr-CA', { timeZone: 'Europe/Paris' }).slice(0, 7);
 const duMois = uid => (store.versements || []).filter(v => v.uid === uid && mois(v.at) === mois(Date.now())).reduce((a, v) => a + v.montant, 0);
 const auTotal = uid => (store.versements || []).filter(v => v.uid === uid).reduce((a, v) => a + v.montant, 0);
@@ -393,28 +395,122 @@ function nouveauxVirements(status) {
 async function traiterVirements(client) {
   const nouveaux = nouveauxVirements(require('./fs25-bridge').getLastFs25Status());
   for (const v of nouveaux) {
-    const total = v.uid ? duMois(v.uid) : 0;
+    const total = v.uid ? auTotal(v.uid) : 0;
     const etat = !v.uid ? '⚠️ Aucun licencié reconnu pour cette ferme (droit d\'entrée, ou pseudo en jeu différent ?) : non compté.'
-      : total > VIR_MAX ? '🚫 **Maximum dépassé** : ' + euros(total) + ' ce mois (max ' + euros(VIR_MAX) + ').'
-      : total < VIR_MIN ? '⏳ ' + euros(total) + ' ce mois · encore **' + euros(VIR_MIN - total) + '** pour le minimum de ' + euros(VIR_MIN) + '.'
-      : '✅ ' + euros(total) + ' ce mois · minimum atteint.';
+      : '✅ Total investi : **' + euros(total) + '**';
     await log(client, '💶 Virement reçu · ' + NOM, v.uid || '0', v.pseudo || '?', 'Montant : **' + euros(v.montant) + '** depuis la ferme **' + v.ferme + '**\n' + etat,
-      !v.uid || total > VIR_MAX ? 0xE67E22 : 0x2ECC71);
+      !v.uid ? 0xE67E22 : 0x2ECC71);
   }
   if (nouveaux.length) await majSalaires(client);
 }
 
 // Section « Investissement » : chaque licencié, ce qu'il a investi ce mois et au total (+ cagnotte / crédit s'il en a)
 function investissement() {
-  const lignes = actifs().map(([u, m]) => ({ u, m, mois: duMois(u), total: auTotal(u) })).sort((a, b) => b.total - a.total).slice(0, 40)
-    .map(x => (x.mois > VIR_MAX ? '🚫' : x.mois >= VIR_MIN ? '✅' : '⏳') + ' <@' + x.u + '> · `' + x.m.pseudo + '` · 💶 investi total **' + euros(x.total) + '**'
+  const lignes = actifs().map(([u, m]) => ({ u, m, total: auTotal(u) })).sort((a, b) => b.total - a.total).slice(0, 40)
+    .map(x => '🌲' + ' <@' + x.u + '> · `' + x.m.pseudo + '` · 💶 investi total **' + euros(x.total) + '**'
       + ' · jusqu\'au ' + ts(x.m.fin, 'D'));
   return [
     '## 🌲  MEMBRES LICENCIÉS',
     ...(lignes.length ? lignes : ['_Aucun membre licencié pour le moment._']),
-    '-# ✅ ' + euros(VIR_MIN) + ' à ' + euros(VIR_MAX) + ' investis ce mois · ⏳ minimum pas atteint · 🚫 maximum dépassé · virements vers **' + NOM + '**',
   ];
 }
+
+// ── Élection du président ─────────────────────────────────────────────────────
+// store.election = { finCandid, finVote, candidats: { uid: pseudo }, votes: { votant: candidat } } ; store.president = { uid, pseudo, at }
+// Candidatures 24 h (bouton « Me présenter »), puis vote 48 h (bouton « Voter », licenciés uniquement), puis clôture automatique.
+const H = 3600_000, CANDIDATURE = 24 * H, VOTE = 48 * H;
+const phase = () => { const e = store.election; if (!e) return null; const t = Date.now(); return t < e.finCandid ? 'candidature' : t < e.finVote ? 'vote' : 'fini'; };
+const licencie = uid => (store.membres[uid]?.fin || 0) > Date.now();
+
+function presidentLignes() {
+  const e = store.election, ph = phase(), pres = store.president;
+  const noms = e ? Object.entries(e.candidats).map(([u, n]) => '> • <@' + u + '> · `' + n + '`') : [];
+  return [
+    '## 👑  PRÉSIDENT',
+    pres ? '👑 <@' + pres.uid + '> · `' + pres.pseudo + '` · élu ' + ts(pres.at, 'D') : '_Pas de président pour le moment._',
+    '-# Il gère les achats et les parcelles à travailler, selon le code de l\'association.',
+    ...(ph === 'candidature' ? ['', '🗳️ **Élection · candidatures ouvertes** jusqu\'à ' + ts(e.finCandid, 'R') + ' (vote ensuite pendant 48 h)', ...(noms.length ? noms : ['_Aucun candidat pour le moment._'])]
+      : ph === 'vote' ? ['', '🗳️ **Élection · vote ouvert** jusqu\'à ' + ts(e.finVote, 'R') + ' · ' + Object.keys(e.votes).length + ' vote(s)', ...noms] : []),
+  ];
+}
+
+const boutonsElection = () => phase() === 'candidature' ? [new ButtonBuilder().setCustomId('asso_elec_candidat').setLabel('🙋 Me présenter').setStyle(ButtonStyle.Primary)]
+  : phase() === 'vote' ? [new ButtonBuilder().setCustomId('asso_elec_vote').setLabel('🗳️ Voter').setStyle(ButtonStyle.Primary)] : [];
+
+async function handleAdmin(interaction) {
+  if (!estStaff(interaction)) return rep(interaction, '❌ Réservé au staff.');
+  const ph = phase();
+  await interaction.reply({ flags: 64, allowedMentions: { parse: [] },
+    content: '⚙️ **Administratif** · ' + (store.president ? 'Président : <@' + store.president.uid + '>' : 'pas de président') + '\n'
+      + (ph ? '🗳️ Une élection est déjà en cours (' + (ph === 'candidature' ? 'candidatures' : 'vote') + ').' : 'Aucune élection en cours.'),
+    components: [new ActionRowBuilder().addComponents(new ButtonBuilder().setCustomId('asso_elec_lancer').setLabel('🗳️ Lancer une élection').setStyle(ButtonStyle.Success).setDisabled(!!ph))] });
+}
+
+async function handleLancer(interaction) {
+  if (!estStaff(interaction)) return rep(interaction, '❌ Réservé au staff.');
+  if (phase()) return rep(interaction, '⚠️ Une élection est déjà en cours.');
+  const t = Date.now();
+  store.election = { finCandid: t + CANDIDATURE, finVote: t + CANDIDATURE + VOTE, candidats: {}, votes: {} };
+  save();
+  await log(interaction.client, '🗳️ Élection lancée · ' + NOM, '0', '', 'Lancée par <@' + interaction.user.id + '> · candidatures jusqu\'à ' + ts(store.election.finCandid, 'f') + ', vote jusqu\'à ' + ts(store.election.finVote, 'f') + '.', 0x3498DB);
+  await interaction.update({ content: '✅ Élection lancée : candidatures 24 h, puis vote 48 h.', components: [] });
+  await majSalaires(interaction.client);
+}
+
+async function handleCandidat(interaction) {
+  const uid = interaction.user.id;
+  if (phase() !== 'candidature') return rep(interaction, '⏱️ Les candidatures sont terminées.');
+  if (!licencie(uid)) return rep(interaction, '🪪 Seuls les **licenciés** peuvent se présenter.');
+  if (store.election.candidats[uid]) return rep(interaction, '✅ Tu es déjà candidat.');
+  store.election.candidats[uid] = store.membres[uid].pseudo;
+  save();
+  await rep(interaction, '🙋 Candidature enregistrée. Le vote s\'ouvre ' + ts(store.election.finCandid, 'R') + '.');
+  await majSalaires(interaction.client);
+}
+
+async function handleVoteBouton(interaction) {
+  const uid = interaction.user.id, e = store.election;
+  if (phase() !== 'vote') return rep(interaction, '⏱️ Le vote n\'est pas ouvert.');
+  if (!licencie(uid)) return rep(interaction, '🪪 Seuls les **licenciés** peuvent voter.');
+  const cands = Object.entries(e.candidats);
+  if (!cands.length) return rep(interaction, '⚠️ Aucun candidat : l\'élection sera close sans président.');
+  await interaction.reply({ flags: 64, content: '🗳️ Choisis ton candidat (tu peux changer ton vote jusqu\'à ' + ts(e.finVote, 't') + ').' + (e.votes[uid] ? '\nVote actuel : <@' + e.votes[uid] + '>' : ''), allowedMentions: { parse: [] },
+    components: [new ActionRowBuilder().addComponents(new StringSelectMenuBuilder().setCustomId('asso_elec_choix').setPlaceholder('Candidat…')
+      .addOptions(cands.slice(0, 25).map(([u, n]) => ({ label: n, value: u }))))] });
+}
+
+async function handleVoteChoix(interaction) {
+  const uid = interaction.user.id, choix = interaction.values[0];
+  if (phase() !== 'vote') return interaction.update({ content: '⏱️ Le vote est terminé.', components: [] });
+  if (!licencie(uid) || !store.election.candidats[choix]) return interaction.update({ content: '❌ Vote refusé.', components: [] });
+  store.election.votes[uid] = choix;
+  save();
+  await interaction.update({ content: '✅ Vote enregistré pour <@' + choix + '>.', components: [], allowedMentions: { parse: [] } });
+  await majSalaires(interaction.client);
+}
+
+// Clôture : le plus de voix gagne (égalité : le premier inscrit) ; sans vote, le président en place reste
+async function clotureElection(client) {
+  const e = store.election;
+  if (!e || phase() !== 'fini') return;
+  const voix = {};
+  for (const c of Object.values(e.votes)) voix[c] = (voix[c] || 0) + 1;
+  const gagnant = Object.keys(e.candidats).sort((x, y) => (voix[y] || 0) - (voix[x] || 0))[0];
+  store.election = null;
+  if (gagnant && voix[gagnant]) store.president = { uid: gagnant, pseudo: e.candidats[gagnant], at: Date.now() };
+  save();
+  const resultat = Object.keys(e.candidats).map(u => '• <@' + u + '> · ' + (voix[u] || 0) + ' voix').join('\n') || '_Aucun candidat._';
+  await log(client, '👑 Élection terminée · ' + NOM, '0', '', (gagnant && voix[gagnant] ? 'Nouveau président : <@' + gagnant + '> (' + voix[gagnant] + ' voix)' : 'Aucun vote : pas de changement de président.') + '\n' + resultat, 0xF1C40F);
+  await majSalaires(client);
+}
+
+let phaseAffichee;
+async function suiviElection(client) {
+  const ph = phase();
+  if (ph === 'fini') return clotureElection(client);
+  if (ph !== phaseAffichee) { phaseAffichee = ph; await majSalaires(client); } // bascule candidatures -> vote : change le bouton
+}
+
 
 // ── Contrôle des licences : un joueur connecté dans la ferme de l'association sans licence valide → alerte dans les logs ──
 // Une alerte par connexion (le joueur est oublié quand il se déconnecte ou quitte la ferme).
@@ -434,14 +530,8 @@ async function verifierLicences(client) {
     if (alertes.has(nom)) continue;
     alertes.add(nom);
     const ancien = Object.entries(store.membres).find(([, m]) => m.pseudo.toLowerCase() === nom.toLowerCase());
-    const ch = await client.channels.fetch(LOGS_ID).catch(() => null);
-    await ch?.send({ embeds: [{
-      title: '🚫 Joueur sans licence · ' + NOM,
-      description: '**' + nom + '** est connecté dans la ferme **' + NOM + '** sans licence valide.\n'
-        + (ancien ? 'Licence de <@' + ancien[0] + '> expirée le ' + ts(ancien[1].fin, 'D') + '.' : 'Aucune licence enregistrée pour ce pseudo en jeu.')
-        + '\nIl n\'a pas le droit de travailler pour l\'association : adhésion de **' + euros(PRIX) + '** dans <#' + CHANNEL_ID + '>.',
-      color: 0xE74C3C, timestamp: new Date().toISOString(),
-    }], allowedMentions: { parse: [] } }).catch(err => console.error('⚠️ Alerte licence :', err.message));
+    await log(client, '🚫 Joueur sans licence · ' + NOM, '0', '', '**' + nom + '** connecté dans la ferme sans licence valide · '
+      + (ancien ? 'licence de <@' + ancien[0] + '> expirée le ' + ts(ancien[1].fin, 'D') : 'aucune licence enregistrée pour ce pseudo') + ' · adhésion de **' + euros(PRIX) + '** dans <#' + CHANNEL_ID + '>', 0xE74C3C);
   }
 }
 
@@ -470,7 +560,8 @@ async function startAssociation(client) {
   setInterval(() => expirer(client).catch(() => {}), 6 * 3600_000).unref(); // logge et retire les licences expirées
   setInterval(() => majSalaires(client).catch(() => {}), 5 * 60_000).unref();
   setInterval(() => verifierLicences(client).catch(() => {}), 60_000).unref();
+  setInterval(() => suiviElection(client).catch(() => {}), 60_000).unref(); // bascule candidatures -> vote -> clôture
   setInterval(() => traiterVirements(client).catch(() => {}), 60_000).unref();
 }
 
-module.exports = { startAssociation, publier, handle, releve, calcul, sansLicence, nouveauxVirements, duMois, _store: () => store, _setReleve: r => { dernierReleve = r; } };
+module.exports = { startAssociation, publier, handle, releve, calcul, sansLicence, nouveauxVirements, duMois, _suivi: suiviElection, _store: () => store, _setReleve: r => { dernierReleve = r; } };
