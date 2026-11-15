@@ -1,4 +1,4 @@
-const { ContextMenuCommandBuilder, PermissionFlagsBits, ApplicationCommandType, ActionRowBuilder, ButtonBuilder, ButtonStyle } = require('discord.js');
+const { SlashCommandBuilder, ContextMenuCommandBuilder, PermissionFlagsBits, ApplicationCommandType, ActionRowBuilder, ButtonBuilder, ButtonStyle } = require('discord.js');
 const { log } = require('../core/logger');
 
 // Suppression d'une plage de messages via le menu contextuel (clic droit > Applications) :
@@ -42,6 +42,40 @@ const dataEnd = new ContextMenuCommandBuilder()
   .setName('Purge : fin')
   .setType(ApplicationCommandType.Message)
   .setDefaultMemberPermissions(PermissionFlagsBits.ManageMessages);
+
+// /nettoyer : tous les messages du salon, avec la même confirmation (boutons purge_ok / purge_no).
+const data = new SlashCommandBuilder()
+  .setName('nettoyer')
+  .setDescription('Supprime TOUS les messages du salon actuel (confirmation demandée)')
+  .setDefaultMemberPermissions(PermissionFlagsBits.ManageMessages);
+
+async function execute(interaction) {
+  await interaction.deferReply({ flags: 64 });
+  const ids = [];
+  try {
+    let before;
+    for (;;) {
+      const batch = await interaction.channel.messages.fetch({ before, limit: 100 });
+      if (!batch.size) break;
+      ids.push(...batch.keys());
+      before = [...batch.keys()].sort((a, b) => (BigInt(a) < BigInt(b) ? -1 : 1))[0];
+    }
+  } catch (err) {
+    await interaction.editReply({ content: '❌ Impossible de lire les messages du salon. (' + err.message + ')' });
+    return;
+  }
+  if (!ids.length) { await interaction.editReply({ content: '✅ Le salon est déjà vide.' }); return; }
+
+  pending.set(interaction.user.id, { channelId: interaction.channelId, ids, at: Date.now() });
+  const row = new ActionRowBuilder().addComponents(
+    new ButtonBuilder().setCustomId('purge_ok_' + interaction.user.id).setLabel('Tout supprimer (' + ids.length + ')').setStyle(ButtonStyle.Danger),
+    new ButtonBuilder().setCustomId('purge_no_' + interaction.user.id).setLabel('Annuler').setStyle(ButtonStyle.Secondary),
+  );
+  await interaction.editReply({
+    content: '🗑️ **' + ids.length + ' message(s)** de <#' + interaction.channelId + '> vont être supprimés (HUB et panneaux du bot compris, épinglés compris).\nLes messages de plus de 14 jours sont supprimés un par un : ce sera lent.\nConfirmer ?',
+    components: [row],
+  });
+}
 
 async function executeStart(interaction) {
   starts.set(key(interaction), { messageId: interaction.targetId, at: Date.now() });
@@ -142,4 +176,4 @@ async function handleButton(interaction) {
   console.log('🗑️ Purge : ' + deleted + ' message(s) dans #' + channel.name + ' par ' + interaction.user.tag);
 }
 
-module.exports = { dataStart, dataEnd, executeStart, executeEnd, handleButton };
+module.exports = { data, execute, dataStart, dataEnd, executeStart, executeEnd, handleButton };

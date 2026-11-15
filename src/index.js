@@ -251,6 +251,7 @@ client.on(Events.InteractionCreate, async interaction => {
       'succes':       './commands/succes',
       'succes-maj':   './commands/succes-maj',
       'fs25':         './commands/fs25',
+      'nettoyer':     './commands/purge',
     };
     const cmdPath = cmdMap[interaction.commandName];
     if (cmdPath) {

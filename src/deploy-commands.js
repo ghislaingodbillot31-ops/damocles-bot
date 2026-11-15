@@ -17,6 +17,7 @@ const commands = [
   require('./commands/classement').data.toJSON(),
   require('./commands/xp-admin').data.toJSON(),
   require('./commands/boutique-admin').data.toJSON(),
+  require('./commands/purge').data.toJSON(),
   require('./commands/purge').dataStart.toJSON(),
   require('./commands/purge').dataEnd.toJSON(),
   require('./commands/invite').data.toJSON(),
