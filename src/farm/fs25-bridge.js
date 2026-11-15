@@ -189,7 +189,24 @@ function offlineEmbed(c, reason) {
 // ---------- Journal des mouvements d'argent (déduit de l'écart entre deux relevés) ----------
 
 // Un relevé toutes les 30 s : plusieurs opérations dans l'intervalle sont additionnées.
-function moneyEvents(prev, cur, min) {
+const ORIGINES = {
+  SOLD_PRODUCTS: 'vente de produits', HARVEST_INCOME: 'vente de récolte', SOLD_ANIMALS: "vente d'animaux",
+  MISSIONS: 'contrat', PROPERTY_INCOME: 'revenu de propriété (passif)', OTHER: 'autre',
+};
+
+// Origine des gains entre deux relevés : farmId -> ['vente de récolte', 'contrat'] (d'après les compteurs money_in du mod).
+function moneyOrigins(prevC, curC) {
+  const before = new Map((prevC || []).filter((c) => c.kind === 'money_in').map((c) => [`${c.farm}|${c.fillType}`, c.value]));
+  const out = new Map();
+  for (const c of curC || []) {
+    if (c.kind !== 'money_in' || c.fillType === 'TRANSFER') continue;
+    if (c.value - (before.get(`${c.farm}|${c.fillType}`) || 0) < 1) continue;
+    out.set(c.farm, [...(out.get(c.farm) || []), ORIGINES[c.fillType] || c.fillType.toLowerCase()]);
+  }
+  return out;
+}
+
+function moneyEvents(prev, cur, min, origins = new Map()) {
   const out = [];
   const ups = [], downs = [];
   for (const f of cur) {
@@ -199,14 +216,14 @@ function moneyEvents(prev, cur, min) {
     if (Math.abs(dm) < min) continue;
     if (dl > 0 && Math.abs(dm - dl) < 1) out.push(`🧾 **${f.name}** a emprunté ${money(dl)}`);
     else if (dl < 0 && Math.abs(dm - dl) < 1) out.push(`✅ **${f.name}** a remboursé ${money(-dl)} de prêt`);
-    else (dm > 0 ? ups : downs).push({ name: f.name, amount: Math.abs(dm) });
+    else (dm > 0 ? ups : downs).push({ name: f.name, amount: Math.abs(dm), why: (origins.get(f.id) || []).join(', ') });
   }
   for (const d of downs) {
     const i = ups.findIndex((u) => Math.abs(u.amount - d.amount) < 1);
     if (i >= 0) out.push(`🔄 **${d.name}** →**${ups.splice(i, 1)[0].name}** : transfert de ${money(d.amount)}`);
     else out.push(`🛒 **${d.name}** a dépensé ${money(d.amount)}`);
   }
-  for (const u of ups) out.push(`💰 **${u.name}** a reçu ${money(u.amount)}`);
+  for (const u of ups) out.push(`💰 **${u.name}** a reçu ${money(u.amount)}${u.why ? ` _(${u.why})_` : ''}`);
   return out;
 }
 
@@ -354,7 +371,7 @@ async function startFs25Bridge(client) {
   const helperChannel = (await salon('FS25_OUVRIERS_CHANNEL_ID')) || connChannel; // à défaut : salon des connexions
   const activeHelpers = new Map();
   const minMove = parseInt(process.env.FS25_LOG_MIN || '500', 10); // ignore les petits mouvements
-  let prevFarms = null;
+  let prevFarms = null, prevCounters = null;
   let lastMtime = null, lastEmbedKey = null, lastEditAt = 0; // évite téléchargements et éditions inutiles
   let wasUp = null; // null = pas encore observé (le 1er relevé ne génère aucune annonce)
   const setUp = (up) => { if (wasUp !== null && up !== wasUp) logTo(connChannel, [up ? "🟢 **Serveur démarré**" : "🔴 **Serveur arrêté**"]); wasUp = up; };
@@ -371,7 +388,8 @@ async function startFs25Bridge(client) {
         lastMtime = mtime;
         lastStatus = parseStatus(data);
         const connexions = presenceEvents(joined, lastStatus.players); // aussi au 1er relevé : il mémorise les joueurs déjà présents
-        const banque = prevFarms ? moneyEvents(prevFarms, lastStatus.farms, minMove) : [];
+        const banque = prevFarms ? moneyEvents(prevFarms, lastStatus.farms, minMove, moneyOrigins(prevCounters, lastStatus.counters)) : [];
+        prevCounters = lastStatus.counters;
         prevFarms = new Map(lastStatus.farms.map((f) => [f.name, f]));
         logTo(connChannel, connexions);
         logTo(helperChannel, helperEvents(activeHelpers, lastStatus.helpers));
@@ -422,6 +440,7 @@ module.exports = {
   ensureStatusMessage,
   isStatusChannel,
   moneyEvents,
+  moneyOrigins,
   handleModsButton,
   presenceEvents,
   helperEvents,
