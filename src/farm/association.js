@@ -73,21 +73,6 @@ function panelPayload() {
   });
 }
 
-function journalPayload() {
-  const liste = actifs();
-  const lignes = liste.slice(0, 40).map(([u, m]) => '🪪 **LICENCIÉ** · <@' + u + '> · `' + m.pseudo + '` · jusqu\'au ' + ts(m.fin, 'D'));
-  return {
-    ...panneau({ embeds: [{
-      title: '🌲  MEMBRES LICENCIÉS',
-      description: lignes.length ? lignes.join('\n') : '_Aucun membre licencié pour le moment._',
-      color: 0x8D6E63,
-      footer: { text: liste.length + ' membre(s) · mis à jour automatiquement' },
-      timestamp: new Date().toISOString(),
-    }] }),
-    allowedMentions: { parse: [] },
-  };
-}
-
 const demandeEmbed = (uid, d, statut, color = 0xF1C40F, objet = 'Droit d\'entrée : **' + euros(PRIX) + '** à verser à la ferme **' + NOM + '**') => ({
   title: '🌲 Adhésion · ' + NOM,
   description: [
@@ -118,19 +103,9 @@ async function expirer(client) {
     await log(client, '⌛ Licence expirée · ' + NOM, uid, m.pseudo, 'Fin de licence : ' + ts(m.fin, 'D') + ' · plus le droit de travailler pour l\'association.', 0x95A5A6);
   }
   save();
-  await majJournal(client);
+  await majSalaires(client);
 }
 
-async function majJournal(client) {
-  const ch = await client.channels.fetch(CHANNEL_ID).catch(() => null);
-  if (!ch) return;
-  const m = store.journalMsgId && await ch.messages.fetch(store.journalMsgId).catch(() => null);
-  if (m) { await m.edit(journalPayload()).catch(() => {}); return; }
-  store.journalMsgId = (await ch.send(journalPayload()).catch(() => null))?.id || null;
-  save();
-}
-
-// ── Interactions ──────────────────────────────────────────────────────────────
 async function handleLicence(interaction) {
   const m = store.membres[interaction.user.id];
   if (!m || m.fin <= Date.now()) return rep(interaction, '🪪 Tu n\'as pas de licence active' + (m ? ' (expirée le ' + ts(m.fin, 'D') + ')' : '') + '. Clique sur **Rejoindre l\'association**.');
@@ -196,7 +171,7 @@ async function handleDecision(interaction) {
     ok ? 'Versement : **' + euros(PRIX) + '** · licence jusqu\'au ' + ts(store.membres[uid].fin, 'D') + ' · validé par <@' + interaction.user.id + '>'
        : 'Refusé par <@' + interaction.user.id + '>', ok ? 0x2ECC71 : 0xE74C3C);
   await interaction.update({ ...panneau({ embeds: [demandeEmbed(uid, d, statut, color)] }), components: [], allowedMentions: { parse: [] } });
-  if (ok) await majJournal(interaction.client);
+  if (ok) await majSalaires(interaction.client);
 }
 
 async function handle(interaction) {
@@ -255,20 +230,16 @@ const cagnotte = uid => Math.round((store.cagnottes ||= {})[uid] || 0);
 const dette    = uid => Math.round((store.credits ||= {})[uid] || 0);
 
 function salairesPayload() {
-  const c = calcul();
-  const description = !c ? '_En attente des données du serveur FS25 (ferme **' + NOM + '** introuvable)._' : [
-    '## ⏱️ Période en cours',
-    '💶 Revenus de la période : **' + euros(Math.round(c.revenu)) + '** · **' + (PART * 100) + ' %** répartis dans les cagnottes à la clôture',
-    '🏦 Caisse de l\'association : **' + euros(Math.round(dernierReleve.caisse || 0)) + '** · période ouverte ' + ts(store.paie.at, 'R'),
-    '',
-    ...(c.lignes.length ? c.lignes.slice(0, 20).map((l, i) => (MEDAILLES[i] || '`' + (i + 1) + '.`') + ' <@' + l.u + '> · `' + l.pseudo + '` · ⏱️ ' + duree(l.s)
-      + ' · ' + Math.round(l.part * 100) + ' % · 🐷 +**' + euros(l.gain) + '**')
-      : ['_Aucun licencié n\'a encore travaillé sur cette période._']),
-    '',
+  const caisse = dernierReleve ? euros(Math.round(dernierReleve.caisse || 0)) : '_en attente des données du serveur FS25_';
+  const debiteurs = Object.entries(store.credits || {}).filter(([u]) => dette(u) > 0).sort((a, b) => dette(b[0]) - dette(a[0]));
+  const description = [
     ...investissement(),
     '',
-    '-# Travail compté : véhicule de l\'association moteur allumé, et coupe à la tronçonneuse. Sans travail, rien n\'est ajouté à la cagnotte.',
-    '-# La cagnotte n\'est pas versée : elle te permet de demander un **crédit** à l\'association, à rembourser ensuite.',
+    '## 🏦 Caisse de l\'association',
+    'Solde : **' + caisse + '**',
+    '',
+    '## 💳 Crédits en cours',
+    ...(debiteurs.length ? debiteurs.slice(0, 20).map(([u]) => '• <@' + u + '> · `' + (store.membres[u]?.pseudo || '?') + '` · reste à payer **' + euros(dette(u)) + '**') : ['_Aucun crédit en cours._']),
   ].join('\n');
   return {
     ...panneau({ embeds: [{ title: '🐷  TRAVAIL & INVESTISSEMENT', description, color: 0xF1C40F, footer: { text: 'MonCopainBot · mis à jour toutes les 5 min' }, timestamp: new Date().toISOString() }] }),
@@ -435,16 +406,13 @@ async function traiterVirements(client) {
 
 // Section « Investissement » : chaque licencié, ce qu'il a investi ce mois et au total (+ cagnotte / crédit s'il en a)
 function investissement() {
-  const lignes = actifs().map(([u, m]) => ({ u, m, mois: duMois(u), total: auTotal(u) })).sort((a, b) => b.total - a.total).slice(0, 20)
-    .map(x => (x.mois > VIR_MAX ? '🚫' : x.mois >= VIR_MIN ? '✅' : '⏳') + ' <@' + x.u + '> · `' + x.m.pseudo + '` · 💶 investi **' + euros(x.total) + '**'
-      + ' · ce mois ' + euros(x.mois) + (x.mois < VIR_MIN ? ' (manque ' + euros(VIR_MIN - x.mois) + ')' : x.mois > VIR_MAX ? ' (dépasse de ' + euros(x.mois - VIR_MAX) + ')' : '')
-      + (cagnotte(x.u) ? ' · 🐷 ' + euros(cagnotte(x.u)) : '') + (dette(x.u) ? ' · 💳 doit ' + euros(dette(x.u)) : ''));
-  const injecte = (store.versements || []).filter(v => v.uid).reduce((a, v) => a + v.montant, 0);
+  const lignes = actifs().map(([u, m]) => ({ u, m, mois: duMois(u), total: auTotal(u) })).sort((a, b) => b.total - a.total).slice(0, 40)
+    .map(x => (x.mois > VIR_MAX ? '🚫' : x.mois >= VIR_MIN ? '✅' : '⏳') + ' <@' + x.u + '> · `' + x.m.pseudo + '` · 💶 investi total **' + euros(x.total) + '**'
+      + ' · jusqu\'au ' + ts(x.m.fin, 'D'));
   return [
-    '## 💼 Investissement',
-    '🏦 Total investi par les licenciés : **' + euros(injecte) + '** · de ' + euros(VIR_MIN) + ' à ' + euros(VIR_MAX) + ' par mois, par virement vers **' + NOM + '**',
-    '',
-    ...(lignes.length ? lignes : ['_Aucun licencié pour le moment._']),
+    '## 🌲  MEMBRES LICENCIÉS',
+    ...(lignes.length ? lignes : ['_Aucun membre licencié pour le moment._']),
+    '-# ✅ ' + euros(VIR_MIN) + ' à ' + euros(VIR_MAX) + ' investis ce mois · ⏳ minimum pas atteint · 🚫 maximum dépassé · virements vers **' + NOM + '**',
   ];
 }
 
@@ -483,7 +451,8 @@ async function publier(client, status) {
   const ch = await client.channels.fetch(CHANNEL_ID).catch(() => null);
   if (!ch) return console.error('⚠️ Association : salon introuvable');
   const get = id => id && ch.messages.fetch(id).catch(() => null);
-  const msgs = [['panelMsgId', panelPayload], ['journalMsgId', journalPayload], ['salairesMsgId', salairesPayload]];
+  if (store.journalMsgId) { (await get(store.journalMsgId))?.delete().catch(() => {}); store.journalMsgId = null; save(); } // ancien HUB « MEMBRES LICENCIÉS »
+  const msgs = [['panelMsgId', panelPayload], ['salairesMsgId', salairesPayload]];
   const trouves = await Promise.all(msgs.map(([k]) => get(store[k])));
   if (trouves.every(Boolean)) {
     for (const [i, [, p]] of msgs.entries()) await trouves[i].edit(p()).catch(() => {});
