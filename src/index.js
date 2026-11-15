@@ -226,6 +226,7 @@ client.on(Events.InteractionCreate, async interaction => {
 
   if (interaction.isAutocomplete()) {
     if (interaction.commandName === 'succes') await require('./commands/succes').autocomplete(interaction).catch(() => {});
+    if (interaction.commandName === 'fs25') await require('./commands/fs25').autocomplete(interaction).catch(() => {});
     return;
   }
 
@@ -249,6 +250,7 @@ client.on(Events.InteractionCreate, async interaction => {
       'invite':       './commands/invite',
       'succes':       './commands/succes',
       'succes-maj':   './commands/succes-maj',
+      'fs25':         './commands/fs25',
     };
     const cmdPath = cmdMap[interaction.commandName];
     if (cmdPath) {

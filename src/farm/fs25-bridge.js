@@ -28,6 +28,7 @@ const { EmbedBuilder, ActionRowBuilder, ButtonBuilder, ButtonStyle } = require('
 const { Writable } = require('stream');
 const { panneauEmbed } = require('../core/embed-format');
 const { processAchievements } = require('./fs25-succes');
+const { loadFull } = require('./fs25-data');
 
 const MONTHS = ['Mars', 'Avril', 'Mai', 'Juin', 'Juillet', 'Août',
   'Septembre', 'Octobre', 'Novembre', 'Décembre', 'Janvier', 'Février'];
@@ -411,6 +412,12 @@ module.exports = {
     const c = cfg();
     const { data } = await (c.source === 'sftp' ? readViaSftp : readViaFtp)(c, null);
     return parseStatus(data);
+  },
+  // full.xml (même dossier que status.xml) : toutes les sections exportées par le mod
+  lireDonneesCompletes: () => {
+    const c = cfg();
+    const read = (path) => (c.source === 'sftp' ? readViaSftp : readViaFtp)({ ...c, path }, null);
+    return loadFull(read, c.path.replace(/[^/]*$/, 'full.xml'));
   },
   ensureStatusMessage,
   isStatusChannel,

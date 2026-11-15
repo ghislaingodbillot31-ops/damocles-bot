@@ -22,6 +22,7 @@ const commands = [
   require('./commands/invite').data.toJSON(),
   require('./commands/succes').data.toJSON(),
   require('./commands/succes-maj').data.toJSON(),
+  require('./commands/fs25').data.toJSON(),
 ];
 
 const rest = new REST().setToken(process.env.DISCORD_TOKEN);
