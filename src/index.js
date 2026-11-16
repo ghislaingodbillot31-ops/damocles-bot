@@ -91,6 +91,7 @@ client.once(Events.ClientReady, async () => {
   require('./community/bugs').startBugs(client);
   require('./moderation/invitations').startInvitations(client);
   require('./community/jeux').startJeux(client);
+  require('./community/loto').startLoto(client, cron);
   require('./moderation/tickets').startTickets(client).catch(err => console.error('⚠️ Tickets :', err.message));
   require('./moderation/antispam').startAntiSpam(client);
   if (process.env.VERIF_MODE === 'code') require('./moderation/codeverif').publierPanneau(client).catch(() => {});
@@ -283,6 +284,7 @@ client.on(Events.InteractionCreate, async interaction => {
   if (interaction.isStringSelectMenu()) {
     const cid = interaction.customId;
     try {
+      if (cid === 'loto_n' || cid === 'loto_s') { await require('./community/loto').handleSelect(interaction); return; }
       if (cid === 'hub_expl_creerfarm')        { await hub.handleHubExplCreerModal(interaction); return; }
       if (cid.startsWith('hub_expl_manage_'))  { await hub.handleHubExplManage(interaction);  return; }
       if (cid.startsWith('hub_expl_setact_'))  { await hub.handleHubExplSetAct(interaction);  return; }
@@ -410,6 +412,7 @@ client.on(Events.InteractionCreate, async interaction => {
   // Lien d'invitation (7 jours)
   try {
     if (id === 'lien_invite') { await require('./moderation/invitations').handleInviteButton(interaction); return; }
+    if (id === 'loto_jouer' || id === 'loto_ok') { await require('./community/loto').handleButton(interaction); return; }
     if (id === 'jeux_new')    { await require('./community/jeux').handleButton(interaction); return; }
     if (id === 'jeux_wish')   { await require('./community/jeux').handleWishButton(interaction); return; }
     if (id === 'wish_y' || id === 'wish_n') { await require('./community/jeux').handleWishVote(interaction); return; }
