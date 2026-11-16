@@ -24,6 +24,7 @@ const commands = [
   require('./commands/succes').data.toJSON(),
   require('./commands/succes-maj').data.toJSON(),
   require('./commands/fs25').data.toJSON(),
+  require('./commands/loto-tirage').data.toJSON(),
 ];
 
 const rest = new REST().setToken(process.env.DISCORD_TOKEN);

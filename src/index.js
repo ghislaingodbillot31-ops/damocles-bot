@@ -238,6 +238,7 @@ client.on(Events.InteractionCreate, async interaction => {
       'sync-db':      './commands/sync-db',
       'contrat':      './commands/contrat',
       'maintenance':  './commands/maintenance',
+      'loto-tirage':  './commands/loto-tirage',
       'niveau':       './commands/niveau',
       'classement':   './commands/classement',
       'xp-admin':     './commands/xp-admin',
