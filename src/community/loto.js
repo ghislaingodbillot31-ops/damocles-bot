@@ -7,7 +7,7 @@ const { publier } = require('../farm/panneau-sync');
 // Mini-jeu « Euro-Copains » : 5 numéros (1-25) + 2 bonus (1-8), 1 grille par joueur et par tirage,
 // tirage le mercredi et le samedi à 20h (Paris). Gains en points (XP du bot).
 const CHANNEL_ID = process.env.LOTO_CHANNEL_ID || '1571825861626302536';
-const MISE = 10, NB = 25, NS = 8, POT_BASE = 5000, POT_PLUS = 1000;
+const MISE = 10, NB = 25, NS = 8, POT_BASE = 3000; // cagnotte de départ ; chaque mise l'augmente, remise à POT_BASE à chaque jackpot
 // GAINS[bons numéros][bons bonus] ; le 5+2 = jackpot (cagnotte)
 const GAINS = { 5: [1500, 3000], 4: [150, 300, 800], 3: [30, 60, 150], 2: [0, 10, 30] };
 
@@ -15,6 +15,8 @@ const STORE_PATH = dataPath('loto.json');
 // { panelMsgId, pot, tirage, tickets: { userId: { n: [], s: [] } }, dernier: { n, s, gagnants: [..] } }
 let store = { panelMsgId: null, pot: POT_BASE, tirage: 1, tickets: {}, dernier: null };
 try { store = { ...store, ...JSON.parse(fs.readFileSync(STORE_PATH, 'utf-8')) }; } catch {}
+// Avant le 1er tirage, la cagnotte = base + mises déjà payées (recale l'ancien départ à 5000)
+if (store.tirage === 1 && !store.dernier) store.pot = POT_BASE + Object.keys(store.tickets).length * MISE;
 const save = () => { try { fs.writeFileSync(STORE_PATH, JSON.stringify(store, null, 2), 'utf-8'); } catch {} };
 
 const brouillons = new Map(); // grilles en cours de saisie (mémoire seulement)
@@ -98,6 +100,7 @@ async function handleButton(i) {
   if (store.tickets[i.user.id] || !b || b.n.length !== 5 || b.s.length !== 2)
     return i.update({ content: '⚠️ Grille invalide ou déjà jouée.', components: [] });
   if (!require('./levels').retirerPoints(i.user.id, MISE).ok) return i.update({ content: '❌ Il faut ' + MISE + ' points pour jouer.', components: [] });
+  store.pot += MISE;
   store.tickets[i.user.id] = { n: tri(b.n), s: tri(b.s) };
   brouillons.delete(i.user.id);
   save();
@@ -132,19 +135,20 @@ async function tirage(client) {
   }
   const joueurs = Object.keys(store.tickets).length;
   store.dernier = { n, s, gagnants };
-  store.pot = jackpot ? POT_BASE : store.pot + POT_PLUS;
+  if (jackpot) store.pot = POT_BASE;
   store.tickets = {};
   const num = store.tirage++;
   save();
   const ch = await majPanneau(client);
-  await ch?.send({
+  await ch?.send(panneau({
     embeds: [{
       title: '🎟️ RÉSULTAT · TIRAGE N°' + num,
       description: '**' + n.join(' · ') + '**  ⭐ **' + s.join(' · ') + '**\n\n' + joueurs + ' grille(s) jouée(s)\n' + (gagnants.length ? gagnants.join('\n') : 'Aucun gagnant cette fois.')
         + (jackpot ? '\n\n💥 **JACKPOT !**' : '\n\n💰 Cagnotte reportée : ' + fmt(store.pot) + ' points'),
       color: 0xF1C40F,
+      footer: { text: 'MonCopainBot' },
     }],
-  }).catch(() => {});
+  })).catch(() => {});
 }
 
 function startLoto(client, cron) {
