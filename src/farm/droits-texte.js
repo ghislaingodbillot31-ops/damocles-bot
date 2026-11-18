@@ -50,19 +50,14 @@ function panneauDroits(exploit) {
     choisies.length ? '**Activités :** ' + choisies.map(a => a.emoji + ' ' + a.nom).join(' · ') : '**Aucune activité choisie** : va dans **⚙️ Gérer mon exploitation** pour les choisir.',
     '✅ = autorisé · ❌ = interdit',
   ];
-  const blocs = GROUPES.map(g => {
+  // une colonne par activité (champs côte à côte, un travail par ligne) : alignement identique pour tout le monde
+  const fields = GROUPES.map(g => {
     const membres = ACTIVITES.filter(a => a.groupe === g);
     const works = [...new Set(membres.flatMap(a => a.works))];
-    const tete = g === 'elevage' ? '🐾 **Élevages**' : membres[0].emoji + ' **' + membres[0].nom + '**';
-    return tete + '\n' + works.map(w => (permis.has(w) ? '✅ ' : '❌ ') + w).join(' · ');
+    return { name: g === 'elevage' ? '🐾 Élevages' : membres[0].emoji + ' ' + membres[0].nom, value: works.map(w => (permis.has(w) ? '✅ ' : '❌ ') + w).join('\n'), inline: true };
   });
-  blocs.push('━━━━━━━━━━━━━━\n' + COMMUN);
-  // découpe en descriptions de moins de 3 500 caractères (limite Discord par embed)
-  const embeds = [];
-  let cur = lignes.join('\n');
-  for (const b of blocs) { if ((cur + '\n\n' + b).length > 3500) { embeds.push(cur); cur = b; } else cur += '\n\n' + b; }
-  embeds.push(cur);
-  return embeds.map((d, k) => ({ title: k === 0 ? '🛠️ TRAVAUX AUTORISÉS · ' + exploit.nom : undefined, description: d, color: exploit.couleur ?? 0x2ECC71 }));
+  fields.push({ name: '​', value: COMMUN, inline: false });
+  return [{ title: '🛠️ TRAVAUX AUTORISÉS · ' + exploit.nom, description: lignes.join('\n'), fields, color: exploit.couleur ?? 0x2ECC71 }];
 }
 
 module.exports = { payload, panneauDroits, CHOIX };
