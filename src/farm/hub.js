@@ -207,7 +207,7 @@ async function handleHubExplManage(interaction) {
   const choice = interaction.values[0];
 
   if (choice === 'droits') {
-    await interaction.reply({ natif: true, embeds: [{ description: require('./droits-texte'), color: 0x2ECC71 }], flags: 64 });
+    await interaction.reply({ natif: true, ...require('./droits-texte').payload(), flags: 64 });
     return;
   }
 

@@ -288,6 +288,7 @@ client.on(Events.InteractionCreate, async interaction => {
     try {
       if (cid === 'loto_n' || cid === 'loto_s') { await require('./community/loto').handleSelect(interaction); return; }
       if (cid === 'hub_expl_creerfarm')        { await hub.handleHubExplCreerModal(interaction); return; }
+      if (cid === 'hub_expl_droits')           { await interaction.update({ natif: true, ...require('./farm/droits-texte').payload(interaction.values[0]) }); return; }
       if (cid.startsWith('hub_expl_manage_'))  { await hub.handleHubExplManage(interaction);  return; }
       if (cid.startsWith('hub_expl_setact_'))  { await hub.handleHubExplSetAct(interaction);  return; }
       if (cid.startsWith('hub_expl_ouvdel_'))  { await hub.handleHubExplOuvDel(interaction);  return; }
