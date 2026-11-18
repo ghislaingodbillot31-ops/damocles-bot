@@ -1,4 +1,4 @@
-// Boutique EUROAGRI : échange de points de classement (XP) contre de la monnaie
+// Boutique : échange de points de classement (XP) contre de la monnaie
 // en jeu (Farming Simulator). Le bot ne peut pas créditer l'argent en jeu → il
 // crée une demande dans un salon staff. À la validation, les points sont retirés
 // du compte du joueur ; au refus, rien ne change.

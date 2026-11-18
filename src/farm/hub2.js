@@ -31,11 +31,16 @@ function headPayload() {
       new ButtonBuilder().setCustomId('nv_succes').setLabel('🏆 Succès').setStyle(ButtonStyle.Primary),
       new ButtonBuilder().setCustomId('nv_act').setLabel('🛒 Activité').setStyle(ButtonStyle.Success),
       new ButtonBuilder().setCustomId('nv_usine').setLabel('🏭 Industrie').setStyle(ButtonStyle.Success),
-      new ButtonBuilder().setCustomId('nv_class').setLabel('📊 Classement').setStyle(ButtonStyle.Secondary),
     ), new ActionRowBuilder().addComponents(
       new ButtonBuilder().setCustomId('hubinfo_parametre').setLabel(require('./hub-info').get().boutons.find(b => b.key === 'parametre').label).setStyle(ButtonStyle.Secondary), // texte réglé avec /bouton-info
     )],
   });
+}
+
+// HUB « Classement » (message séparé, juste sous le statut du serveur) : mis à jour en place à chaque vérification
+function classementPayload(st) {
+  const lignes = N.classement(st).map((x, k) => (['🥇', '🥈', '🥉'][k] || '`' + (k + 1) + '.`') + ' **' + x.farm.name + '** · niv. ' + x.f.niveau + ' · ' + x.f.score + ' succès');
+  return panneau({ embeds: [{ title: '📊  CLASSEMENT DES EXPLOITATIONS', description: lignes.join('\n') || '_Aucune exploitation._', color: 0xF1C40F, footer: { text: 'MonCopainBot' } }], allowedMentions: { parse: [] } });
 }
 
 // Panneau INFORMATIONS (message séparé) : Règlement, Google Drive, Mot de passe, Mods. Textes réglés avec /bouton-info, clics gérés par hub-info.js.
@@ -77,17 +82,22 @@ async function maj(st = status(), force = false) {
     // Statut FS25 : s'il est dans ce salon, il doit rester EN TÊTE (avant le HUB) et n'est jamais supprimé par le nettoyage
     const bridge = require('./fs25-bridge');
     const stat = bridge.isStatusChannel(channel) ? await bridge.ensureStatusMessage(channel).catch(() => null) : null;
-    const [tete, infoMsg, comMsg] = [await get(hub.head), await get(hub.info), await get(hub.commerce)];
-    const complet = !force && tete && infoMsg && comMsg && (!stat || BigInt(stat.id) < BigInt(tete.id));
+    const [classMsg, tete, infoMsg, comMsg] = [await get(hub.classement), await get(hub.head), await get(hub.info), await get(hub.commerce)];
+    // ordre : statut, classement, HUB des exploitants, informations, commerce
+    const complet = !force && classMsg && tete && infoMsg && comMsg && BigInt(classMsg.id) < BigInt(tete.id) && (!stat || BigInt(stat.id) < BigInt(classMsg.id));
 
     if (!complet) {
       // Salon dédié : on retire tout ce que le bot y a posté (évite les doublons si les ids connus sont perdus)
       const vus = await channel.messages.fetch({ limit: 100 }).catch(() => new Map());
       for (const m of vus.values()) if (m.author.id === client.user.id && m.id !== stat?.id) await m.delete().catch(() => {});
+      hub.classement = (await channel.send(classementPayload(st))).id;
+      hub.classementH = JSON.stringify(classementPayload(st));
       hub.head = (await channel.send(headPayload())).id;
       hub.info = (await channel.send(infoPayload())).id;
       hub.commerce = (await channel.send(commercePayload())).id;
     } else {
+      const clh = JSON.stringify(classementPayload(st));
+      if (hub.classementH !== clh) { await classMsg.edit(classementPayload(st)).catch(() => {}); hub.classementH = clh; }
       const hh = JSON.stringify(headPayload());
       if (hub.headH !== hh) { await tete.edit(headPayload()).catch(() => {}); hub.headH = hh; }
       const ih = JSON.stringify(infoPayload());
@@ -175,11 +185,6 @@ async function handle(i) {
     if (id === 'nv_act') return await i.reply({ natif: true, ...panneau({ embeds: [{ description: ACTIVITES_TEXTE, color: 0x2ECC71 }] }), flags: 64 });
     if (id === 'nv_usine') return await require('./industrie').afficher(i);
     if (!st) return i.reply({ content: '⏳ Pas encore de données du serveur FS25, réessaie dans une minute.', flags: 64 });
-
-    if (id === 'nv_class') {
-      const lignes = N.classement(st).map((x, k) => (['🥇', '🥈', '🥉'][k] || '`' + (k + 1) + '.`') + ' **' + x.farm.name + '** · niv. ' + x.f.niveau + ' · ' + x.f.score + ' succès');
-      return i.reply({ natif: true, ...panneau({ embeds: [{ title: '📊 Classement des exploitations', description: lignes.join('\n') || '_Aucune exploitation._', color: 0xF1C40F }] }), flags: 64 });
-    }
 
     let farm;
     if (id === 'nv_succes') {

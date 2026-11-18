@@ -15,7 +15,7 @@ const STYLES = {
 // Boutons dont le contenu est dynamique (liste, formulaire, données du joueur) : le texte réglé avec /bouton-info s'affiche EN TÊTE de leur embed.
 const DYN = {
   hub_contrat: '📋 Contrat', hub_besoin: '📦 Besoin', hub_marche: '🏪 Marché', hub_boutique: '🛒 Boutique',
-  nv_succes: '🏆 Succès', nv_act: '🛒 Activité', nv_usine: '🏭 Industrie', nv_class: '📊 Classement', hubinfo_mods: '📦 Mods',
+  nv_succes: '🏆 Succès', nv_act: '🛒 Activité', nv_usine: '🏭 Industrie', hubinfo_mods: '📦 Mods',
 };
 
 const DEFAUT = {
@@ -38,7 +38,9 @@ function get() {
   let saved = {};
   try { if (fs.existsSync(STORE)) saved = JSON.parse(fs.readFileSync(STORE, 'utf-8')); } catch {}
   const boutons = DEFAUT.boutons.map(d => ({ ...d, ...((saved.boutons || []).find(b => b.key === d.key) || {}) }));
-  return { ...DEFAUT, ...saved, boutons };
+  const sansEuro = t => typeof t === 'string' ? t.replace(/EURO ?AGRI\s*[·\-]?\s*/gi, '') : t; // « EUROAGRI · INFORMATIONS » → « INFORMATIONS »
+  const m = { ...DEFAUT, ...saved, boutons };
+  return { ...m, titre: sansEuro(m.titre), description: sansEuro(m.description) };
 }
 
 // Ne garde que les champs connus, avec les bonnes limites Discord.

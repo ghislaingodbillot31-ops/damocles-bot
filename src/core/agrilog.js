@@ -1,5 +1,5 @@
 const ids = require('./ids');
-// Journal d'activité EUROAGRI : une ligne par événement, sans ping.
+// Journal d'activité : une ligne par événement, sans ping.
 // Chaque ligne va dans le salon de sa catégorie (cf. ROUTES).
 
 const ROUTES = [

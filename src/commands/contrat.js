@@ -275,7 +275,7 @@ async function handleContratAccepter(interaction) {
       type: ChannelType.GuildText,
       parent: parentId,
       permissionOverwrites: overwrites,
-      reason: 'Négociation EUROAGRI',
+      reason: 'Négociation',
     });
   } catch (err) {
     await interaction.followUp({ content: '⚠️ Impossible de créer le salon privé (permission `Gérer les salons` manquante ?). ' + err.message, flags: 64 });
