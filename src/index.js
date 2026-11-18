@@ -478,7 +478,11 @@ client.on(Events.InteractionCreate, async interaction => {
 // ── Démarrage ─────────────────────────────────────────────────────────────────
 createDashboard();
 
-client.login(process.env.DISCORD_TOKEN).then(() => {
+// En local (hors Render), le bot ne se connecte PAS à Discord : aucun salon touché, pas de doublons.
+// Pour tester volontairement sur Discord : DISCORD_LOCAL=1 npm start
+if (!process.env.RENDER && !process.env.DISCORD_LOCAL) {
+  console.log('🔒 Mode local : pas de connexion Discord (DISCORD_LOCAL=1 pour forcer)');
+} else client.login(process.env.DISCORD_TOKEN).then(() => {
   console.log('🟢 Login Discord réussi');
 }).catch(err => {
   console.error('❌ Erreur login Discord :', err.message);

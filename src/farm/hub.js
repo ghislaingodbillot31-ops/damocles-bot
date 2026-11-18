@@ -69,17 +69,7 @@ async function handleHubExpl(interaction) {
   const uid  = interaction.user.id;
   const list = managedExploitations(uid);
 
-  if (!list.length) {
-    await interaction.reply({
-      natif: true, embeds: [{ title: '🌾 Créer mon exploitation', description: 'Tu n\'as pas encore d\'exploitation. Clique ci-dessous pour en créer une !', color: 0x5865F2 }],
-      components: [new ActionRowBuilder().addComponents(
-        new ButtonBuilder().setCustomId('hub_expl_creer').setLabel('🌾 Créer mon exploitation').setStyle(ButtonStyle.Success),
-      )],
-      flags: 64,
-    });
-    autoClean(interaction, 120000);
-    return;
-  }
+  if (!list.length) return handleHubExplCreer(interaction); // pas encore de ferme : menu déroulant des exploitations du serveur, directement
 
   // Une carte distincte (couleur, menu) par exploitation gérée
   await interaction.reply({ natif: true, ...manageMenu(list[0], uid, { i: 1, n: list.length }), flags: 64 });
@@ -196,17 +186,9 @@ async function handleHubExplCreerModal(interaction) {
 
   await agrilog(interaction.guild, '🌾 Nouvelle exploitation : **' + nom + '** par <@' + interaction.user.id + '>');
 
-  const menu = new StringSelectMenuBuilder()
-    .setCustomId('hub_expl_setact_' + exploitation.id + '_principale_setup')
-    .setPlaceholder('Choisis ton activité principale...')
-    .addOptions(ACTIVITES);
-
-  await interaction.reply({
-    natif: true, embeds: [{ title: '🌾 ' + nom + ' créée !', description: '✅ Rôle **Exploitant** attribué.\n\nChoisis ton **activité principale** :', color: 0x2ECC71 }],
-    components: [new ActionRowBuilder().addComponents(menu)],
-    flags: 64,
-  });
-  autoClean(interaction, 120000);
+  // Attribution directe : la ferme apparaît ensuite dans le salon liste (mise à jour par hub2)
+  await interaction.update({ natif: true, content: '', embeds: [{ title: '🌾 ' + nom, description: '✅ Cette exploitation t\'est attribuée, rôle **Exploitant** donné.\nElle s\'affiche dans <#' + ids('EXPLOITATIONS_LISTE_CHANNEL_ID', '1569522701666885642') + '>.', color: 0x2ECC71 }], components: [] });
+  autoClean(interaction, 30000);
 }
 
 // ── Select du menu de gestion ───────────────────────────────────────────────

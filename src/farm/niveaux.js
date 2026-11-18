@@ -3,11 +3,11 @@ const { dataPath } = require('../core/paths');
 const C = require('./niveaux-config');
 const SERIES = require('./fs25-succes-config');
 
-// Niveaux et points des fermes du jeu (clé = id de la ferme FS25).
+// Niveaux des fermes du jeu (clé = id de la ferme FS25).
 // Le niveau et le score gardés ne baissent jamais, même si une statistique du jeu diminue.
 const PATH = dataPath('niveaux.json');
-// { farms: { id: { nom, score, niveau, activites: [ids], usines } }, demandes: { n: {...} }, next, hub: { head, farms: { id: { msgId, h } }, foret } }
-let db = { farms: {}, demandes: {}, next: 1, hub: { head: null, farms: {}, foret: null } };
+// { farms: { id: { nom, score, niveau } }, hub: { head, farms: { id: { msgId, h } }, foret } }
+let db = { farms: {}, hub: { head: null, farms: {}, foret: null } };
 try { db = { ...db, ...JSON.parse(fs.readFileSync(PATH, 'utf-8')) }; } catch {}
 const save = () => { try { fs.writeFileSync(PATH, JSON.stringify(db, null, 2), 'utf-8'); } catch {} };
 
@@ -20,15 +20,9 @@ function score(farm, status) {
 }
 const niveauDe = sc => C.PALIERS.filter(p => sc >= p).length;
 
-const lire = farm => db.farms[farm.id] || { nom: farm.name, score: 0, niveau: 1, activites: [], usines: 0 };
+const lire = farm => db.farms[farm.id] || { nom: farm.name, score: 0, niveau: 1 };
 function fiche(farm) {
-  return db.farms[farm.id] ||= { nom: farm.name, score: 0, niveau: 1, activites: [], usines: 0 };
-}
-
-function points(f) {
-  const gagnes = C.pointsGagnes(f.niveau);
-  const depenses = f.activites.reduce((n, id) => n + C.parId[id].cout, 0) + C.coutUsines(f.usines);
-  return { gagnes, depenses, dispo: gagnes - depenses };
+  return db.farms[farm.id] ||= { nom: farm.name, score: 0, niveau: 1 };
 }
 
 // Recalcule score et niveau de toutes les fermes. Renvoie les montées de niveau.
@@ -54,4 +48,4 @@ const classement = status => status.farms.filter(f => !estForet(f))
   .map(farm => ({ farm, f: lire(farm) }))
   .sort((a, b) => b.f.niveau - a.f.niveau || b.f.score - a.f.score || a.farm.name.localeCompare(b.farm.name, 'fr'));
 
-module.exports = { db: () => db, save, estForet, fiche, lire, points, actualiser, classement, niveauDe };
+module.exports = { db: () => db, save, estForet, fiche, lire, actualiser, classement, niveauDe };

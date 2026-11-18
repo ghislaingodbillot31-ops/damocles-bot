@@ -28,12 +28,10 @@ function headPayload() {
     embeds: [{
       title: '🌾  HUB DES EXPLOITANTS',
       description: [
-        'Chaque exploitation gagne un **niveau (1 à 20)** avec ses succès. Chaque niveau donne **1 point** à dépenser en **activités** et en **usines**.',
+        'Chaque exploitation gagne un **niveau (1 à 20)** avec ses succès.',
         '',
-        '> • Niveau 1 : **3 points** de départ, jusqu\'à **22 points** au niveau 20.',
-        '> • Un niveau ne baisse jamais, les points gagnés restent acquis.',
-        '> • Tout achat est validé par le staff dans un **ticket**.',
-        '> • Revente ou changement : uniquement via le staff.',
+        '> • Un niveau ne baisse jamais.',
+        '> • Le bouton **🛒 Activité** liste les activités du serveur.',
         '',
         '📋 La liste des exploitations est dans <#' + LISTE_CHANNEL + '>.',
       ].join('\n'),
@@ -44,7 +42,6 @@ function headPayload() {
       new ButtonBuilder().setCustomId('hub_expl').setLabel('🌾 Exploitation').setStyle(ButtonStyle.Success), // créer / gérer sa fiche (flux hub.js) : la case du salon liste est mise à jour ensuite
       new ButtonBuilder().setCustomId('nv_succes').setLabel('🏆 Succès').setStyle(ButtonStyle.Primary),
       new ButtonBuilder().setCustomId('nv_act').setLabel('🛒 Activité').setStyle(ButtonStyle.Success),
-      new ButtonBuilder().setCustomId('nv_usine').setLabel('🏭 Usine').setStyle(ButtonStyle.Success),
       new ButtonBuilder().setCustomId('nv_class').setLabel('📊 Classement').setStyle(ButtonStyle.Secondary),
     ), new ActionRowBuilder().addComponents(
       new ButtonBuilder().setCustomId('hubinfo_parametre').setLabel(require('./hub-info').get().boutons.find(b => b.key === 'parametre').label).setStyle(ButtonStyle.Secondary), // texte réglé avec /bouton-info
@@ -92,21 +89,17 @@ function ficheExploitation(farm) {
 
 function fermePayload(farm) {
   const f = N.lire(farm);
-  const p = N.points(f);
   const suiv = C.PALIERS[f.niveau];
   const prog = suiv === undefined
     ? '**Niveau max** ' + barre(1, 0, 1) + ' ' + f.score
     : barre(f.score, C.PALIERS[f.niveau - 1], suiv) + ' ' + f.score + '/' + suiv;
-  const acts = f.activites.map(id => C.parId[id].emoji + ' ' + C.parId[id].nom).join(' · ') || '_Aucune_';
   const fiche = ficheExploitation(farm);
   return panneau({ embeds: [{
     title: '🌾 ' + farm.name,
     description: '👥 ' + exploitants(farm) + '  ·  ⭐ **Niv. ' + f.niveau + '/20** ' + prog,
     fields: [
-      { name: '💠 Points', value: '**' + p.dispo + '** dispo · ' + p.gagnes + ' gagnés · ' + p.depenses + ' dépensés', inline: true },
       { name: '💰 Solde', value: fmt(farm.money) + ' €', inline: true },
       { name: '🏦 Crédit', value: farm.loan > 0 ? fmt(farm.loan) + ' €' : '—', inline: true },
-      { name: '🧰 Activités · 🏭 ' + f.usines + ' usine' + (f.usines > 1 ? 's' : ''), value: acts },
       { name: '📋 Exploitation', value: (fiche ? fiche.texte : '_Pas encore de fiche : clique sur **🌾 Exploitation** dans le HUB._').slice(0, 1024) },
     ],
     color: fiche?.couleur ?? 0x2ECC71,
@@ -199,7 +192,7 @@ async function traiter(st, annonces) {
   const montees = N.actualiser(st);
   if (annonces && montees.length) {
     await annonces.send({
-      content: montees.map(m => '⭐ **' + m.farm.name + '** passe **niveau ' + m.a + '** !  (+' + (m.a - m.de) + ' point' + (m.a - m.de > 1 ? 's' : '') + ' d\'activité)').join('\n'),
+      content: montees.map(m => '⭐ **' + m.farm.name + '** passe **niveau ' + m.a + '** !').join('\n'),
       allowedMentions: { parse: [] },
     }).catch(e => console.warn('⚠️ Annonce de niveau :', e.message));
   }
@@ -207,10 +200,49 @@ async function traiter(st, annonces) {
 }
 
 // ── Interactions ──────────────────────────────────────────────────────────────
-const rep = (i, payload) => i.isStringSelectMenu() || /^nv_(oui|non)/.test(i.customId) ? i.update({ natif: true, content: '', embeds: [], components: [], ...payload }) : i.reply({ natif: true, ...payload, flags: 64 });
-const estStaff = i => i.member?.permissions?.has(PermissionFlagsBits.Administrator) || require('../moderation/tickets').estSupport(i.member);
+const rep = (i, payload) => i.isStringSelectMenu() ? i.update({ natif: true, content: '', embeds: [], components: [], ...payload }) : i.reply({ natif: true, ...payload, flags: 64 });
 
-// Fermes proposées au joueur : celles qui portent le nom de son exploitation, sinon toutes (le staff valide)
+// Texte du bouton « Activité » (information seule, aucun achat)
+const ACTIVITES_TEXTE = [
+  '**🚜 ACTIVITÉS DU SERVEUR — FS25**',
+  '━━━━━━━━━━━━━━',
+  '**🌱 CULTURES**',
+  '🌾 **Céréalier + Oléagineux**',
+  'blé, orge, avoine, maïs grain, sorgho, colza, tournesol, soja, moutarde',
+  '',
+  '🥕 **Maraîcher racines + verts**',
+  'carottes, panais, betteraves rouges, pommes de terre, betteraves sucrières, épinards, pois, haricots verts',
+  '',
+  '🌴 **Tropical**',
+  'canne à sucre, coton',
+  '',
+  '🍚 **Riziculteur**',
+  'riz, riz long grain',
+  '',
+  '🌿 **Fourrager + Ensileur**',
+  'herbe, foin, paille, balles enrubannées, maïs ensilage, luzerne, ensilage d\'herbe',
+  '━━━━━━━━━━━━━━',
+  '**🍇 VIGNES**',
+  '🍇 **Viticulteur** · raisin',
+  '',
+  '**🫒 VERGERS**',
+  '🫒 **Oléiculteur** · olives',
+  '',
+  '**🏡 SERRES**',
+  '🍅 **Culture sous serre** · légumes et champignons',
+  '━━━━━━━━━━━━━━',
+  '**🐾 ÉLEVAGE**',
+  '🐃 **Buffles + vaches laitières**',
+  '🥩 **Vaches à viande**',
+  '🐑 **Moutons + chèvres**',
+  '🐖 **Porcs + poules**',
+  '🐎 **Équin + abeilles**',
+  '━━━━━━━━━━━━━━',
+  '**🌲 FORÊT**',
+  'Association forestière, activité non accessible aux exploitations',
+].join('\n');
+
+// Fermes proposées au joueur : celles qui portent le nom de son exploitation, sinon toutes
 function fermesDuJoueur(uid, st) {
   const noms = exp.getAll().filter(e => exp.memberIds(e).includes(uid)).map(e => e.nom.toLowerCase());
   const toutes = st.farms.filter(f => !N.estForet(f));
@@ -218,153 +250,15 @@ function fermesDuJoueur(uid, st) {
   return siennes.length ? siennes : toutes;
 }
 
-const selectFerme = (genre, fermes) => new ActionRowBuilder().addComponents(
-  new StringSelectMenuBuilder().setCustomId('nv_ferme_' + genre).setPlaceholder('🌾 Choisis ton exploitation')
+const selectFerme = fermes => new ActionRowBuilder().addComponents(
+  new StringSelectMenuBuilder().setCustomId('nv_ferme_succes').setPlaceholder('🌾 Choisis ton exploitation')
     .addOptions(fermes.slice(0, 25).map(f => ({ label: f.name.slice(0, 100), value: String(f.id) }))));
-
-const groupes = [...new Set(C.ACTIVITES.map(a => a.groupe))];
-
-// cat = index de la catégorie choisie (null : seulement le menu des catégories)
-function selectsActivites(farm, cat = null) {
-  const f = N.lire(farm), p = N.points(f);
-  const menuCat = new ActionRowBuilder().addComponents(
-    new StringSelectMenuBuilder().setCustomId('nv_cat_' + farm.id).setPlaceholder('📂 Sélectionner une catégorie')
-      .addOptions(groupes.map((g, k) => ({ label: g.replace(/^S+s/, ''), value: String(k), emoji: g.split(' ')[0], default: k === cat }))));
-  const libres = cat === null ? [] : C.ACTIVITES.filter(a => a.groupe === groupes[cat] && !f.activites.includes(a.id));
-  const menuAct = cat !== null && new ActionRowBuilder().addComponents(
-    new StringSelectMenuBuilder().setCustomId('nv_achat_' + farm.id).setPlaceholder(libres.length ? '🛒 Sélectionner une activité' : 'Toutes les activités de cette catégorie sont possédées')
-      .setDisabled(!libres.length)
-      .addOptions(libres.length ? libres.map(a => ({
-        label: (a.nom + ' · ' + a.cout + ' pt' + (a.cout > 1 ? 's' : '')).slice(0, 100), value: a.id, emoji: a.emoji, description: a.res.slice(0, 100),
-      })) : [{ label: '—', value: 'aucune' }]));
-  const pts = n => '💠 **' + n + ' pt' + (n > 1 ? 's' : '') + '**';
-  const lignes = [];
-  let groupe = '';
-  for (const a of C.ACTIVITES) {
-    if (a.groupe !== groupe) { groupe = a.groupe; lignes.push('## ' + groupe); }
-    lignes.push((f.activites.includes(a.id) ? '✅ ' : '') + '**' + a.nom + '** · ' + a.res + ' — ' + pts(a.cout));
-  }
-  lignes.push('## 🌲 Forêt ( Association )', ...C.FORET_ACTIVITES.map(([n, r]) => '**' + n + '** · ' + r + ' — _Association, non achetable_'));
-  lignes.push('', '## 🏭 Industrie : monte en niveau, débloque des usines !',
-    ...C.NIVEAUX_INDUSTRIE.map((n, k) => '**Nv ' + (k + 1) + ' · ' + n + '** → ' + (k + 1) + ' usine' + (k ? 's' : '') + ' — ' + pts(C.coutUsines(k + 1)) + ' au total'));
-  return {
-    content: 'Sélectionne une catégorie, puis une activité.',
-    embeds: [{
-      title: '🛒 Activités à acheter · ' + farm.name,
-      description: 'Points disponibles : **' + p.dispo + '**  ·  ✅ = déjà possédée\n' + lignes.join('\n'),
-      color: 0x2ECC71,
-    }],
-    components: [menuCat, menuAct].filter(Boolean),
-  };
-}
-
-// Menu des niveaux d'industrie : le niveau ACTUEL (informatif) et le SUIVANT, jamais au-delà.
-const nomNiv = n => n ? 'Nv ' + n + ' · ' + C.NIVEAUX_INDUSTRIE[n - 1] + ' (' + n + ' usine' + (n > 1 ? 's' : '') + ')' : 'Aucune usine';
-function selectsUsine(farm) {
-  const f = N.lire(farm), p = N.points(f), actuel = f.usines, suivant = actuel + 1;
-  const max = suivant > C.NIVEAUX_INDUSTRIE.length;
-  const options = [{ label: ('✅ Niveau actuel : ' + nomNiv(actuel)).slice(0, 100), value: 'cur' }];
-  if (!max) options.push({ label: ('🔓 Débloquer : ' + nomNiv(suivant)).slice(0, 100), value: String(suivant), description: ('💠 ' + (actuel + 2) + ' pts · tu as ' + p.dispo + ' pts').slice(0, 100) });
-  return {
-    content: '',
-    embeds: [{
-      title: '🏭 Usines · ' + farm.name,
-      description: '**Niveau actuel :** ' + nomNiv(actuel) + '\n'
-        + (max ? '🏆 Niveau maximum atteint.' : '**Niveau suivant :** ' + nomNiv(suivant) + ' · 💠 **' + (actuel + 2) + ' pts**  (tu as **' + p.dispo + '**)')
-        + '\n\nTu ne peux demander que le niveau **suivant** : on débloque les niveaux un par un.',
-      color: 0xE67E22,
-    }],
-    components: [new ActionRowBuilder().addComponents(
-      new StringSelectMenuBuilder().setCustomId('nv_niv_' + farm.id).setPlaceholder('🏭 Choisir un niveau d\'usine').addOptions(options))],
-  };
-}
-
-async function demander(i, farm, genre, actId, niveau) {
-  const f = N.lire(farm), p = N.points(f);
-  const act = actId && C.parId[actId];
-  if (!act && niveau !== f.usines + 1) return rep(i, { content: '❌ Tu ne peux demander que le niveau d\'usine suivant (' + (f.usines >= C.NIVEAUX_INDUSTRIE.length ? 'niveau maximum atteint' : 'Nv ' + (f.usines + 1)) + ').' });
-  const cout = act ? act.cout : f.usines + 2;
-  const quoi = act ? act.emoji + ' ' + act.nom : '🏭 Usine ' + nomNiv(niveau);
-  if (act && f.activites.includes(actId)) return rep(i, { content: '❌ Ton exploitation possède déjà cette activité.' });
-  if (cout > p.dispo) return rep(i, { content: '❌ Il te faut **' + cout + ' pts** pour ' + quoi + ', tu en as **' + p.dispo + '**.' });
-  const db = N.db();
-  if (Object.values(db.demandes).some(d => d.statut === 'attente' && d.farmId === farm.id && d.quoi === (actId || 'usine')))
-    return rep(i, { content: '⏳ Une demande identique est déjà en attente du staff.' });
-
-  await (i.isStringSelectMenu() || i.customId.startsWith('nv_oui') ? i.deferUpdate() : i.deferReply({ flags: 64 }));
-  if (!act) { // usine : niveau débloqué automatiquement (points déjà vérifiés), pas de ticket, juste un log
-    N.fiche(farm).usines += 1;
-    N.save();
-    await i.editReply({ content: '✅ Niveau débloqué : ' + quoi + ' (−' + cout + ' pt' + (cout > 1 ? 's' : '') + ')', embeds: [], components: [] });
-    try {
-      const ch = await i.guild.channels.fetch('1567011774912532671');
-      await ch.send({ embeds: [{ title: '🏭 Niveau d\'usine débloqué', description: '<@' + i.user.id + '> a débloqué **' + nomNiv(niveau) + '** pour **' + farm.name + '**.',
-        fields: [{ name: 'Coût', value: cout + ' pt' + (cout > 1 ? 's' : ''), inline: true }, { name: 'Points restants', value: String(p.dispo - cout), inline: true }], color: 0xE67E22, timestamp: new Date().toISOString() }], allowedMentions: { parse: [] } });
-    } catch (e) { console.error('⚠️ Log usine :', e.message); }
-    return maj();
-  }
-  let ticket;
-  try {
-    ticket = await require('../moderation/tickets').ouvrirSalon(i.guild, i.member, {
-      prefix: 'achat', objet: 'Achat d\'exploitation', welcome: 'Ta demande d\'achat est juste en dessous. Le staff la traite dans ce salon.',
-    });
-  } catch (e) {
-    console.error('⚠️ Achat — ticket :', e.message);
-    return i.editReply({ content: '⚠️ Impossible d\'ouvrir le ticket. Préviens un administrateur.', components: [] });
-  }
-  const n = db.next++;
-  db.demandes[n] = { userId: i.user.id, farmId: farm.id, quoi: actId || 'usine', niveau: act ? undefined : niveau, cout, statut: 'attente' };
-  N.save();
-  await ticket.send({
-    ...panneau({ embeds: [{
-      title: '🛒 Demande d\'achat n°' + n,
-      description: '<@' + i.user.id + '> demande **' + quoi + '** pour **' + farm.name + '**.',
-      fields: [
-        { name: 'Coût', value: cout + ' pt' + (cout > 1 ? 's' : ''), inline: true },
-        { name: 'Points disponibles', value: String(p.dispo), inline: true },
-      ],
-      color: 0x5865F2,
-    }] }),
-    components: [new ActionRowBuilder().addComponents(
-      new ButtonBuilder().setCustomId('nv_ok_' + n).setLabel('✅ Valider').setStyle(ButtonStyle.Success),
-      new ButtonBuilder().setCustomId('nv_no_' + n).setLabel('❌ Refuser').setStyle(ButtonStyle.Danger),
-    )],
-    allowedMentions: { parse: [] },
-  });
-  const texte = '✅ Demande transmise au staff : <#' + ticket.id + '>';
-  await i.editReply({ content: texte, components: [] });
-}
-
-async function decider(i) {
-  if (!estStaff(i)) return i.reply({ content: '❌ Réservé au staff.', flags: 64 });
-  const [, oui, num] = i.customId.match(/^nv_(ok|no)_(\d+)$/);
-  const d = N.db().demandes[num];
-  if (!d || d.statut !== 'attente') return i.reply({ content: 'ℹ️ Demande déjà traitée.', flags: 64 });
-  const st = status();
-  const farm = st?.farms.find(f => f.id === d.farmId);
-  if (!farm) return i.reply({ content: '⏳ Données FS25 indisponibles, réessaie dans une minute.', flags: 64 });
-
-  let note = '';
-  if (oui === 'ok') {
-    const f = N.fiche(farm);
-    if (d.quoi !== 'usine' && f.activites.includes(d.quoi)) note = 'déjà possédée';
-    else if (d.quoi === 'usine' && d.niveau !== undefined && d.niveau !== f.usines + 1) note = 'niveau d\'usine ' + d.niveau + ' non débloquable (niveau actuel : ' + f.usines + ')';
-    else if (d.cout > N.points(f).dispo) note = 'points insuffisants (' + N.points(f).dispo + ' dispo)';
-    else if (d.quoi === 'usine') f.usines += 1; else f.activites.push(d.quoi);
-    if (note) return i.reply({ content: '❌ Validation impossible : ' + note + '.', flags: 64 });
-  }
-  d.statut = oui === 'ok' ? 'valide' : 'refuse';
-  d.par = i.user.id;
-  N.save();
-  await i.update({ components: [], content: (oui === 'ok' ? '✅ Validé' : '❌ Refusé') + ' par <@' + i.user.id + '> · <@' + d.userId + '>', allowedMentions: { users: [d.userId] } });
-  await maj();
-}
 
 async function handle(i) {
   const id = i.customId;
   const st = status();
   try {
-    if (/^nv_(ok|no)_\d+$/.test(id)) return await decider(i);
+    if (id === 'nv_act') return await i.reply({ natif: true, ...panneau({ embeds: [{ description: ACTIVITES_TEXTE, color: 0x2ECC71 }] }), flags: 64 });
     if (!st) return i.reply({ content: '⏳ Pas encore de données du serveur FS25, réessaie dans une minute.', flags: 64 });
 
     if (id === 'nv_class') {
@@ -372,54 +266,17 @@ async function handle(i) {
       return i.reply({ natif: true, ...panneau({ embeds: [{ title: '📊 Classement des exploitations', description: lignes.join('\n') || '_Aucune exploitation._', color: 0xF1C40F }] }), flags: 64 });
     }
 
-    // Boutons / menus qui commencent par choisir une ferme
-    let genre = { nv_succes: 'succes', nv_act: 'act', nv_usine: 'usine' }[id];
     let farm;
-    if (genre) {
+    if (id === 'nv_succes') {
       const fermes = fermesDuJoueur(i.user.id, st);
       if (!fermes.length) return i.reply({ content: '❌ Aucune exploitation trouvée.', flags: 64 });
-      if (fermes.length > 1) return i.reply({ content: 'Pour quelle exploitation ?', components: [selectFerme(genre, fermes)], flags: 64 });
+      if (fermes.length > 1) return i.reply({ content: 'Pour quelle exploitation ?', components: [selectFerme(fermes)], flags: 64 });
       farm = fermes[0];
-    } else if (id.startsWith('nv_ferme_')) {
-      genre = id.slice(9);
+    } else if (id === 'nv_ferme_succes') {
       farm = st.farms.find(f => String(f.id) === i.values[0]);
-    } else if (/^nv_(cat|achat|niv|oui|ouiu)_/.test(id)) {
-      farm = st.farms.find(f => String(f.id) === id.split('_')[2]);
-      if (!farm) return;
-      if (id.startsWith('nv_ouiu_')) return await demander(i, farm, 'usine', null, Number(id.split('_')[3]));
-      if (id.startsWith('nv_niv_')) {
-        const choix = i.values[0], f = N.lire(farm);
-        if (choix === 'cur') return await rep(i, { content: 'ℹ️ C\'est ton niveau actuel : ' + nomNiv(f.usines) + '.' });
-        if (Number(choix) !== f.usines + 1) return await rep(i, { ...selectsUsine(farm), content: '❌ Tu ne peux demander que le niveau suivant.' });
-        return await i.update({
-          natif: true, content: 'Débloquer ce niveau d\'usine ?\n🏭 **' + nomNiv(Number(choix)) + '** · 💠 **' + (f.usines + 2) + ' pts** pour **' + farm.name + '**',
-          embeds: [],
-          components: [new ActionRowBuilder().addComponents(
-            new ButtonBuilder().setCustomId('nv_ouiu_' + farm.id + '_' + choix).setLabel('Oui').setStyle(ButtonStyle.Success),
-            new ButtonBuilder().setCustomId('nv_non').setLabel('Non').setStyle(ButtonStyle.Danger),
-          )],
-        });
-      }
-      if (id.startsWith('nv_cat_')) return await rep(i, selectsActivites(farm, Number(i.values[0])));
-      if (id.startsWith('nv_oui_')) return await demander(i, farm, 'act', id.split('_')[3]);
-      // activité choisie : confirmation Oui / Non
-      const a = C.parId[i.values[0]];
-      return await i.update({
-        content: 'Voulez-vous choisir cette activité ?\n' + a.emoji + ' **' + a.nom + '** · 💠 **' + a.cout + ' pt' + (a.cout > 1 ? 's' : '') + '** pour **' + farm.name + '**',
-        embeds: [],
-        components: [new ActionRowBuilder().addComponents(
-          new ButtonBuilder().setCustomId('nv_oui_' + farm.id + '_' + a.id).setLabel('Oui').setStyle(ButtonStyle.Success),
-          new ButtonBuilder().setCustomId('nv_non').setLabel('Non').setStyle(ButtonStyle.Danger),
-        )],
-      });
-    } else if (id === 'nv_non') {
-      return await i.update({ content: 'Achat annulé.', embeds: [], components: [] });
-    }
+    } else return;
     if (!farm) return i.reply({ content: '⏳ Ferme introuvable.', flags: 64 });
-
-    if (genre === 'succes') return rep(i, { embeds: [require('./fs25-succes').progressEmbed(farm, st)] });
-    if (genre === 'usine') return await rep(i, selectsUsine(farm));
-    return rep(i, selectsActivites(farm));
+    return rep(i, { embeds: [require('./fs25-succes').progressEmbed(farm, st)] });
   } catch (e) {
     console.error('Erreur HUB exploitants :', e.stack || e.message);
   }
