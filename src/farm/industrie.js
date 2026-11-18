@@ -3,6 +3,7 @@
 const { ActionRowBuilder, ButtonBuilder, ButtonStyle, PermissionFlagsBits } = require('discord.js');
 const exp = require('./exploitation');
 const { panneau } = require('../core/embed-format');
+const { agrilog } = require('../core/agrilog');
 
 const NIVEAUX = [
   ['Artisan', 50000], ['Atelier', 200000], ['Petite entreprise', 350000], ['PME', 500000], ['Manufacture', 650000],
@@ -94,6 +95,7 @@ async function demander(i) {
     allowedMentions: { parse: [] },
   });
   exp.updateExploitation(e.id, { industrieDemande: { niveau: niv, ticketId: ticket.id, msgId: msg.id, userId: i.user.id } });
+  await agrilog(i.guild, '🏭 **' + e.nom + '** demande le niveau d\'industrie : ' + nomNiveau(niv) + ' (' + eur(NIVEAUX[niv - 1][1]) + ')');
   await i.editReply({ natif: true, content: '', embeds: [{ description: '✅ Demande transmise au staff : <#' + ticket.id + '>', color: 0x2ECC71 }], components: [] });
 }
 
@@ -107,6 +109,9 @@ async function decider(i) {
   const demandeur = e.industrieDemande.userId;
   exp.updateExploitation(e.id, oui === 'ok' ? { industrie: niv, industrieDemande: null } : { industrieDemande: null });
   await i.update({ components: [], content: (oui === 'ok' ? '✅ Validé : **' + e.nom + '** passe **' + nomNiveau(niv) + '**' : '❌ Refusé') + ' par <@' + i.user.id + '> · <@' + demandeur + '>', allowedMentions: { users: [demandeur] } });
+  await agrilog(i.guild, oui === 'ok'
+    ? '✅ Industrie validée : **' + e.nom + '** passe **' + nomNiveau(niv) + '** (' + eur(NIVEAUX[niv - 1][1]) + ') · par **' + (i.member?.displayName || i.user.username) + '**'
+    : '❌ Industrie refusée : **' + e.nom + '** niveau **' + nomNiveau(niv) + '** · par **' + (i.member?.displayName || i.user.username) + '**');
   require('./salon-exploitation').ensure(i.client, exp.getById(e.id)).catch(() => {}); // le HUB du salon affiche le nouveau niveau
 }
 
