@@ -20,7 +20,7 @@ const DYN = {
 
 const DEFAUT = {
   intros: {},
-  titre: '📌  LE COIN DES COPAINS  ·  INFORMATIONS',
+  titre: '📌  INFORMATIONS',
   description: 'Tout ce qu\'il faut savoir avant de jouer. Clique sur un bouton pour afficher les détails (visible par toi seul).',
   couleur: 0x3498DB,
   boutons: [
