@@ -315,7 +315,7 @@ async function findExistingMessage(channel, botId) {
   return msgs.find((m) => m.author.id === botId && m.embeds[0]?.footer?.text === FOOTER_TAG) || null;
 }
 
-// Message de statut unique. Le HUB l'appelle aussi pour le placer AU-DESSUS de ses panneaux (ordre : statut, infos, HUB).
+// Message de statut unique. Le HUB l'appelle aussi pour le placer AU-DESSUS de ses panneaux (ordre : statut avec boutons d'information, classement, HUB).
 let statusMsg = null;
 let statusPending = null;
 async function ensureStatusMessage(channel) {
@@ -386,10 +386,11 @@ async function startFs25Bridge(client) {
     }
     try {
       const json = panneauEmbed(embed.toJSON());
-      const key = JSON.stringify({ ...json, timestamp: 0 });
+      const boutons = require('./hub-info').buildMessage(['reglement', 'drive', 'motdepasse', 'mods']).components; // boutons d'information sous le statut
+      const key = JSON.stringify({ ...json, timestamp: 0, boutons });
       if (key === lastEmbedKey && Date.now() - lastEditAt < 300000) return; // identique : pas d'appel Discord (au pire rafraîchi toutes les 5 min)
       const message = await ensureStatusMessage(channel);
-      await message.edit({ embeds: [json], components: [] }); // le bouton « Liste des mods » est dans le HUB INFORMATIONS
+      await message.edit({ embeds: [json], components: boutons });
       lastEmbedKey = key; lastEditAt = Date.now();
     } catch (err) {
       if (err.code === 10008) statusMsg = null; // message supprimé -> recréé au prochain tour

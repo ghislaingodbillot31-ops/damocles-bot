@@ -43,9 +43,6 @@ function classementPayload(st) {
   return panneau({ embeds: [{ title: '📊  CLASSEMENT DES EXPLOITATIONS', description: lignes.join('\n') || '_Aucune exploitation._', color: 0xF1C40F, footer: { text: 'MonCopainBot' } }], allowedMentions: { parse: [] } });
 }
 
-// Panneau INFORMATIONS (message séparé) : Règlement, Google Drive, Mot de passe, Mods. Textes réglés avec /bouton-info, clics gérés par hub-info.js.
-const infoPayload = () => require('./hub-info').buildMessage(['reglement', 'drive', 'motdepasse', 'mods']);
-
 // HUB « Commerce & Contrat » (message séparé) : mêmes boutons et mêmes fonctions que l'ancien HUB des exploitants (hub_* gérés dans index.js).
 const commercePayload = () => panneau({
   embeds: [{
@@ -82,9 +79,9 @@ async function maj(st = status(), force = false) {
     // Statut FS25 : s'il est dans ce salon, il doit rester EN TÊTE (avant le HUB) et n'est jamais supprimé par le nettoyage
     const bridge = require('./fs25-bridge');
     const stat = bridge.isStatusChannel(channel) ? await bridge.ensureStatusMessage(channel).catch(() => null) : null;
-    const [classMsg, tete, infoMsg, comMsg] = [await get(hub.classement), await get(hub.head), await get(hub.info), await get(hub.commerce)];
-    // ordre : statut, classement, HUB des exploitants, informations, commerce
-    const complet = !force && classMsg && tete && infoMsg && comMsg && BigInt(classMsg.id) < BigInt(tete.id) && (!stat || BigInt(stat.id) < BigInt(classMsg.id));
+    const [classMsg, tete, comMsg] = [await get(hub.classement), await get(hub.head), await get(hub.commerce)];
+    // ordre : statut (avec les boutons d'information), classement, HUB des exploitants, commerce
+    const complet = !force && classMsg && tete && comMsg && BigInt(classMsg.id) < BigInt(tete.id) && BigInt(tete.id) < BigInt(comMsg.id) && (!stat || BigInt(stat.id) < BigInt(classMsg.id));
 
     if (!complet) {
       // Salon dédié : on retire tout ce que le bot y a posté (évite les doublons si les ids connus sont perdus)
@@ -93,15 +90,13 @@ async function maj(st = status(), force = false) {
       hub.classement = (await channel.send(classementPayload(st))).id;
       hub.classementH = JSON.stringify(classementPayload(st));
       hub.head = (await channel.send(headPayload())).id;
-      hub.info = (await channel.send(infoPayload())).id;
+      delete hub.info;
       hub.commerce = (await channel.send(commercePayload())).id;
     } else {
       const clh = JSON.stringify(classementPayload(st));
       if (hub.classementH !== clh) { await classMsg.edit(classementPayload(st)).catch(() => {}); hub.classementH = clh; }
       const hh = JSON.stringify(headPayload());
       if (hub.headH !== hh) { await tete.edit(headPayload()).catch(() => {}); hub.headH = hh; }
-      const ih = JSON.stringify(infoPayload());
-      if (hub.infoH !== ih) { await infoMsg.edit(infoPayload()).catch(() => {}); hub.infoH = ih; }
       const ch = JSON.stringify(commercePayload());
       if (hub.commerceH !== ch) { await comMsg.edit(commercePayload()).catch(() => {}); hub.commerceH = ch; }
     }
