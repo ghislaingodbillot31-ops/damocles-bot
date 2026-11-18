@@ -13,7 +13,7 @@ const status = () => require('./fs25-succes').getStatus();
 
 // ── Affichage ─────────────────────────────────────────────────────────────────
 
-function headPayload() {
+function headPayload(st) {
   return panneau({
     embeds: [{
       title: '🌾  HUB DES EXPLOITANTS',
@@ -22,6 +22,9 @@ function headPayload() {
         '',
         '> • Un niveau ne baisse jamais.',
         '> • **🛒 Activité** liste les activités du serveur, **🏭 Industrie** les niveaux d\'industrie.',
+        '',
+        '**📊  CLASSEMENT DES EXPLOITATIONS**',
+        classement(st),
       ].join('\n'),
       color: 0x2ECC71,
       footer: { text: 'MonCopainBot' },
@@ -37,11 +40,8 @@ function headPayload() {
   });
 }
 
-// HUB « Classement » (message séparé, juste sous le statut du serveur) : mis à jour en place à chaque vérification
-function classementPayload(st) {
-  const lignes = N.classement(st).map((x, k) => (['🥇', '🥈', '🥉'][k] || '`' + (k + 1) + '.`') + ' **' + x.farm.name + '** · niv. ' + x.f.niveau + ' · ' + x.f.score + ' succès');
-  return panneau({ embeds: [{ title: '📊  CLASSEMENT DES EXPLOITATIONS', description: lignes.join('\n') || '_Aucune exploitation._', color: 0xF1C40F, footer: { text: 'MonCopainBot' } }], allowedMentions: { parse: [] } });
-}
+// Classement (niveau puis succès) affiché dans le HUB des exploitants, mis à jour en place à chaque vérification
+const classement = st => N.classement(st).map((x, k) => (['🥇', '🥈', '🥉'][k] || '`' + (k + 1) + '.`') + ' **' + x.farm.name + '** · niv. ' + x.f.niveau + ' · ' + x.f.score + ' succès').join('\n') || '_Aucune exploitation._';
 
 // HUB « Commerce & Contrat » (message séparé) : mêmes boutons et mêmes fonctions que l'ancien HUB des exploitants (hub_* gérés dans index.js).
 const commercePayload = () => panneau({
@@ -79,24 +79,20 @@ async function maj(st = status(), force = false) {
     // Statut FS25 : s'il est dans ce salon, il doit rester EN TÊTE (avant le HUB) et n'est jamais supprimé par le nettoyage
     const bridge = require('./fs25-bridge');
     const stat = bridge.isStatusChannel(channel) ? await bridge.ensureStatusMessage(channel).catch(() => null) : null;
-    const [classMsg, tete, comMsg] = [await get(hub.classement), await get(hub.head), await get(hub.commerce)];
-    // ordre : statut (avec les boutons d'information), classement, HUB des exploitants, commerce
-    const complet = !force && classMsg && tete && comMsg && BigInt(classMsg.id) < BigInt(tete.id) && BigInt(tete.id) < BigInt(comMsg.id) && (!stat || BigInt(stat.id) < BigInt(classMsg.id));
+    const [tete, comMsg] = [await get(hub.head), await get(hub.commerce)];
+    // ordre : statut (avec les boutons d'information), HUB des exploitants (avec le classement), commerce
+    const complet = !force && tete && comMsg && BigInt(tete.id) < BigInt(comMsg.id) && (!stat || BigInt(stat.id) < BigInt(tete.id));
 
     if (!complet) {
       // Salon dédié : on retire tout ce que le bot y a posté (évite les doublons si les ids connus sont perdus)
       const vus = await channel.messages.fetch({ limit: 100 }).catch(() => new Map());
       for (const m of vus.values()) if (m.author.id === client.user.id && m.id !== stat?.id) await m.delete().catch(() => {});
-      hub.classement = (await channel.send(classementPayload(st))).id;
-      hub.classementH = JSON.stringify(classementPayload(st));
-      hub.head = (await channel.send(headPayload())).id;
-      delete hub.info;
+      delete hub.classement; delete hub.info;
+      hub.head = (await channel.send(headPayload(st))).id;
       hub.commerce = (await channel.send(commercePayload())).id;
     } else {
-      const clh = JSON.stringify(classementPayload(st));
-      if (hub.classementH !== clh) { await classMsg.edit(classementPayload(st)).catch(() => {}); hub.classementH = clh; }
-      const hh = JSON.stringify(headPayload());
-      if (hub.headH !== hh) { await tete.edit(headPayload()).catch(() => {}); hub.headH = hh; }
+      const hh = JSON.stringify(headPayload(st));
+      if (hub.headH !== hh) { await tete.edit(headPayload(st)).catch(() => {}); hub.headH = hh; }
       const ch = JSON.stringify(commercePayload());
       if (hub.commerceH !== ch) { await comMsg.edit(commercePayload()).catch(() => {}); hub.commerceH = ch; }
     }
