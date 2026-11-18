@@ -311,7 +311,7 @@ function init(c) {
   client = c;
   c.on('interactionCreate', i => {
     if (!String(i.customId || '').startsWith('hub_expl')) return;
-    for (const d of [3000, 12000]) setTimeout(() => maj().catch(() => {}), d); // 2 passes : le flux peut finir après la 1re
+    for (const d of [3000, 12000]) setTimeout(() => { maj().catch(() => {}); require('./salon-exploitation').refreshAll(c).catch(() => {}); }, d); // 2 passes : le flux peut finir après la 1re
   });
 }
 

@@ -12,24 +12,8 @@ const { panneau } = require('../core/embed-format');
 // ── Config ────────────────────────────────────────────────────────────────────
 const EXPLOITANT_ROLE_ID = ids('EXPLOITANT_ROLE_ID');
 
-const ACTIVITES = [
-  { label: '🌾 Céréales & Grandes cultures', value: 'Céréales & Grandes cultures' },
-  { label: '🥕 Maraîchage',                  value: 'Maraîchage' },
-  { label: '🌱 Cultures spécialisées',        value: 'Cultures spécialisées' },
-  { label: '🍇 Viticulture',                  value: 'Viticulture' },
-  { label: '🌲 Sylviculture',                 value: 'Sylviculture' },
-  { label: '🌿 Fauchage / Ensilage',          value: 'Fauchage / Ensilage' },
-  { label: '🐄 Élevage Bovin',               value: 'Élevage Bovin' },
-  { label: '🐷 Élevage Porcin',              value: 'Élevage Porcin' },
-  { label: '🐑 Élevage Ovin',               value: 'Élevage Ovin' },
-  { label: '🐐 Élevage Caprin',             value: 'Élevage Caprin' },
-  { label: '🐔 Élevage Avicole',            value: 'Élevage Avicole' },
-  { label: '🐴 Élevage Équin',              value: 'Élevage Équin' },
-  { label: '🐃 Élevage Bubalin',            value: 'Élevage Bubalin' },
-  { label: '🚜 Travaux agricoles',           value: 'Travaux agricoles' },
-  { label: '🤝 Sous-traitance',              value: 'Sous-traitance' },
-  { label: '⚡ Biogaz',                       value: 'Biogaz' },
-];
+// Activités choisissables (liste du serveur, voir droits-texte.js) : le nom est enregistré dans la fiche
+const ACTIVITES = require('./droits-texte').CHOIX.map(a => ({ label: a.emoji + ' ' + a.nom, value: a.nom }));
 
 // Couleurs d'embed proposées à l'exploitant (menu déroulant, pas de saisie libre).
 const PRESET_COLORS = [
@@ -182,14 +166,25 @@ async function handleHubExplCreerModal(interaction) {
     return;
   }
 
+  await interaction.deferUpdate();
   const exploitation = exp.createExploitation(interaction.user.id, interaction.user.tag, nom);
   await interaction.member.roles.add(EXPLOITANT_ROLE_ID).catch(() => {});
 
   await agrilog(interaction.guild, '🌾 Nouvelle exploitation : **' + nom + '** par <@' + interaction.user.id + '>');
 
-  // Attribution directe : la ferme apparaît ensuite dans le salon liste (mise à jour par hub2)
-  await interaction.update({ natif: true, content: '', embeds: [{ title: '🌾 ' + nom, description: '✅ Cette exploitation t\'est attribuée, rôle **Exploitant** donné.\nElle s\'affiche dans <#' + ids('EXPLOITATIONS_LISTE_CHANNEL_ID', '1569522701666885642') + '>.', color: 0x2ECC71 }], components: [] });
+  // Attribution directe : salon privé créé (HUB + travaux autorisés), la ferme apparaît aussi dans le salon liste (mise à jour par hub2)
+  const salon = await require('./salon-exploitation').ensure(interaction.client, exploitation).catch(err => { console.error('⚠️ Salon exploitation :', err.message); return null; });
+  await interaction.editReply({ natif: true, content: '', embeds: [{ title: '🌾 ' + nom, description: '✅ Cette exploitation t\'est attribuée, rôle **Exploitant** donné.' + (salon ? '\n🔒 Ton salon privé : <#' + salon.id + '>' : ''), color: 0x2ECC71 }], components: [] });
   autoClean(interaction, 30000);
+}
+
+// Bouton « ⚙️ Gérer mon exploitation » du salon privé : ouvre le menu de gestion
+async function handleHubExplGerer(interaction) {
+  const exploit = exp.getById(interaction.customId.replace('hub_expl_gerer_', ''));
+  if (!exploit) return interaction.reply({ content: '❌ Exploitation introuvable.', flags: 64 });
+  if (!canManage(interaction, exploit)) return interaction.reply({ content: '❌ Seul un exploitant (ou un admin) peut gérer cette exploitation.', flags: 64 });
+  await interaction.reply({ natif: true, ...manageMenu(exploit, interaction.user.id), flags: 64 });
+  autoClean(interaction, 120000);
 }
 
 // ── Select du menu de gestion ───────────────────────────────────────────────
@@ -626,6 +621,7 @@ async function handleHubExplAdmOwner(interaction) {
   if (!old) { // ferme sans fiche : on la crée
     e = exp.createExploitation(uid, member.user.tag, e.nom);
     await member.roles.add(EXPLOITANT_ROLE_ID).catch(() => {});
+    require('./salon-exploitation').ensure(interaction.client, e).catch(() => {});
     await interaction.update({ natif: true, embeds: [{ description: '✅ **' + e.nom + '** : <@' + uid + '> est maintenant propriétaire.', color: 0x2ECC71 }], components: [] });
     autoClean(interaction);
     await agrilog(interaction.guild, '👑 **' + e.nom + '** : propriétaire <@' + uid + '> (fiche créée) · par <@' + interaction.user.id + '>');
@@ -678,6 +674,7 @@ async function handleHubAnnuaireDelYes(interaction) {
   const id = interaction.customId.replace('hub_annuaire_delyes_', '');
   const exploit = exp.getById(id);
   if (exploit) {
+    await require('./salon-exploitation').supprimer(interaction.client, exploit);
     exp.deleteExploitation(id);
     await agrilog(interaction.guild, '🗑️ Exploitation supprimée : **' + exploit.nom + '** (créateur <@' + exploit.ownerId + '>) · par <@' + interaction.user.id + '>');
   }
@@ -700,7 +697,7 @@ function canManage(interaction, exploit) {
 
 module.exports = {
   EXPLOITANT_ROLE_ID, ACTIVITES,
-  handleHubExpl, handleHubExplCreer, handleHubExplCreerModal,
+  handleHubExpl, handleHubExplGerer, handleHubExplCreer, handleHubExplCreerModal,
   handleHubExplManage, handleHubExplSetAct, handleHubExplNom,
   handleHubExplOuvAdd, handleHubExplOuvDel, handleHubAnnuaire, handleHubAnnuaireOff,
   handleHubAnnuaireAdm, handleHubExplAdmOwner,
