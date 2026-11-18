@@ -344,6 +344,7 @@ client.on(Events.InteractionCreate, async interaction => {
     if (id === 'verif_code' || id === 'verif_saisir') { await require('./moderation/codeverif').handleButton(interaction); return; }
     if (id === 'anniv_btn')                   { await require('./community/birthday').handleButton(interaction); return; }
     if (id === 'hub_expl')                    { await hub.handleHubExpl(interaction);        return; }
+    if (id.startsWith('ind_'))                { await require('./farm/industrie').handle(interaction); return; }
     if (id.startsWith('hub_expl_gerer_'))     { await hub.handleHubExplGerer(interaction);   return; }
     if (id === 'hub_expl_creer')              { await hub.handleHubExplCreer(interaction);   return; }
     if (id === 'hub_contrat')                 { await contrat.startContratFlow(interaction); return; }

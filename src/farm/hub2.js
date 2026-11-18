@@ -155,27 +155,6 @@ const ACTIVITES_TEXTE = [
   'Association forestière, activité non accessible aux exploitations',
 ].join('\n');
 
-// Texte du bouton « Industrie » (information seule)
-const INDUSTRIE_TEXTE = [
-  "**🏭 NIVEAUX D'INDUSTRIE**",
-  "━━━━━━━━━━━━━━",
-  "**Nv 1 · Artisan** → 1 usine — 💶 50 000 €",
-  "**Nv 2 · Atelier** → 2 usines — 💶 200 000 €",
-  "**Nv 3 · Petite entreprise** → 3 usines — 💶 350 000 €",
-  "**Nv 4 · PME** → 4 usines — 💶 500 000 €",
-  "**Nv 5 · Manufacture** → 5 usines — 💶 650 000 €",
-  "**Nv 6 · Industriel** → 6 usines — 💶 800 000 €",
-  "**Nv 7 · Groupe industriel** → 7 usines — 💶 950 000 €",
-  "**Nv 8 · Grand groupe** → 8 usines — 💶 1 100 000 €",
-  "**Nv 9 · Conglomérat** → 9 usines — 💶 1 250 000 €",
-  "**Nv 10 · Magnat de l'industrie** → 10 usines — 💶 1 400 000 €",
-  "━━━━━━━━━━━━━━",
-  "• Chaque niveau se paie **par virement à l'association**",
-  "• Le niveau est validé par le staff après réception du virement",
-  "• On passe les niveaux dans l'ordre, sans en sauter",
-  "• Le prix d'achat des usines dans le jeu reste à votre charge"
-].join('\n');
-
 // Fermes proposées au joueur : celles qui portent le nom de son exploitation, sinon toutes
 function fermesDuJoueur(uid, st) {
   const noms = exp.getAll().filter(e => exp.memberIds(e).includes(uid)).map(e => e.nom.toLowerCase());
@@ -192,9 +171,9 @@ async function handle(i) {
   const id = i.customId;
   const st = status();
   try {
-    if (id === 'nv_act' || id === 'nv_usine') i._intro = true; // texte complet : pas d'intro /bouton-info en tête
+    if (id === 'nv_act') i._intro = true; // texte complet : pas d'intro /bouton-info en tête
     if (id === 'nv_act') return await i.reply({ natif: true, ...panneau({ embeds: [{ description: ACTIVITES_TEXTE, color: 0x2ECC71 }] }), flags: 64 });
-    if (id === 'nv_usine') return await i.reply({ natif: true, ...panneau({ embeds: [{ description: INDUSTRIE_TEXTE, color: 0xE67E22 }] }), flags: 64 });
+    if (id === 'nv_usine') return await require('./industrie').afficher(i);
     if (!st) return i.reply({ content: '⏳ Pas encore de données du serveur FS25, réessaie dans une minute.', flags: 64 });
 
     if (id === 'nv_class') {
