@@ -98,6 +98,7 @@ function manageMenu(exploit, viewerId, pos) {
     { label: '🧑‍🌾 Recrutement (oui / non)', value: 'recrute' },
     { label: '🎨 Couleur de l\'exploitation', value: 'couleur' },
     { label: '➕ Ajouter un ouvrier',        value: 'ouvrier_add' },
+    { label: '📜 Mes droits',                value: 'droits', description: 'Travaux autorisés selon l\'activité' },
   ];
   if (hasOuvriers) options.push({ label: '➖ Retirer un ouvrier', value: 'ouvrier_del' });
   if (isOwner && !hasCo) options.push({ label: '🤝 Ajouter un co-exploitant', value: 'coexpl_add' });
@@ -204,6 +205,11 @@ async function handleHubExplManage(interaction) {
   }
 
   const choice = interaction.values[0];
+
+  if (choice === 'droits') {
+    await interaction.reply({ natif: true, embeds: [{ description: require('./droits-texte'), color: 0x2ECC71 }], flags: 64 });
+    return;
+  }
 
   // Gestion du co-exploitant : réservée au créateur (pas aux co-exploitants).
   if ((choice === 'coexpl_add' || choice === 'coexpl_del') && interaction.user.id !== exploit.ownerId) {
