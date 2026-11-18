@@ -82,7 +82,7 @@ function ficheExploitation(farm) {
   if (!e) return null;
   const liste = ids => ids?.length ? ids.map(i => '<@' + i + '>').join(' ') : '—';
   const acts = [e.activitePrincipale, e.activiteSecondaire, e.activiteSupplementaire].filter(Boolean).join(' · ') || '—';
-  return { couleur: e.couleur, texte: [
+  return { id: e.id, couleur: e.couleur, texte: [
     '**Exploitant :** <@' + e.ownerId + '>' + (e.coExploitants?.length ? '  ·  **Co :** ' + liste(e.coExploitants) : ''),
     '**Activités :** ' + acts,
     '**Recrutement :** ' + (e.recrute ? 'OUI' : 'NON') + '  ·  **Ouvriers :** ' + liste(e.ouvriers),
@@ -110,7 +110,11 @@ function fermePayload(farm) {
       { name: '📋 Exploitation', value: (fiche ? fiche.texte : '_Pas encore de fiche : clique sur **🌾 Exploitation** dans le HUB._').slice(0, 1024) },
     ],
     color: fiche?.couleur ?? 0x2ECC71,
-  }], allowedMentions: { parse: [] } });
+  }],
+  // Bouton visible de tous mais réservé aux admins (vérifié au clic) ; seulement si la ferme a une fiche
+  components: fiche ? [new ActionRowBuilder().addComponents(
+    new ButtonBuilder().setCustomId('hub_expl_adm_' + fiche.id).setLabel('⚙️ Admin').setStyle(ButtonStyle.Secondary))] : [],
+  allowedMentions: { parse: [] } });
 }
 
 function foretPayload(farm) {

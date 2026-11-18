@@ -600,20 +600,19 @@ async function handleHubAnnuaireOff(interaction) {
 // ── Panneau admin d'une exploitation : changer le propriétaire / supprimer ──
 async function handleHubAnnuaireAdm(interaction) {
   if (!isAdmin(interaction)) { await interaction.reply({ content: '❌ Réservé aux administrateurs.', flags: 64 }); autoClean(interaction); return; }
-  const id = interaction.customId.replace('hub_annuaire_adm_', '');
+  // Depuis l'annuaire (message éphémère) on édite en place ; depuis la case du salon liste (message public) on répond en éphémère.
+  const depuisCase = interaction.customId.startsWith('hub_expl_adm_');
+  const id = interaction.customId.replace(/^hub_(annuaire|expl)_adm_/, '');
   const e = exp.getById(id);
   if (!e) { await interaction.reply({ content: '❌ Exploitation introuvable.', flags: 64 }); autoClean(interaction); return; }
-  await interaction.update({
-    natif: true,
-    embeds: [{ title: '⚙️ Admin · ' + e.nom, description: '👑 Propriétaire actuel : <@' + e.ownerId + '>\nChoisis le **nouveau propriétaire** ci-dessous.', color: 0xE67E22 }],
-    components: [
-      new ActionRowBuilder().addComponents(new UserSelectMenuBuilder().setCustomId('hub_expl_admowner_' + id).setPlaceholder('👑 Nouveau propriétaire...').setMaxValues(1)),
-      new ActionRowBuilder().addComponents(
-        new ButtonBuilder().setCustomId('hub_annuaire_del_' + id).setLabel('🗑️ Supprimer').setStyle(ButtonStyle.Danger),
-        new ButtonBuilder().setCustomId('hub_annuaire_delno_' + id).setLabel('⬅️ Retour').setStyle(ButtonStyle.Secondary),
-      ),
-    ],
-  });
+  const rows = [new ActionRowBuilder().addComponents(new UserSelectMenuBuilder().setCustomId('hub_expl_admowner_' + id).setPlaceholder('👑 Nouveau propriétaire...').setMaxValues(1))];
+  if (!depuisCase) rows.push(new ActionRowBuilder().addComponents(
+    new ButtonBuilder().setCustomId('hub_annuaire_del_' + id).setLabel('🗑️ Supprimer').setStyle(ButtonStyle.Danger),
+    new ButtonBuilder().setCustomId('hub_annuaire_delno_' + id).setLabel('⬅️ Retour').setStyle(ButtonStyle.Secondary),
+  ));
+  const view = { natif: true, embeds: [{ title: '⚙️ Admin · ' + e.nom, description: '👑 Propriétaire actuel : <@' + e.ownerId + '>\nChoisis le **nouveau propriétaire** ci-dessous.', color: 0xE67E22 }], components: rows };
+  if (depuisCase) { await interaction.reply({ ...view, flags: 64 }); autoClean(interaction, 120000); }
+  else await interaction.update(view);
 }
 
 // User select → transfert de propriété (le nouveau remplace l'ancien, qui sort de l'exploitation).
