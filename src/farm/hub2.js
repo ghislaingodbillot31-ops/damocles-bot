@@ -91,6 +91,9 @@ async function maj(st = status(), force = false) {
       hub.head = (await channel.send(headPayload(st))).id;
       hub.commerce = (await channel.send(commercePayload())).id;
     } else {
+      // panneau retiré de la config (ancien classement / informations) laissé par une ancienne version : supprimé
+      const vus = await channel.messages.fetch({ limit: 30 }).catch(() => new Map());
+      for (const m of vus.values()) if (m.author.id === client.user.id && ![tete.id, comMsg.id].includes(m.id) && /CLASSEMENT|INFORMATIONS/.test(m.embeds[0]?.title || '') && m.id !== stat?.id) await m.delete().catch(() => {});
       const hh = JSON.stringify(headPayload(st));
       if (hub.headH !== hh) { await tete.edit(headPayload(st)).catch(() => {}); hub.headH = hh; }
       const ch = JSON.stringify(commercePayload());
