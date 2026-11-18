@@ -51,22 +51,15 @@ const payload = value => ({
 });
 
 // ── Panneau du salon privé : ✅ / ❌ selon les activités choisies par l'exploitation ──
-const GROUPES = ['cereales', 'maraicher', 'tropical', 'riz', 'fourrager', 'vigne', 'olives', 'serre', 'elevage', 'foret'];
 function panneauDroits(exploit) {
   const choisies = [exploit.activitePrincipale, exploit.activiteSecondaire, exploit.activiteSupplementaire].map(n => n && parNom(n)).filter(Boolean);
   const permis = new Set(choisies.flatMap(a => a.works));
-  const lignes = [
+  const SEP = '━━━━━━━━━━━━━━';
+  // même liste que « Mes droits » : • remplacé par ✅ (autorisé) ou ❌ (interdit) selon les activités choisies
+  const lignes = ['**📋 LISTE DES TRAVAUX — FS25**', SEP,
     choisies.length ? '**Activités :** ' + choisies.map(a => a.emoji + ' ' + a.nom).join(' · ') : '**Aucune activité choisie** : va dans **⚙️ Gérer mon exploitation** pour les choisir.',
-    '✅ = autorisé · ❌ = interdit',
-  ];
-  // une colonne par activité (champs côte à côte, un travail par ligne) : alignement identique pour tout le monde
-  const fields = GROUPES.map(g => {
-    const membres = ACTIVITES.filter(a => a.groupe === g);
-    const works = [...new Set(membres.flatMap(a => a.works))];
-    return { name: g === 'elevage' ? '🐾 Élevages' : membres[0].emoji + ' ' + membres[0].nom, value: works.map(w => (permis.has(w) ? '✅ ' : '❌ ') + w).join('\n'), inline: true };
-  });
-  fields.push({ name: '​', value: COMMUN, inline: false });
-  return [{ title: '🛠️ TRAVAUX AUTORISÉS · ' + exploit.nom, description: lignes.join('\n'), fields, color: exploit.couleur ?? 0x2ECC71 }];
+    ...LISTE.map(w => (permis.has(w) ? '✅ ' : '❌ ') + w), SEP, COMMUN];
+  return [{ description: lignes.join('\n'), color: exploit.couleur ?? 0x2ECC71 }];
 }
 
 module.exports = { payload, panneauDroits, CHOIX };
