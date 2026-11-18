@@ -280,6 +280,7 @@ async function handle(i) {
   const id = i.customId;
   const st = status();
   try {
+    if (id === 'nv_act' || id === 'nv_usine') i._intro = true; // texte complet : pas d'intro /bouton-info en tête
     if (id === 'nv_act') return await i.reply({ natif: true, ...panneau({ embeds: [{ description: ACTIVITES_TEXTE, color: 0x2ECC71 }] }), flags: 64 });
     if (id === 'nv_usine') return await i.reply({ natif: true, ...panneau({ embeds: [{ description: INDUSTRIE_TEXTE, color: 0xE67E22 }] }), flags: 64 });
     if (!st) return i.reply({ content: '⏳ Pas encore de données du serveur FS25, réessaie dans une minute.', flags: 64 });
