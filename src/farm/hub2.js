@@ -5,23 +5,13 @@ const {
 const { panneau } = require('../core/embed-format');
 const exp = require('./exploitation');
 const N = require('./niveaux');
-const C = require('./niveaux-config');
 
-// Nouveau HUB des exploitants : un message général (boutons) puis une case par ferme du jeu,
-// toutes éditées en place. Les fermes viennent directement du mod FS25.
+// HUB des exploitants : trois messages (HUB, informations, commerce) dans un seul salon, édités en place.
 const HUB2_CHANNEL = ids('EXPLOITANTS_HUB_CHANNEL_ID', '1569517803747152033');   // HUB général (boutons)
-const LISTE_CHANNEL = ids('EXPLOITATIONS_LISTE_CHANNEL_ID', '1569522701666885642'); // une case par exploitation
 let client = null;
 const status = () => require('./fs25-succes').getStatus();
 
 // ── Affichage ─────────────────────────────────────────────────────────────────
-const barre = (v, a, b) => { const n = Math.round(Math.max(0, Math.min(1, (v - a) / (b - a))) * 10); return '▰'.repeat(n) + '▱'.repeat(10 - n); };
-const fmt = n => Math.round(n).toLocaleString('fr-FR').replace(/ | /g, ' ');
-
-function exploitants(farm) {
-  const e = exp.getAll().find(x => x.nom?.toLowerCase() === farm.name.trim().toLowerCase());
-  return e ? exp.memberIds(e).slice(0, 8).map(i => '<@' + i + '>').join(' ') : '—';
-}
 
 function headPayload() {
   return panneau({
@@ -32,14 +22,12 @@ function headPayload() {
         '',
         '> • Un niveau ne baisse jamais.',
         '> • **🛒 Activité** liste les activités du serveur, **🏭 Industrie** les niveaux d\'industrie.',
-        '',
-        '📋 La liste des exploitations est dans <#' + LISTE_CHANNEL + '>.',
       ].join('\n'),
       color: 0x2ECC71,
       footer: { text: 'MonCopainBot' },
     }],
     components: [new ActionRowBuilder().addComponents(
-      new ButtonBuilder().setCustomId('hub_expl').setLabel('🌾 Exploitation').setStyle(ButtonStyle.Success), // créer / gérer sa fiche (flux hub.js) : la case du salon liste est mise à jour ensuite
+      new ButtonBuilder().setCustomId('hub_expl').setLabel('🌾 Exploitation').setStyle(ButtonStyle.Success), // créer / gérer sa fiche (flux hub.js)
       new ButtonBuilder().setCustomId('nv_succes').setLabel('🏆 Succès').setStyle(ButtonStyle.Primary),
       new ButtonBuilder().setCustomId('nv_act').setLabel('🛒 Activité').setStyle(ButtonStyle.Success),
       new ButtonBuilder().setCustomId('nv_usine').setLabel('🏭 Industrie').setStyle(ButtonStyle.Success),
@@ -74,99 +62,31 @@ const commercePayload = () => panneau({
   )],
 });
 
-// Fiche de l'exploitation (créée avec le bouton Exploitation) liée à la ferme du jeu par son nom
-function ficheExploitation(farm) {
-  const e = exp.getAll().find(x => x.nom?.toLowerCase() === farm.name.trim().toLowerCase());
-  if (!e) return null;
-  const liste = ids => ids?.length ? ids.map(i => '<@' + i + '>').join(' ') : '—';
-  const acts = [e.activitePrincipale, e.activiteSecondaire, e.activiteSupplementaire].filter(Boolean).join(' · ') || '—';
-  return { id: e.id, couleur: e.couleur, texte: [
-    '**Exploitant :** <@' + e.ownerId + '>' + (e.coExploitants?.length ? '  ·  **Co :** ' + liste(e.coExploitants) : ''),
-    '**Activités :** ' + acts,
-    '**Recrutement :** ' + (e.recrute ? 'OUI' : 'NON') + '  ·  **Ouvriers :** ' + liste(e.ouvriers),
-    '**Créée le :** ' + new Date(e.createdAt).toLocaleDateString('fr-FR', { day: '2-digit', month: 'long', year: 'numeric' }),
-  ].join('\n') };
-}
-
-function fermePayload(farm) {
-  const f = N.lire(farm);
-  const suiv = C.PALIERS[f.niveau];
-  const prog = suiv === undefined
-    ? '**Niveau max** ' + barre(1, 0, 1) + ' ' + f.score
-    : barre(f.score, C.PALIERS[f.niveau - 1], suiv) + ' ' + f.score + '/' + suiv;
-  const fiche = ficheExploitation(farm);
-  return panneau({ embeds: [{
-    title: '🌾 ' + farm.name,
-    description: '👥 ' + exploitants(farm) + '  ·  ⭐ **Niv. ' + f.niveau + '/20** ' + prog,
-    fields: [
-      { name: '💰 Solde', value: fmt(farm.money) + ' €', inline: true },
-      { name: '🏦 Crédit', value: farm.loan > 0 ? fmt(farm.loan) + ' €' : '—', inline: true },
-      { name: '📋 Exploitation', value: (fiche ? fiche.texte : '_Pas encore de fiche : clique sur **🌾 Exploitation** dans le HUB._').slice(0, 1024) },
-    ],
-    color: fiche?.couleur ?? 0x2ECC71,
-  }],
-  // Bouton visible de tous mais réservé aux admins (vérifié au clic) ; sans fiche, il sert à désigner le propriétaire
-  components: [new ActionRowBuilder().addComponents(
-    new ButtonBuilder().setCustomId('hub_expl_adm_' + (fiche ? fiche.id : 'farm_' + farm.id)).setLabel('⚙️ Admin').setStyle(ButtonStyle.Secondary))],
-  allowedMentions: { parse: [] } });
-}
-
-function foretPayload(farm) {
-  return panneau({ embeds: [{
-    title: '🌲 Association forestière',
-    description: '👥 ' + exploitants(farm) + '\n\nBûcheron, bois de chauffage, plaquettes, populiculteur : activités **hors système**, non achetables par les exploitations.',
-    fields: [{ name: '💰 Caisse', value: fmt(farm.money) + ' €' }],
-    color: 0x1F8B4C,
-  }], allowedMentions: { parse: [] } });
-}
-
 // ── Mise à jour des messages (édition en place) ───────────────────────────────
 let enCours = false;
 async function maj(st = status(), force = false) {
   if (!client || !st || enCours) return;
   enCours = true;
   try {
-    const salon = id => client.channels.cache.get(id) || client.channels.fetch(id).catch(() => null);
-    const [channel, liste] = [await salon(HUB2_CHANNEL), await salon(LISTE_CHANNEL)];
-    if (!channel || !liste) return;
+    const channel = client.channels.cache.get(HUB2_CHANNEL) || await client.channels.fetch(HUB2_CHANNEL).catch(() => null);
+    if (!channel) return;
     const hub = N.db().hub;
-    // Les cases étaient avant dans le salon du HUB : on les retire de l'ancien salon
-    const ancien = hub.listeCanal || HUB2_CHANNEL;
-    if (ancien !== LISTE_CHANNEL) {
-      const vieux = await salon(ancien);
-      for (const x of Object.values(hub.farms)) await vieux?.messages.delete(x.msgId).catch(() => {});
-      hub.farms = {};
-    }
-    hub.listeCanal = LISTE_CHANNEL;
+    delete hub.listeCanal; hub.farms = {}; // ancien salon « liste des exploitations » supprimé
     const get = id => id ? channel.messages.fetch(id).catch(() => null) : null;
-    const getCase = id => id ? liste.messages.fetch(id).catch(() => null) : null;
 
-    const fermes = N.classement(st).map(x => x.farm);
-    const foret = st.farms.find(N.estForet);
-    const voulus = [...fermes.map(f => ({ cle: String(f.id), payload: fermePayload(f) })), ...(foret ? [{ cle: 'foret', payload: foretPayload(foret) }] : [])];
-
-    // Tout est-il déjà en place ? sinon on republie dans l'ordre (HUB, classement des fermes, association)
-    const tete = await get(hub.head);
-    const existants = new Map();
-    for (const v of voulus) { const m = await getCase(hub.farms[v.cle]?.msgId); if (m) existants.set(v.cle, m); }
     // Statut FS25 : s'il est dans ce salon, il doit rester EN TÊTE (avant le HUB) et n'est jamais supprimé par le nettoyage
     const bridge = require('./fs25-bridge');
     const stat = bridge.isStatusChannel(channel) ? await bridge.ensureStatusMessage(channel).catch(() => null) : null;
-    const infoMsg = await get(hub.info);
-    const comMsg = await get(hub.commerce);
-    const complet = !force && tete && infoMsg && comMsg && voulus.every(v => existants.has(v.cle)) && (!stat || BigInt(stat.id) < BigInt(tete.id));
+    const [tete, infoMsg, comMsg] = [await get(hub.head), await get(hub.info), await get(hub.commerce)];
+    const complet = !force && tete && infoMsg && comMsg && (!stat || BigInt(stat.id) < BigInt(tete.id));
 
     if (!complet) {
-      // Salons dédiés : on retire tout ce que le bot y a posté (évite les doublons si les ids connus sont perdus)
-      for (const c of new Set([channel, liste])) {
-        const vus = await c.messages.fetch({ limit: 100 }).catch(() => new Map());
-        for (const m of vus.values()) if (m.author.id === client.user.id && m.id !== stat?.id) await m.delete().catch(() => {});
-      }
-      hub.farms = {};
+      // Salon dédié : on retire tout ce que le bot y a posté (évite les doublons si les ids connus sont perdus)
+      const vus = await channel.messages.fetch({ limit: 100 }).catch(() => new Map());
+      for (const m of vus.values()) if (m.author.id === client.user.id && m.id !== stat?.id) await m.delete().catch(() => {});
       hub.head = (await channel.send(headPayload())).id;
       hub.info = (await channel.send(infoPayload())).id;
       hub.commerce = (await channel.send(commercePayload())).id;
-      for (const v of voulus) hub.farms[v.cle] = { msgId: (await liste.send(v.payload)).id, h: JSON.stringify(v.payload) };
     } else {
       const hh = JSON.stringify(headPayload());
       if (hub.headH !== hh) { await tete.edit(headPayload()).catch(() => {}); hub.headH = hh; }
@@ -174,14 +94,6 @@ async function maj(st = status(), force = false) {
       if (hub.infoH !== ih) { await infoMsg.edit(infoPayload()).catch(() => {}); hub.infoH = ih; }
       const ch = JSON.stringify(commercePayload());
       if (hub.commerceH !== ch) { await comMsg.edit(commercePayload()).catch(() => {}); hub.commerceH = ch; }
-      for (const v of voulus) {
-        const h = JSON.stringify(v.payload);
-        if (hub.farms[v.cle].h !== h) { await existants.get(v.cle).edit(v.payload).catch(() => {}); hub.farms[v.cle].h = h; }
-      }
-      for (const cle of Object.keys(hub.farms)) if (!voulus.some(v => v.cle === cle)) { // ferme disparue du jeu
-        await liste.messages.delete(hub.farms[cle].msgId).catch(() => {});
-        delete hub.farms[cle];
-      }
     }
     N.save();
   } catch (e) { console.warn('⚠️ HUB exploitants :', e.message); }
