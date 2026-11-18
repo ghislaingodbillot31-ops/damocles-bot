@@ -275,6 +275,7 @@ client.on(Events.InteractionCreate, async interaction => {
   if (interaction.isUserSelectMenu()) {
     try {
       if (interaction.customId.startsWith('hub_expl_ouvadd_')) { await hub.handleHubExplOuvAdd(interaction); return; }
+      if (interaction.customId.startsWith('hub_expl_admowner_')) { await hub.handleHubExplAdmOwner(interaction); return; }
       if (interaction.customId.startsWith('hub_expl_coadd_'))  { await hub.handleHubExplCoAdd(interaction);  return; }
     } catch (err) { console.error('Erreur user select :', err.message); }
     return;
@@ -346,6 +347,7 @@ client.on(Events.InteractionCreate, async interaction => {
     if (id === 'hub_besoin')                  { await contrat.handleBesoinButton(interaction); return; }
     if (id === 'hub_annuaire')                { await hub.handleHubAnnuaire(interaction);    return; }
     if (id === 'hub_annuaire_off')            { await hub.handleHubAnnuaireOff(interaction); return; }
+    if (id.startsWith('hub_annuaire_adm_'))    { await hub.handleHubAnnuaireAdm(interaction);    return; }
     if (id.startsWith('hub_annuaire_delyes_')) { await hub.handleHubAnnuaireDelYes(interaction); return; }
     if (id.startsWith('hub_annuaire_delno_'))  { await hub.handleHubAnnuaireDelNo(interaction);  return; }
     if (id.startsWith('hub_annuaire_del_'))    { await hub.handleHubAnnuaireDel(interaction);    return; }

@@ -562,7 +562,7 @@ function renderAnnuaire(admin) {
 
   const rows = [];
   if (admin) {
-    const del = shown.map(e => new ButtonBuilder().setCustomId('hub_annuaire_del_' + e.id).setLabel('🗑️ ' + e.nom.slice(0, 20)).setStyle(ButtonStyle.Danger));
+    const del = shown.map(e => new ButtonBuilder().setCustomId('hub_annuaire_adm_' + e.id).setLabel('⚙️ ' + e.nom.slice(0, 20)).setStyle(ButtonStyle.Secondary));
     for (let i = 0; i < del.length && rows.length < 4; i += 5) rows.push(new ActionRowBuilder().addComponents(del.slice(i, i + 5)));
   }
   rows.push(new ActionRowBuilder().addComponents(
@@ -595,6 +595,46 @@ async function handleHubAnnuaire(interaction) {
 async function handleHubAnnuaireOff(interaction) {
   await interaction.deferUpdate();
   await interaction.deleteReply().catch(() => {});
+}
+
+// ── Panneau admin d'une exploitation : changer le propriétaire / supprimer ──
+async function handleHubAnnuaireAdm(interaction) {
+  if (!isAdmin(interaction)) { await interaction.reply({ content: '❌ Réservé aux administrateurs.', flags: 64 }); autoClean(interaction); return; }
+  const id = interaction.customId.replace('hub_annuaire_adm_', '');
+  const e = exp.getById(id);
+  if (!e) { await interaction.reply({ content: '❌ Exploitation introuvable.', flags: 64 }); autoClean(interaction); return; }
+  await interaction.update({
+    natif: true,
+    embeds: [{ title: '⚙️ Admin · ' + e.nom, description: '👑 Propriétaire actuel : <@' + e.ownerId + '>\nChoisis le **nouveau propriétaire** ci-dessous.', color: 0xE67E22 }],
+    components: [
+      new ActionRowBuilder().addComponents(new UserSelectMenuBuilder().setCustomId('hub_expl_admowner_' + id).setPlaceholder('👑 Nouveau propriétaire...').setMaxValues(1)),
+      new ActionRowBuilder().addComponents(
+        new ButtonBuilder().setCustomId('hub_annuaire_del_' + id).setLabel('🗑️ Supprimer').setStyle(ButtonStyle.Danger),
+        new ButtonBuilder().setCustomId('hub_annuaire_delno_' + id).setLabel('⬅️ Retour').setStyle(ButtonStyle.Secondary),
+      ),
+    ],
+  });
+}
+
+// User select → transfert de propriété (le nouveau remplace l'ancien, qui sort de l'exploitation).
+async function handleHubExplAdmOwner(interaction) {
+  if (!isAdmin(interaction)) { await interaction.reply({ content: '❌ Réservé aux administrateurs.', flags: 64 }); autoClean(interaction); return; }
+  const e = exp.getById(interaction.customId.replace('hub_expl_admowner_', ''));
+  const fail = async d => { await interaction.update({ natif: true, embeds: [{ description: '❌ ' + d, color: 0xE74C3C }], components: [] }); autoClean(interaction); };
+  if (!e) return fail('Exploitation introuvable.');
+  const uid = interaction.values[0];
+  const member = interaction.guild.members.cache.get(uid) || await interaction.guild.members.fetch(uid).catch(() => null);
+  if (!member) return fail('Joueur introuvable sur le serveur.');
+  if (member.user.bot) return fail('Impossible de choisir un bot.');
+  if (uid === e.ownerId) return fail('Il est déjà propriétaire.');
+  if (exp.getByOwner(uid)) return fail('Ce joueur possède déjà une autre exploitation.');
+
+  const old = e.ownerId;
+  exp.setOwner(e.id, uid, member.user.tag);
+  await member.roles.add(EXPLOITANT_ROLE_ID).catch(() => {});
+  await interaction.update({ natif: true, embeds: [{ description: '✅ **' + e.nom + '** : <@' + uid + '> remplace <@' + old + '> comme propriétaire.', color: 0x2ECC71 }], components: [] });
+  autoClean(interaction);
+  await agrilog(interaction.guild, '👑 **' + e.nom + '** : propriétaire <@' + old + '> → <@' + uid + '> · par <@' + interaction.user.id + '>');
 }
 
 // ── Suppression admin d'une exploitation depuis l'annuaire ──────────────────
@@ -662,6 +702,7 @@ module.exports = {
   handleHubExpl, handleHubExplCreer, handleHubExplCreerModal,
   handleHubExplManage, handleHubExplSetAct, handleHubExplNom,
   handleHubExplOuvAdd, handleHubExplOuvDel, handleHubAnnuaire, handleHubAnnuaireOff,
+  handleHubAnnuaireAdm, handleHubExplAdmOwner,
   handleHubAnnuaireDel, handleHubAnnuaireDelYes, handleHubAnnuaireDelNo,
   handleHubExplRecrute, handleHubExplCouleur, handleHubExplCoAdd, handleHubExplCoDel,
 };
