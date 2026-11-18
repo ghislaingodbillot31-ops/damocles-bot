@@ -114,7 +114,7 @@ function manageMenu(exploit, viewerId, pos) {
   if (isOwner && hasCo)  options.push({ label: '➖ Retirer le co-exploitant', value: 'coexpl_del' });
 
   const menu = new StringSelectMenuBuilder()
-    .setCustomId('hub_expl_manage_' + exploit.ownerId)
+    .setCustomId('hub_expl_manage_' + exploit.id) // par id d'exploitation : un joueur peut en posséder plusieurs (attribution admin)
     .setPlaceholder('Que veux-tu faire ?')
     .addOptions(options);
 
@@ -211,8 +211,8 @@ async function handleHubExplCreerModal(interaction) {
 
 // ── Select du menu de gestion ───────────────────────────────────────────────
 async function handleHubExplManage(interaction) {
-  const ownerId = interaction.customId.replace('hub_expl_manage_', '');
-  const exploit = exp.getByOwner(ownerId);
+  const ref = interaction.customId.replace('hub_expl_manage_', '');
+  const exploit = exp.getById(ref) || exp.getByOwner(ref); // getByOwner : anciens menus déjà postés
   if (!exploit) { await interaction.update({ natif: true, embeds: [{ description: '❌ Exploitation introuvable.', color: 0xE74C3C }], components: [] }); return; }
 
   if (!canManage(interaction, exploit)) {
@@ -633,7 +633,6 @@ async function handleHubExplAdmOwner(interaction) {
   if (!member) return fail('Joueur introuvable sur le serveur.');
   if (member.user.bot) return fail('Impossible de choisir un bot.');
   if (uid === e.ownerId) return fail('Il est déjà propriétaire.');
-  if (exp.getByOwner(uid)) return fail('Ce joueur possède déjà une autre exploitation.');
 
   const old = e.ownerId;
   if (!old) { // ferme sans fiche : on la crée
