@@ -603,22 +603,29 @@ async function handleHubAnnuaireAdm(interaction) {
   // Depuis l'annuaire (message éphémère) on édite en place ; depuis la case du salon liste (message public) on répond en éphémère.
   const depuisCase = interaction.customId.startsWith('hub_expl_adm_');
   const id = interaction.customId.replace(/^hub_(annuaire|expl)_adm_/, '');
-  const e = exp.getById(id);
+  const e = exploitOuFerme(id);
   if (!e) { await interaction.reply({ content: '❌ Exploitation introuvable.', flags: 64 }); autoClean(interaction); return; }
   const rows = [new ActionRowBuilder().addComponents(new UserSelectMenuBuilder().setCustomId('hub_expl_admowner_' + id).setPlaceholder('👑 Nouveau propriétaire...').setMaxValues(1))];
   if (!depuisCase) rows.push(new ActionRowBuilder().addComponents(
     new ButtonBuilder().setCustomId('hub_annuaire_del_' + id).setLabel('🗑️ Supprimer').setStyle(ButtonStyle.Danger),
     new ButtonBuilder().setCustomId('hub_annuaire_delno_' + id).setLabel('⬅️ Retour').setStyle(ButtonStyle.Secondary),
   ));
-  const view = { natif: true, embeds: [{ title: '⚙️ Admin · ' + e.nom, description: '👑 Propriétaire actuel : <@' + e.ownerId + '>\nChoisis le **nouveau propriétaire** ci-dessous.', color: 0xE67E22 }], components: rows };
+  const view = { natif: true, embeds: [{ title: '⚙️ Admin · ' + e.nom, description: '👑 Propriétaire actuel : ' + (e.ownerId ? '<@' + e.ownerId + '>' : '*aucun (ferme sans fiche)*') + '\nChoisis le **' + (e.ownerId ? 'nouveau ' : '') + 'propriétaire** ci-dessous.', color: 0xE67E22 }], components: rows };
   if (depuisCase) { await interaction.reply({ ...view, flags: 64 }); autoClean(interaction, 120000); }
   else await interaction.update(view);
+}
+
+// « farm_<id> » = ferme du jeu sans fiche : exploitation virtuelle (ownerId null), créée au choix du propriétaire.
+function exploitOuFerme(id) {
+  if (!id.startsWith('farm_')) return exp.getById(id);
+  const f = require('./fs25-succes').getStatus()?.farms.find(x => 'farm_' + x.id === id);
+  return f && !exp.getByName(f.name.trim()) ? { id, nom: f.name.trim(), ownerId: null } : null;
 }
 
 // User select → transfert de propriété (le nouveau remplace l'ancien, qui sort de l'exploitation).
 async function handleHubExplAdmOwner(interaction) {
   if (!isAdmin(interaction)) { await interaction.reply({ content: '❌ Réservé aux administrateurs.', flags: 64 }); autoClean(interaction); return; }
-  const e = exp.getById(interaction.customId.replace('hub_expl_admowner_', ''));
+  let e = exploitOuFerme(interaction.customId.replace('hub_expl_admowner_', ''));
   const fail = async d => { await interaction.update({ natif: true, embeds: [{ description: '❌ ' + d, color: 0xE74C3C }], components: [] }); autoClean(interaction); };
   if (!e) return fail('Exploitation introuvable.');
   const uid = interaction.values[0];
@@ -629,6 +636,14 @@ async function handleHubExplAdmOwner(interaction) {
   if (exp.getByOwner(uid)) return fail('Ce joueur possède déjà une autre exploitation.');
 
   const old = e.ownerId;
+  if (!old) { // ferme sans fiche : on la crée
+    e = exp.createExploitation(uid, member.user.tag, e.nom);
+    await member.roles.add(EXPLOITANT_ROLE_ID).catch(() => {});
+    await interaction.update({ natif: true, embeds: [{ description: '✅ **' + e.nom + '** : <@' + uid + '> est maintenant propriétaire.', color: 0x2ECC71 }], components: [] });
+    autoClean(interaction);
+    await agrilog(interaction.guild, '👑 **' + e.nom + '** : propriétaire <@' + uid + '> (fiche créée) · par <@' + interaction.user.id + '>');
+    return;
+  }
   exp.setOwner(e.id, uid, member.user.tag);
   await member.roles.add(EXPLOITANT_ROLE_ID).catch(() => {});
   await interaction.update({ natif: true, embeds: [{ description: '✅ **' + e.nom + '** : <@' + uid + '> remplace <@' + old + '> comme propriétaire.', color: 0x2ECC71 }], components: [] });

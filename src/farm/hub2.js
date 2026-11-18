@@ -111,9 +111,9 @@ function fermePayload(farm) {
     ],
     color: fiche?.couleur ?? 0x2ECC71,
   }],
-  // Bouton visible de tous mais réservé aux admins (vérifié au clic) ; seulement si la ferme a une fiche
-  components: fiche ? [new ActionRowBuilder().addComponents(
-    new ButtonBuilder().setCustomId('hub_expl_adm_' + fiche.id).setLabel('⚙️ Admin').setStyle(ButtonStyle.Secondary))] : [],
+  // Bouton visible de tous mais réservé aux admins (vérifié au clic) ; sans fiche, il sert à désigner le propriétaire
+  components: [new ActionRowBuilder().addComponents(
+    new ButtonBuilder().setCustomId('hub_expl_adm_' + (fiche ? fiche.id : 'farm_' + farm.id)).setLabel('⚙️ Admin').setStyle(ButtonStyle.Secondary))],
   allowedMentions: { parse: [] } });
 }
 
