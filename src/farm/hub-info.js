@@ -15,7 +15,7 @@ const STYLES = {
 // Boutons dont le contenu est dynamique (liste, formulaire, données du joueur) : le texte réglé avec /bouton-info s'affiche EN TÊTE de leur embed.
 const DYN = {
   hub_contrat: '📋 Contrat', hub_besoin: '📦 Besoin', hub_marche: '🏪 Marché', hub_boutique: '🛒 Boutique',
-  nv_succes: '🏆 Succès', nv_act: '🛒 Activité', nv_class: '📊 Classement', hubinfo_mods: '📦 Mods',
+  nv_succes: '🏆 Succès', nv_act: '🛒 Activité', nv_usine: '🏭 Industrie', nv_class: '📊 Classement', hubinfo_mods: '📦 Mods',
 };
 
 const DEFAUT = {
