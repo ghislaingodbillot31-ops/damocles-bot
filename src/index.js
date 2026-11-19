@@ -425,6 +425,8 @@ client.on(Events.InteractionCreate, async interaction => {
     if (id === 'jeux_wish')   { await require('./community/jeux').handleWishButton(interaction); return; }
     if (id === 'wish_y' || id === 'wish_n') { await require('./community/jeux').handleWishVote(interaction); return; }
     if (id === 'tuto_compris') {
+      if ((await db.getMember(interaction.user.id))?.tutoLu) { await interaction.reply({ content: '✅ Tu as déjà confirmé avoir lu le tuto, merci !', flags: 64 }); return; }
+      await db.updateMember(interaction.user.id, { tutoLu: new Date().toISOString() });
       await interaction.reply({ content: '✅ Parfait, bienvenue parmi nous ! Bon jeu 🚜', flags: 64 });
       const logs = await interaction.client.channels.fetch('1567011774912532671').catch(() => null);
       await logs?.send({ content: '✅ **' + (interaction.member?.displayName || interaction.user.username) + '** a lu et compris le fonctionnement du serveur', allowedMentions: { parse: [] } }).catch(console.error);
