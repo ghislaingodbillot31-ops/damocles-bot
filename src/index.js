@@ -427,12 +427,7 @@ client.on(Events.InteractionCreate, async interaction => {
     if (id === 'tuto_compris') {
       await interaction.reply({ content: '✅ Parfait, bienvenue parmi nous ! Bon jeu 🚜', flags: 64 });
       const logs = await interaction.client.channels.fetch('1567011774912532671').catch(() => null);
-      await logs?.send({ embeds: [{
-        title: '✅ Tuto lu et compris',
-        description: '<@' + interaction.user.id + '> (' + interaction.user.tag + ') a confirmé avoir lu et compris le fonctionnement du serveur.',
-        color: 0x2ECC71,
-        timestamp: new Date().toISOString(),
-      }], allowedMentions: { parse: [] } }).catch(console.error);
+      await logs?.send({ content: '✅ **' + (interaction.member?.displayName || interaction.user.username) + '** a lu et compris le fonctionnement du serveur', allowedMentions: { parse: [] } }).catch(console.error);
       return;
     }
     if (id === 'hub_reglement') { await require('./moderation/invitations').handleReglementButton(interaction); return; }
