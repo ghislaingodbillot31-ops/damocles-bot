@@ -89,6 +89,14 @@ function buildMessage(keys) {
 async function handleButton(interaction) {
   const key = interaction.customId.replace('hubinfo_', '');
   if (key === 'mods') { await require('./fs25-bridge').handleModsButton(interaction); return; }
+  if (key === 'fermer') { await interaction.deferUpdate(); await interaction.deleteReply().catch(() => {}); return; }
+  if (key === 'reglement') {
+    const { BLOCS } = require('./reglement-fs25');
+    const embeds = BLOCS.map((d, i) => ({ title: `🚜  RÈGLEMENT DU SERVEUR FS25 (${i + 1}/${BLOCS.length})`, description: d, color: 0x3498DB, ...(i === BLOCS.length - 1 && { footer: { text: 'MonCopainBot' } }) }));
+    const fermer = new ActionRowBuilder().addComponents(new ButtonBuilder().setCustomId('hubinfo_fermer').setLabel('✖ Fermer le règlement').setStyle(ButtonStyle.Secondary));
+    await interaction.reply({ ...panneau({ embeds }), components: [fermer], flags: 64, natif: true });
+    return;
+  }
   const b = get().boutons.find(x => x.key === key);
   if (!b || !b.message.trim()) {
     await interaction.reply({ content: 'ℹ️ Cette rubrique n\'est pas encore renseignée. Reviens bientôt !', flags: 64 });
