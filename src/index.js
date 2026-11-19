@@ -424,6 +424,17 @@ client.on(Events.InteractionCreate, async interaction => {
     if (id === 'jeux_new')    { await require('./community/jeux').handleButton(interaction); return; }
     if (id === 'jeux_wish')   { await require('./community/jeux').handleWishButton(interaction); return; }
     if (id === 'wish_y' || id === 'wish_n') { await require('./community/jeux').handleWishVote(interaction); return; }
+    if (id === 'tuto_compris') {
+      await interaction.reply({ content: '✅ Parfait, bienvenue parmi nous ! Bon jeu 🚜', flags: 64 });
+      const logs = await interaction.client.channels.fetch('1567011774912532671').catch(() => null);
+      await logs?.send({ embeds: [{
+        title: '✅ Tuto lu et compris',
+        description: '<@' + interaction.user.id + '> (' + interaction.user.tag + ') a confirmé avoir lu et compris le fonctionnement du serveur.',
+        color: 0x2ECC71,
+        timestamp: new Date().toISOString(),
+      }], allowedMentions: { parse: [] } }).catch(console.error);
+      return;
+    }
     if (id === 'hub_reglement') { await require('./moderation/invitations').handleReglementButton(interaction); return; }
     if (id === 'hub_roles')   { await require('./moderation/invitations').handleRolesButton(interaction); return; }
     if (id.startsWith('hubrole_')) { await require('./moderation/invitations').handleRoleToggle(interaction); return; }
