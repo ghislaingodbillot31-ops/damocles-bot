@@ -317,6 +317,8 @@ async function handleHubExplSetAct(interaction) {
   exp.updateExploitation(exploitId, { [dbField]: interaction.values[0] });
 
   const exploit = Object.values(exp.load()).find(e => e.id === exploitId);
+  const lib = field === 'principale' ? '🥇 Activité 1' : field === 'secondaire' ? '🥈 Activité 2 (élevage)' : '🥉 Activité supplémentaire';
+  require('../core/logs-salon').logsSalon(interaction.client, lib + ' choisie : **' + (exploit?.nom || exploitId) + '** · **' + interaction.values[0] + '** · par **' + (interaction.member?.displayName || interaction.user.username) + '**');
 
   if (mode === 'setup' && field === 'principale') {
     const menu = new StringSelectMenuBuilder()
