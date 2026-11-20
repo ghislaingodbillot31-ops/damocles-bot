@@ -298,6 +298,7 @@ client.on(Events.InteractionCreate, async interaction => {
       if (cid.startsWith('hub_expl_couleur_')) { await hub.handleHubExplCouleur(interaction); return; }
       if (cid.startsWith('hub_expl_recrute_')) { await hub.handleHubExplRecrute(interaction); return; }
       if (cid.startsWith('asso_'))             { await require('./farm/association').handle(interaction); return; }
+      if (cid.startsWith('cred_sel_'))         { await require('./farm/credit').handle(interaction);      return; }
       if (cid === 'succhub_farm')              { await require('./farm/fs25-succes-hub').handleSelect(interaction); return; }
       if (cid === 'marche_prix')               { await require('./farm/marche').handlePrix(interaction); return; }
       if (cid === 'marche_retirer')            { await require('./farm/marche').handleRetirer(interaction); return; }
@@ -327,6 +328,7 @@ client.on(Events.InteractionCreate, async interaction => {
       if (/^bug_nomodal_\d+$/.test(cid))        { await require('./community/bugs').handleBugRefus(interaction); return; }
       if (cid === 'jeux_modal')                 { await require('./community/jeux').handleModal(interaction); return; }
       if (cid === 'jeux_wishmodal')             { await require('./community/jeux').handleWishModal(interaction); return; }
+      if (cid.startsWith('cred_modal_'))       { await require('./farm/credit').handle(interaction);      return; }
       if (cid.startsWith('marche_prixmodal_')) { await require('./farm/marche').handlePrixModal(interaction); return; }
       if (cid === 'marche_modal')              { await require('./farm/marche').handleModal(interaction); return; }
       if (cid === 'hub_boutique_modal')        { await boutique.handleModal(interaction);         return; }
@@ -345,6 +347,7 @@ client.on(Events.InteractionCreate, async interaction => {
     if (id === 'anniv_btn')                   { await require('./community/birthday').handleButton(interaction); return; }
     if (id === 'hub_expl')                    { await hub.handleHubExpl(interaction);        return; }
     if (id.startsWith('ind_'))                { await require('./farm/industrie').handle(interaction); return; }
+    if (id.startsWith('cred_admin_'))         { await require('./farm/credit').handle(interaction);    return; }
     if (id.startsWith('hub_expl_gerer_'))     { await hub.handleHubExplGerer(interaction);   return; }
     if (id === 'hub_expl_creer')              { await hub.handleHubExplCreer(interaction);   return; }
     if (id === 'hub_contrat')                 { await contrat.startContratFlow(interaction); return; }
