@@ -192,6 +192,26 @@ const TABS = {
     m.onclick = e => { const b = e.target.closest('button[data-id]'); if (b && confirm('Supprimer cette exploitation ?')) run(() => api('/exploitations/' + b.dataset.id, 'DELETE'), 'Supprimée')(); };
   },
 
+  async succes(m) {
+    let l = await api('/succes');
+    const fr = n => n.toLocaleString('fr-FR'), niv = (t) => t.map((v, i) => 'Niv. ' + (i + 1) + ' : ' + fr(v)).join(' · ');
+    const calc = (pas, sup, nb) => Array.from({ length: nb }, (_, i) => +(pas * (i + 1) + sup * i * (i + 1) / 2).toFixed(4));
+    const carte = x => `<div class="box" data-id="${x.id}"><b>${x.emoji} ${esc(x.nom)}</b> <span class="mut">${esc(x.unite)} · ${x.tiers.length} niveaux${x.reglage ? ' · réglé' : ' · paliers d’origine'}</span>
+      <div class="row" style="display:flex;gap:8px;align-items:center;flex-wrap:wrap"><label>Pas</label><input class="pas" style="width:110px" value="${x.reglage ? x.reglage.pas : ''}" placeholder="ex. 200">
+      <label>Supplément</label><input class="sup" style="width:110px" value="${x.reglage && x.reglage.sup ? x.reglage.sup : ''}" placeholder="ex. 10"><button class="ok">Enregistrer</button><button class="raz">Paliers d’origine</button></div>
+      <div class="mut apercu" style="margin-top:6px;line-height:1.6">${niv(x.tiers)}</div></div>`;
+    let cat = '';
+    m.innerHTML = '<h2>🏆 Paliers des succès</h2><p class="mut">Niveau 1 = le pas ; l’écart entre un niveau et le suivant = pas + n × supplément (n = numéro du niveau). Entrée ou « Enregistrer » applique et recalcule les niveaux des exploitations. Vide = paliers d’origine.</p>'
+      + l.map(x => (x.categorie !== cat ? (cat = x.categorie, '<h3>' + esc(cat) + '</h3>') : '') + carte(x)).join('');
+    const num = v => parseFloat(String(v).replace(/s/g, '').replace(',', '.')) || 0;
+    const lit = b => ({ id: b.dataset.id, pas: num(b.querySelector('.pas').value), sup: num(b.querySelector('.sup').value) });
+    m.oninput = e => { const b = e.target.closest('.box[data-id]'); if (!b) return; const { id, pas, sup } = lit(b), x = l.find(y => y.id === id);
+      b.querySelector('.apercu').textContent = niv(pas > 0 ? calc(pas, sup, x.tiers.length) : x.defaut); };
+    const enregistre = async (b, raz) => { const v = lit(b); if (raz) { v.pas = 0; v.sup = 0; } try { await api('/succes/' + v.id, 'PUT', { pas: v.pas, sup: v.sup }); toast('Enregistré ✔'); await TABS.succes(m); } catch (er) { toast(er.message, true); } };
+    m.onclick = e => { const b = e.target.closest('.box[data-id]'); if (!b) return; if (e.target.closest('.ok')) enregistre(b); else if (e.target.closest('.raz')) enregistre(b, true); };
+    m.onkeydown = e => { if (e.key === 'Enter' && e.target.closest('.box[data-id]')) { e.preventDefault(); enregistre(e.target.closest('.box[data-id]')); } };
+  },
+
   async hub(m) {
     const h = await api('/hubinfo');
     const f = (id, l, v, ta) => `<div class="row"><label>${l}</label>${ta ? `<textarea id="${id}">${esc(v)}</textarea>` : `<input id="${id}" value="${esc(v)}">`}</div>`;
@@ -255,7 +275,7 @@ async function listeDecisions(m, titre, path) {
 const SECTIONS = [
   ['🏠 Accueil', [['apercu', 'Vue d’ensemble']]],
   ['👥 Membres', [['membres', 'Liste des membres'], ['logs', 'Historique']]],
-  ['🚜 Exploitations', [['exploitations', 'Toutes les exploitations']]],
+  ['🚜 Exploitations', [['exploitations', 'Toutes les exploitations'], ['succes', '🏆 Paliers des succès']]],
   ['🏆 Communauté', [['xp', 'Niveaux & XP'], ['boutique', '🛒 Boutique'], ['bugs', '🐞 Bugs'], ['suggestions', '💡 Idées'], ['mods', '🛠️ Mods']]],
   ['📌 Discord', [['hub', 'HUB d’information'], ['roles', 'Rôles'], ['messages', 'Messages récurrents']]],
   ['⚙️ Système', [['reglages', 'Réglages'], ['actions', 'Actions'], ['donnees', 'Base de données']]],

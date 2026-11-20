@@ -54,4 +54,7 @@ const classement = status => status.farms.filter(f => !estForet(f))
   .map(farm => ({ farm, f: lire(farm) }))
   .sort((a, b) => b.f.niveau - a.f.niveau || b.f.score - a.f.score || a.farm.name.localeCompare(b.farm.name, 'fr'));
 
-module.exports = { db: () => db, save, estForet, fiche, lire, actualiser, classement, niveauDe };
+// Les paliers ont changé (dashboard) : score et niveau de toutes les fermes recalculés au prochain passage
+const forcerRecalcul = () => { db.bareme = null; save(); };
+
+module.exports = { forcerRecalcul, db: () => db, save, estForet, fiche, lire, actualiser, classement, niveauDe };

@@ -58,7 +58,7 @@ const C = {
   possessions: '🏠 Possessions',
 };
 
-module.exports = [
+const SERIES = [
   // ---------------- Travaux des champs ----------------
   { id: 'labour',      category: C.champs, emoji: '🚜', name: 'Laboureur',             source: { stat: 'plowedHectares' },     unit: 'ha', tiers: palier(20, 10) },
   { id: 'dechaumage',  category: C.champs, emoji: '⚙️', name: 'Travailleur du sol',            source: { stat: 'cultivatedHectares' }, unit: 'ha', tiers: palier(20, 10) },
@@ -110,3 +110,8 @@ module.exports = [
   { id: 'usines',      category: C.possessions, emoji: '🏭', name: 'Industriel',         source: { stat: '_ownedProductionPoints' }, unit: 'usines', tiers: palier(1, 0, 10) },
   { id: 'ruches',      category: C.possessions, emoji: '🐝', name: 'Apiculteur',   source: { stat: '_ownedBeehives' },        unit: 'ruches', tiers: palier(1, 0, 5) },
 ];
+
+// Réglages faits depuis le dashboard (onglet Succès), appliqués par-dessus les paliers ci-dessus
+require('./succes-paliers').init(SERIES);
+
+module.exports = SERIES;

@@ -130,6 +130,10 @@ function mount(app, ctx) {
         coExploitants: l.reduce((n, e) => n + (e.coExploitants || []).length, 0), produits: l.reduce((n, e) => n + (e.produits || []).length, 0) } };
   }));
 
+  // ── Succès FS25 : paliers réglables (pas + supplément) ──
+  app.get(A + '/succes', wrap(() => require('../farm/succes-paliers').liste()));
+  app.put(A + '/succes/:id', wrap(req => require('../farm/succes-paliers').regler(req.params.id, req.body.pas, req.body.sup)));
+
   // ── Exploitations ──
   app.get(A + '/exploitations', wrap(() => expl.getAll()));
   app.delete(A + '/exploitations/:id', wrap(req => { expl.deleteExploitation(req.params.id); }));
