@@ -1,6 +1,6 @@
 const fs = require('fs');
 const {
-  ActionRowBuilder, ButtonBuilder, ButtonStyle, ModalBuilder, TextInputBuilder, TextInputStyle, PermissionFlagsBits,
+  ActionRowBuilder, ButtonBuilder, ButtonStyle, ModalBuilder, TextInputBuilder, TextInputStyle, PermissionFlagsBits, StringSelectMenuBuilder,
 } = require('discord.js');
 const ids = require('../core/ids');
 const { panneau } = require('../core/embed-format');
@@ -197,6 +197,8 @@ async function handle(interaction) {
   if (id === 'asso_reglement')       return handleReglement(interaction);
   if (id === 'asso_reglement_edit')  return handleReglementEdit(interaction);
   if (id === 'asso_reglement_modal') return handleReglementModal(interaction);
+  if (id === 'asso_resil')                        return handleResil(interaction);
+  if (/^asso_resil(ok_\d+|no)$/.test(id))         return handleResilBouton(interaction);
   if (id === 'asso_credit' || id === 'asso_remb') return handleOpButton(interaction);
   if (/^asso_opmodal_(credit|remb)$/.test(id))    return handleOpModal(interaction);
   if (/^asso_op(ok|no)_\d+$/.test(id))            return handleOpDecision(interaction);
@@ -414,9 +416,39 @@ async function handleReglementModal(interaction) {
 }
 
 // ── Administratif (réservé à l'administration) : travail et crédits des licenciés, en privé ──
+// Menu « Résilier un membre » sous le tableau (25 licenciés max par menu)
+function adminPayload() {
+  const p = travailPayload(), l = actifs().slice(0, 25);
+  if (l.length) p.components = [new ActionRowBuilder().addComponents(new StringSelectMenuBuilder().setCustomId('asso_resil')
+    .setPlaceholder('🚫 Résilier un membre…').addOptions(l.map(([u, m]) => ({ label: m.pseudo.slice(0, 100), value: u, description: 'Licence jusqu\'au ' + new Date(m.fin).toLocaleDateString('fr-FR') }))))];
+  return p;
+}
 const handleAdmin = interaction => estStaff(interaction)
-  ? interaction.reply({ ...travailPayload(), flags: 64 })
+  ? interaction.reply({ ...adminPayload(), flags: 64 })
   : rep(interaction, '❌ Réservé à l\'administration.');
+
+async function handleResil(interaction) {
+  if (!estStaff(interaction)) return rep(interaction, '❌ Réservé à l\'administration.');
+  const uid = interaction.values[0], m = store.membres[uid];
+  if (!m) return interaction.update({ content: 'ℹ️ Ce membre n\'a plus de licence.', embeds: [], components: [] });
+  await interaction.update({ embeds: [{ title: '⚠️ Résilier la licence', color: 0xE74C3C, description: 'Résilier la licence de <@' + uid + '> (`' + m.pseudo + '`) ?'
+    + (dette(uid) ? '\n💳 Il reste **' + euros(dette(uid)) + '** de crédit à rembourser (conservé).' : '') + '\nIl perd immédiatement le droit de travailler pour l\'association.' }],
+  components: [new ActionRowBuilder().addComponents(
+    new ButtonBuilder().setCustomId('asso_resilok_' + uid).setLabel('🚫 Confirmer la résiliation').setStyle(ButtonStyle.Danger),
+    new ButtonBuilder().setCustomId('asso_resilno').setLabel('Annuler').setStyle(ButtonStyle.Secondary))], allowedMentions: { parse: [] } });
+}
+
+async function handleResilBouton(interaction) {
+  if (!estStaff(interaction)) return rep(interaction, '❌ Réservé à l\'administration.');
+  if (interaction.customId === 'asso_resilno') return interaction.update({ content: 'Résiliation annulée.', embeds: [], components: [] });
+  const uid = interaction.customId.slice(12), m = store.membres[uid];
+  if (!m) return interaction.update({ content: 'ℹ️ Licence déjà résiliée.', embeds: [], components: [] });
+  delete store.membres[uid];
+  save();
+  await log(interaction.client, '🚫 Licence résiliée · ' + NOM, uid, m.pseudo, 'Résiliée par <@' + interaction.user.id + '>' + (dette(uid) ? ' · crédit restant **' + euros(dette(uid)) + '**' : ''), 0xE74C3C);
+  await interaction.update({ content: '✅ Licence de **' + m.pseudo + '** résiliée.', embeds: [], components: [], allowedMentions: { parse: [] } });
+  await majSalaires(interaction.client);
+}
 
 
 // ── Contrôle des licences : un joueur connecté dans la ferme de l'association sans licence valide → alerte dans les logs ──
