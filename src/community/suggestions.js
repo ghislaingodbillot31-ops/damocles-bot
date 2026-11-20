@@ -286,14 +286,11 @@ async function handleSuggDecisionModal(interaction) {
 
   // Mods : décision publiée dans le salon de logs (raison ajoutée si refus), aucun MP
   if (!JEU) {
-    const logs = await interaction.client.channels.fetch('1567011774912532671').catch(() => null);
-    await logs?.send({ embeds: [{
-      title: valide ? '✅ Mod accepté · ' + s.titre : '❌ Mod refusé · ' + s.titre,
-      description: 'Proposé par <@' + s.userId + '> · ' + (valide ? 'accepté' : 'refusé') + ' par <@' + s.decidedBy + '>',
-      fields: valide ? [] : [{ name: '💬 Raison du refus', value: s.commentaire || 'Non précisée' }],
-      color: valide ? 0x2ECC71 : 0xE74C3C,
-      timestamp: new Date().toISOString(),
-    }], allowedMentions: { parse: [] } }).catch(console.error);
+    const { logsSalon, nomAffiche } = require('../core/logs-salon');
+    const [auteur, staff] = await Promise.all([nomAffiche(interaction.guild, s.userId), nomAffiche(interaction.guild, s.decidedBy)]);
+    await logsSalon(interaction.client, valide
+      ? '✅ Mod **' + s.titre + '** accepté · proposé par **' + auteur + '** · validé par **' + staff + '**'
+      : '❌ Mod **' + s.titre + '** refusé · proposé par **' + auteur + '** · refusé par **' + staff + '** · 💬 ' + (s.commentaire || 'Raison non précisée'));
   }
 
   await agrilog(interaction.guild, (valide ? '✅' : '❌') + ' Proposition n°' + num + ' ' + (valide ? 'validée' : 'refusée')

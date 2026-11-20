@@ -3,7 +3,7 @@
 // Attribuer un crédit = la dette monte · Remboursement anticipé = la dette baisse (jamais sous 0).
 const { ActionRowBuilder, StringSelectMenuBuilder, ModalBuilder, TextInputBuilder, TextInputStyle, PermissionFlagsBits } = require('discord.js');
 const exp = require('./exploitation');
-const { agrilog } = require('../core/agrilog');
+const { logsSalon } = require('../core/logs-salon');
 
 const eur = n => n.toLocaleString('fr-FR').replace(/[  ]/g, ' ') + ' €';
 const estAdmin = i => i.member?.permissions?.has(PermissionFlagsBits.Administrator);
@@ -48,8 +48,10 @@ async function valider(i) {
   const apres = mode === 'attribuer' ? avant + montant : avant - montant;
   const histo = [...(e.creditHisto || []), { date: new Date().toISOString(), type: mode, montant, par: i.user.id }].slice(-30);
   exp.updateExploitation(e.id, { credit: apres, creditHisto: histo });
-  await agrilog(i.guild, (mode === 'attribuer' ? '💳 Crédit attribué' : '💳 Remboursement anticipé') + ' : **' + e.nom + '** · ' + eur(montant)
-    + ' · reste à rembourser **' + eur(apres) + '** · par **' + (i.member?.displayName || i.user.username) + '**');
+  const par = i.member?.displayName || i.user.username;
+  await logsSalon(i.client, mode === 'attribuer'
+    ? '💳 Crédit de **' + eur(montant) + '** attribué à **' + e.nom + '** · reste à rembourser **' + eur(apres) + '** · par **' + par + '**'
+    : '💳 Remboursement anticipé de **' + eur(montant) + '** · **' + e.nom + '** · reste à rembourser **' + eur(apres) + '** · par **' + par + '**');
   require('./salon-exploitation').ensure(i.client, exp.getById(e.id)).catch(() => {});
   return i.reply({
     embeds: [{ description: (mode === 'attribuer' ? '✅ Crédit de **' + eur(montant) + '** attribué' : '✅ Remboursement de **' + eur(montant) + '** enregistré')
