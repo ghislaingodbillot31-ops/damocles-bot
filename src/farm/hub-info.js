@@ -40,7 +40,10 @@ function get() {
   const boutons = DEFAUT.boutons.map(d => ({ ...d, ...((saved.boutons || []).find(b => b.key === d.key) || {}) }));
   const sansEuro = t => typeof t === 'string' ? t.replace(/EURO ?AGRI\s*[·\-]?\s*/gi, '') : t; // « EUROAGRI · INFORMATIONS » → « INFORMATIONS »
   const m = { ...DEFAUT, ...saved, boutons };
-  return { ...m, titre: sansEuro(m.titre), description: sansEuro(m.description) };
+  // Le succès « Ami des chiens » (caresses) n'existe plus : on retire ces lignes des textes d'explication des boutons
+  const sansChien = t => typeof t === 'string' ? t.split('\n').filter(l => !/caress|chien/i.test(l)).join('\n') : t;
+  const intros = Object.fromEntries(Object.entries(m.intros || {}).map(([k, v]) => [k, sansChien(v)]));
+  return { ...m, intros, titre: sansEuro(m.titre), description: sansEuro(m.description) };
 }
 
 // Ne garde que les champs connus, avec les bonnes limites Discord.
