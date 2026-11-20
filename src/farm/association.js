@@ -441,7 +441,7 @@ async function handleResil(interaction) {
 async function handleResilBouton(interaction) {
   if (!estStaff(interaction)) return rep(interaction, '❌ Réservé à l\'administration.');
   if (interaction.customId === 'asso_resilno') return interaction.update({ content: 'Résiliation annulée.', embeds: [], components: [] });
-  const uid = interaction.customId.slice(12), m = store.membres[uid];
+  const uid = interaction.customId.slice(13), m = store.membres[uid];
   if (!m) return interaction.update({ content: 'ℹ️ Licence déjà résiliée.', embeds: [], components: [] });
   delete store.membres[uid];
   save();
