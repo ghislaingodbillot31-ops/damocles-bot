@@ -349,7 +349,7 @@ client.on(Events.InteractionCreate, async interaction => {
     if (id === 'hub_expl')                    { await hub.handleHubExpl(interaction);        return; }
     if (id.startsWith('ind_'))                { await require('./farm/industrie').handle(interaction); return; }
     if (id.startsWith('asup_'))               { await require('./farm/activites-sup').handle(interaction); return; }
-    if (id.startsWith('cred_admin_'))         { await require('./farm/credit').handle(interaction);    return; }
+    if (id.startsWith('cred_admin_') || id.startsWith('cred_reset')) { await require('./farm/credit').handle(interaction);    return; }
     if (id.startsWith('hub_expl_gerer_'))     { await hub.handleHubExplGerer(interaction);   return; }
     if (id === 'hub_expl_creer')              { await hub.handleHubExplCreer(interaction);   return; }
     if (id === 'hub_contrat')                 { await contrat.startContratFlow(interaction); return; }
