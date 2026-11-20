@@ -77,13 +77,10 @@ function manageMenu(exploit, viewerId, pos) {
     { label: '📝 Renommer l\'exploitation', value: 'nom' },
     { label: '🥇 Activité 1 (cultures)',      value: 'principale' },
     { label: '🥈 Activité 2 (élevage)',      value: 'secondaire' },
-    hasOuvriers
-      ? { label: '🥉 Activité supplémentaire', value: 'supplementaire' }
-      : { label: '🥉 Activité supplémentaire', value: 'supplementaire', description: '🔒 Nécessite un ouvrier' },
+    { label: '🥉 Activité supplémentaire', value: 'supplementaire', description: 'Acheter une activité en plus' },
     { label: '🧑‍🌾 Recrutement (oui / non)', value: 'recrute' },
     { label: '🎨 Couleur de l\'exploitation', value: 'couleur' },
     { label: '➕ Ajouter un ouvrier',        value: 'ouvrier_add' },
-    { label: '📜 Mes droits',                value: 'droits', description: 'Travaux autorisés selon l\'activité' },
   ];
   if (hasOuvriers) options.push({ label: '➖ Retirer un ouvrier', value: 'ouvrier_del' });
   if (isOwner && !hasCo) options.push({ label: '🤝 Ajouter un co-exploitant', value: 'coexpl_add' });
@@ -110,7 +107,7 @@ function manageMenu(exploit, viewerId, pos) {
           value: [
             '🥇 **Activité 1 :** ' + (exploit.activitePrincipale || '*Non définie*'),
             '🥈 **Activité 2 :** ' + (exploit.activiteSecondaire || '*Non définie*'),
-            '🥉 **Supplémentaire :** ' + (hasOuvriers ? (exploit.activiteSupplementaire || '*Non définie*') : '🔒 *Nécessite un ouvrier*'),
+            '🥉 **Supplémentaires :** ' + ([...(exploit.activitesSup || []), exploit.activiteSupplementaire].filter(Boolean).join(' · ') || '*Aucune (achat possible)*'),
           ].join('\n'),
           inline: false,
         },
@@ -202,11 +199,6 @@ async function handleHubExplManage(interaction) {
 
   const choice = interaction.values[0];
 
-  if (choice === 'droits') {
-    await interaction.reply({ natif: true, ...require('./droits-texte').payload(), flags: 64 });
-    return;
-  }
-
   // Gestion du co-exploitant : réservée au créateur (pas aux co-exploitants).
   if ((choice === 'coexpl_add' || choice === 'coexpl_del') && interaction.user.id !== exploit.ownerId) {
     await interaction.reply({ content: '❌ Seul le créateur de l\'exploitation peut gérer le co-exploitant.', flags: 64 });
@@ -214,11 +206,7 @@ async function handleHubExplManage(interaction) {
     return;
   }
 
-  if (choice === 'supplementaire' && !(exploit.ouvriers?.length > 0)) {
-    await interaction.reply({ content: '❌ Il faut au moins un ouvrier pour débloquer l\'activité supplémentaire.', flags: 64 });
-    autoClean(interaction);
-    return;
-  }
+  if (choice === 'supplementaire') return require('./activites-sup').proposer(interaction, exploit);
 
   if (choice === 'nom') {
     const modal = new ModalBuilder().setCustomId('hub_expl_nom_' + exploit.id).setTitle('Renommer l\'exploitation');
@@ -509,7 +497,7 @@ function ficheAnnuaire(e, vis) {
   const ouvriers = (e.ouvriers || []).filter(id => vis.has(id));
   const co = (e.coExploitants || []).filter(id => vis.has(id));
   const dateCrea = new Date(e.createdAt).toLocaleDateString('fr-FR', { day: '2-digit', month: 'long', year: 'numeric' });
-  const acts = [e.activitePrincipale, e.activiteSecondaire, ouvriers.length ? e.activiteSupplementaire : null].filter(Boolean);
+  const acts = [e.activitePrincipale, e.activiteSecondaire, ...(e.activitesSup || []), e.activiteSupplementaire].filter(Boolean);
   const estElevage = a => require('./droits-texte').parNom(a)?.groupe === 'elevage';
   const elevage = acts.filter(estElevage);
   const autres  = acts.filter(a => !estElevage(a));

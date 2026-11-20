@@ -42,6 +42,15 @@ const ACTIVITES = [
   { value: 'foret', emoji: '🌲', nom: 'Association forestière', groupe: 'foret', choisir: false, works: ['Forêt (abattage, débardage, fendage, plaquettes)'] },
 ];
 
+// Chaque élevage séparément : proposés à l'achat comme activité supplémentaire
+const ELEVAGE_INDIV = [
+  { emoji: '🐃', nom: 'Buffles', works: ELEVAGE }, { emoji: '🐄', nom: 'Vaches laitières', works: ELEVAGE },
+  { emoji: '🥩', nom: 'Vaches à viande', works: ELEVAGE }, { emoji: '🐑', nom: 'Moutons', works: ELEVAGE },
+  { emoji: '🐐', nom: 'Chèvres', works: ELEVAGE }, { emoji: '🐖', nom: 'Porcs', works: ELEVAGE },
+  { emoji: '🐔', nom: 'Poules', works: ELEVAGE }, { emoji: '🐎', nom: 'Chevaux', works: [...ELEVAGE, 'Monte des chevaux'] },
+  { emoji: '🐝', nom: 'Abeilles', works: ['Pose des ruches'] },
+].map(a => ({ ...a, groupe: 'elevage' }));
+
 // Anciens noms déjà enregistrés dans les fiches d'exploitation : plus proposés, mais leurs droits restent reconnus
 const ANCIENS = [
   { nom: 'Céréalier + Oléagineux', works: CER }, { nom: 'Maraîcher racines + verts', works: MARA }, { nom: 'Tropical', works: TROP },
@@ -53,7 +62,7 @@ const COMMUN = '🔓 **Commun à tous** : Gestion des usines · Transport · Liv
 
 // Activités que l'exploitation peut choisir (menu de gestion)
 const CHOIX = ACTIVITES.filter(a => a.choisir !== false);
-const parNom = nom => ACTIVITES.find(a => a.nom === nom) || ANCIENS.find(a => a.nom === nom);
+const parNom = nom => ACTIVITES.find(a => a.nom === nom) || ELEVAGE_INDIV.find(a => a.nom === nom) || ANCIENS.find(a => a.nom === nom);
 // Menu d'une case : principale = activité 1 (cultures), secondaire = activité 2 (élevage), supplémentaire = les deux
 const choixPour = champ => CHOIX.filter(a => champ === 'supplementaire' || a.type === (champ === 'secondaire' ? 2 : 1)).map(a => ({ label: a.emoji + ' ' + a.nom, value: a.nom }));
 
@@ -72,7 +81,7 @@ const payload = value => ({
 
 // ── Panneau du salon privé : ✅ / ❌ selon les activités choisies par l'exploitation ──
 function panneauDroits(exploit) {
-  const choisies = [exploit.activitePrincipale, exploit.activiteSecondaire, exploit.activiteSupplementaire].map(n => n && parNom(n)).filter(Boolean).map(a => ({ emoji: '🌱', ...a }));
+  const choisies = [exploit.activitePrincipale, exploit.activiteSecondaire, ...(exploit.activitesSup || []), exploit.activiteSupplementaire].map(n => n && parNom(n)).filter(Boolean).map(a => ({ emoji: '🌱', ...a }));
   const permis = new Set(choisies.flatMap(a => a.works));
   const SEP = '━━━━━━━━━━━━━━';
   // même liste que « Mes droits » : • remplacé par ✅ (autorisé) ou ❌ (interdit) selon les activités choisies
@@ -82,4 +91,4 @@ function panneauDroits(exploit) {
   return [{ description: lignes.join('\n'), color: exploit.couleur ?? 0x2ECC71 }];
 }
 
-module.exports = { payload, panneauDroits, CHOIX, choixPour, parNom };
+module.exports = { payload, panneauDroits, CHOIX, ELEVAGE_INDIV, choixPour, parNom };

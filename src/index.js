@@ -298,6 +298,7 @@ client.on(Events.InteractionCreate, async interaction => {
       if (cid.startsWith('hub_expl_couleur_')) { await hub.handleHubExplCouleur(interaction); return; }
       if (cid.startsWith('hub_expl_recrute_')) { await hub.handleHubExplRecrute(interaction); return; }
       if (cid.startsWith('asso_'))             { await require('./farm/association').handle(interaction); return; }
+      if (cid.startsWith('asup_sel_'))         { await require('./farm/activites-sup').handle(interaction); return; }
       if (cid.startsWith('cred_sel_'))         { await require('./farm/credit').handle(interaction);      return; }
       if (cid === 'succhub_farm')              { await require('./farm/fs25-succes-hub').handleSelect(interaction); return; }
       if (cid === 'marche_prix')               { await require('./farm/marche').handlePrix(interaction); return; }
@@ -347,6 +348,7 @@ client.on(Events.InteractionCreate, async interaction => {
     if (id === 'anniv_btn')                   { await require('./community/birthday').handleButton(interaction); return; }
     if (id === 'hub_expl')                    { await hub.handleHubExpl(interaction);        return; }
     if (id.startsWith('ind_'))                { await require('./farm/industrie').handle(interaction); return; }
+    if (id.startsWith('asup_'))               { await require('./farm/activites-sup').handle(interaction); return; }
     if (id.startsWith('cred_admin_'))         { await require('./farm/credit').handle(interaction);    return; }
     if (id.startsWith('hub_expl_gerer_'))     { await hub.handleHubExplGerer(interaction);   return; }
     if (id === 'hub_expl_creer')              { await hub.handleHubExplCreer(interaction);   return; }
