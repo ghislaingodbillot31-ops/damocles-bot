@@ -21,7 +21,7 @@ function headPayload(st) {
         'Chaque exploitation gagne un **niveau (1 à 20)** avec ses succès.',
         '',
         '> • Un niveau ne baisse jamais.',
-        '> • **🛒 Activité** liste les activités du serveur, **🏭 Industrie** les niveaux d\'industrie.',
+        '> • **🛒 Activité** liste les activités du serveur.',
         '',
         '**📊  CLASSEMENT DES EXPLOITATIONS**',
         classement(st),
@@ -33,7 +33,6 @@ function headPayload(st) {
       new ButtonBuilder().setCustomId('hub_expl').setLabel('🌾 Exploitation').setStyle(ButtonStyle.Success), // créer / gérer sa fiche (flux hub.js)
       new ButtonBuilder().setCustomId('nv_succes').setLabel('🏆 Succès').setStyle(ButtonStyle.Primary),
       new ButtonBuilder().setCustomId('nv_act').setLabel('🛒 Activité').setStyle(ButtonStyle.Success),
-      new ButtonBuilder().setCustomId('nv_usine').setLabel('🏭 Industrie').setStyle(ButtonStyle.Success),
     ), new ActionRowBuilder().addComponents(
       new ButtonBuilder().setCustomId('hubinfo_parametre').setLabel(require('./hub-info').get().boutons.find(b => b.key === 'parametre').label).setStyle(ButtonStyle.Secondary), // texte réglé avec /bouton-info
     )],
