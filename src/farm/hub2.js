@@ -22,6 +22,7 @@ function headPayload(st) {
         '',
         '> • Un niveau ne baisse jamais.',
         '> • **🛒 Activité** liste les activités du serveur.',
+        '> • **🏪 Marché** : tu y gères tes produits (ajouter, modifier, supprimer).',
         '',
         '**📊  CLASSEMENT DES EXPLOITATIONS**',
         classement(st),
@@ -33,6 +34,7 @@ function headPayload(st) {
       new ButtonBuilder().setCustomId('hub_expl').setLabel('🌾 Exploitation').setStyle(ButtonStyle.Success), // créer / gérer sa fiche (flux hub.js)
       new ButtonBuilder().setCustomId('nv_succes').setLabel('🏆 Succès').setStyle(ButtonStyle.Primary),
       new ButtonBuilder().setCustomId('nv_act').setLabel('🛒 Activité').setStyle(ButtonStyle.Success),
+      new ButtonBuilder().setCustomId('nv_marche').setLabel('🏪 Marché').setStyle(ButtonStyle.Success),
     ), new ActionRowBuilder().addComponents(
       new ButtonBuilder().setCustomId('hubinfo_parametre').setLabel(require('./hub-info').get().boutons.find(b => b.key === 'parametre').label).setStyle(ButtonStyle.Secondary), // texte réglé avec /bouton-info
     )],
@@ -49,7 +51,7 @@ const commercePayload = () => panneau({
     description: [
       '📋  **Contrat** · propose tes services ou cherche un joueur',
       '📦  **Besoin** · recherche une matière première',
-      '🏪  **Marché** · vends tes produits, consulte ceux des autres',
+      '🏪  **Marché** · liste globale des produits en vente',
       '🛒  **Boutique** · points de classement contre argent en jeu',
     ].join('\n'),
     color: 0xF1C40F,
@@ -139,6 +141,7 @@ async function handle(i) {
   try {
     if (id === 'nv_act') i._intro = true; // texte complet : pas d'intro /bouton-info en tête
     if (id === 'nv_act') return await i.reply({ natif: true, ...panneau({ embeds: [{ description: ACTIVITES_TEXTE, color: 0x2ECC71 }] }), flags: 64 });
+    if (id === 'nv_marche') return await require('./marche').handleGerer(i);
     if (id === 'nv_usine') return await require('./industrie').afficher(i);
     if (!st) return i.reply({ content: '⏳ Pas encore de données du serveur FS25, réessaie dans une minute.', flags: 64 });
 
