@@ -106,9 +106,9 @@ const SERIES = [
 
   // ---------------- Possessions (valeur actuelle) ----------------
   { id: 'vehicules',   category: C.possessions, emoji: '🚜', name: 'Collectionneur',     source: { stat: '_ownedVehicles' },        unit: 'achats', tiers: lineaire(100) },
-  // Industriel : 10 niveaux seulement (comme les 10 niveaux d'industrie, 1 usine par niveau) ; Apiculteur : 1 à 5 ruches
+  // Industriel : 10 niveaux seulement (comme les 10 niveaux d'industrie, 1 usine par niveau) ; Apiculteur : 1 à 6 ruches
   { id: 'usines',      category: C.possessions, emoji: '🏭', name: 'Industriel',         source: { stat: '_ownedProductionPoints' }, unit: 'usines', tiers: palier(1, 0, 10) },
-  { id: 'ruches',      category: C.possessions, emoji: '🐝', name: 'Apiculteur',   source: { stat: '_ownedBeehives' },        unit: 'ruches', tiers: palier(1, 0, 5) },
+  { id: 'ruches',      category: C.possessions, emoji: '🐝', name: 'Apiculteur',   source: { stat: '_ownedBeehives' },        unit: 'ruches', tiers: palier(1, 0, 6) },
 ];
 
 // Réglages faits depuis le dashboard (onglet Succès), appliqués par-dessus les paliers ci-dessus
