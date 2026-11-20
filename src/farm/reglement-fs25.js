@@ -12,6 +12,7 @@ const BLOCS = [
 🗺️ **Respect de la map**
 • Interdit de modifier la map d'origine : **destruction de bâtiments, de props, de routes ou de sentiers** ❌
 • Terraforming et peinture : uniquement dans tes champs vierges, si c'est réaliste, et jamais aux abords des routes ✅
+• L'utilisation des **spots de stade** est interdite 🚫
 • Une modification à faire ? Demande-la par ticket 🎫
 
 🏡 **Ton exploitation**
