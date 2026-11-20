@@ -27,18 +27,24 @@ function fiche(farm) {
 
 // Recalcule score et niveau de toutes les fermes. Renvoie les montées de niveau.
 // Une ferme vue pour la première fois est enregistrée sans annonce.
+// Barème des succès : en changer le nom recalcule UNE fois le score et le niveau de toutes les fermes (sans annonce)
+const BAREME = 'paliers-2026-11';
+
 function actualiser(status) {
   const montees = [];
+  const recalcul = db.bareme !== BAREME && status.stats?.length > 0;
   for (const farm of status.farms) {
     if (estForet(farm)) continue;
     const neuf = !db.farms[farm.id];
     const f = fiche(farm);
     f.nom = farm.name;
+    if (recalcul) { f.score = score(farm, status); f.niveau = niveauDe(f.score) || 1; continue; }
     f.score = Math.max(f.score, score(farm, status));
     const niv = Math.max(f.niveau, niveauDe(f.score));
     if (niv > f.niveau && !neuf) montees.push({ farm, de: f.niveau, a: niv });
     f.niveau = niv;
   }
+  if (recalcul) db.bareme = BAREME;
   save();
   return montees;
 }
