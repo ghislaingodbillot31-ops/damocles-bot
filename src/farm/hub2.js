@@ -120,44 +120,7 @@ async function traiter(st, annonces) {
 const rep = (i, payload) => i.isStringSelectMenu() ? i.update({ natif: true, content: '', embeds: [], components: [], ...payload }) : i.reply({ natif: true, ...payload, flags: 64 });
 
 // Texte du bouton « Activité » (information seule, aucun achat)
-const ACTIVITES_TEXTE = [
-  '**🚜 ACTIVITÉS DU SERVEUR — FS25**',
-  '━━━━━━━━━━━━━━',
-  '**🌱 CULTURES**',
-  '🌾 **Céréalier + Oléagineux**',
-  'blé, orge, avoine, maïs grain, sorgho, colza, tournesol, soja, moutarde',
-  '',
-  '🥕 **Maraîcher racines + verts**',
-  'carottes, panais, betteraves rouges, pommes de terre, betteraves sucrières, épinards, pois, haricots verts',
-  '',
-  '🌴 **Tropical**',
-  'canne à sucre, coton',
-  '',
-  '🍚 **Riziculteur**',
-  'riz, riz long grain',
-  '',
-  '🌿 **Fourrager + Ensileur**',
-  'herbe, foin, paille, balles enrubannées, maïs ensilage, luzerne, ensilage d\'herbe',
-  '━━━━━━━━━━━━━━',
-  '**🍇 VIGNES**',
-  '🍇 **Viticulteur** · raisin',
-  '',
-  '**🫒 VERGERS**',
-  '🫒 **Oléiculteur** · olives',
-  '',
-  '**🏡 SERRES**',
-  '🍅 **Culture sous serre** · légumes et champignons',
-  '━━━━━━━━━━━━━━',
-  '**🐾 ÉLEVAGE**',
-  '🐃 **Buffles + vaches laitières**',
-  '🥩 **Vaches à viande**',
-  '🐑 **Moutons + chèvres**',
-  '🐖 **Porcs + poules**',
-  '🐎 **Équin + abeilles**',
-  '━━━━━━━━━━━━━━',
-  '**🌲 FORÊT**',
-  'Association forestière, activité non accessible aux exploitations',
-].join('\n');
+const ACTIVITES_TEXTE = "🚜 **ACTIVITÉS DU SERVEUR — FS25**\n━━━━━━━━━━━━━━\n**ACTIVITÉ 1 AU CHOIX**\n━━━━━━━━━━━━━━\n\n**🌱 CULTURES**\n\n**Céréalier 1**\nBlé, orge, avoine, maïs grain, sorgho\n\n**Céréalier 2**\nColza, tournesol, soja, moutarde\n\n**Maraîcher 1**\nCarottes, panais, betteraves rouges, pommes de terre\n\n**Maraîcher 2**\nÉpinards, pois, haricots verts, betteraves sucrières\n\n**Tropical 1**\nCanne à sucre, coton\n\n**Tropical 2**\nCoton\n\n**Riziculteur**\nRiz, riz long grain\n\n**Fourrager + Ensileur 1**\nHerbe, foin\n\n**Fourrager + Ensileur 2**\nMaïs ensilage, luzerne, ensilage d'herbe\n\n**🍇 VIGNES**\n\n**Viticulteur**\nRaisin\n\n**🫒 VERGERS**\n\n**Oléiculteur**\nOlives\n\n**🏡 SERRES**\n\n**Culture sous serre 1**\nLégumes\n\n**Culture sous serre 2**\nChampignons\n\n━━━━━━━━━━━━━━\n**ACTIVITÉ 2 AU CHOIX**\n━━━━━━━━━━━━━━\n\n**🐾 ÉLEVAGE**\n\n**500 animaux maximum par espèce**\n\nBuffles + vaches laitières\nVaches à viande\nMoutons + chèvres\nPorcs + poules (80 maximum)\nÉquin + abeilles\nPoules\n\n━━━━━━━━━━━━━━\n**🌲 FORÊT**\n\nAssociation forestière — activité indépendante, non accessible aux exploitations."; require('../core/ids');
 
 // Fermes proposées au joueur : celles qui portent le nom de son exploitation, sinon toutes
 function fermesDuJoueur(uid, st) {
