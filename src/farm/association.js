@@ -1,6 +1,6 @@
 const fs = require('fs');
 const {
-  ActionRowBuilder, ButtonBuilder, ButtonStyle, ModalBuilder, TextInputBuilder, TextInputStyle, PermissionFlagsBits, StringSelectMenuBuilder,
+  ActionRowBuilder, ButtonBuilder, ButtonStyle, ModalBuilder, TextInputBuilder, TextInputStyle, PermissionFlagsBits,
 } = require('discord.js');
 const ids = require('../core/ids');
 const { panneau } = require('../core/embed-format');
@@ -12,7 +12,7 @@ const { dataPath } = require('../core/paths');
 const CHANNEL_ID = ids('ASSO_CHANNEL_ID', '1571180916863279285');
 const STORE_PATH = dataPath('association.json');
 const NOM        = '[A] Le mechet';
-const PRIX       = 30000;
+const PRIX       = 10000;
 const DUREE      = 365 * 24 * 3600_000; // licence d'un an (temps réel)
 const RENOUV     = 30 * 24 * 3600_000;  // renouvellement possible 30 jours avant l'échéance
 const LOGS_ID    = '1571329280410001488'; // logs admin de l'association (logs sur une ligne + message « travail et crédits » mis à jour toutes les 5 min)
@@ -30,6 +30,7 @@ const rep = (i, content) => i.reply({ content, flags: 64, allowedMentions: { par
 
 // ── Messages ──────────────────────────────────────────────────────────────────
 function panelPayload() {
+  const debiteurs = Object.entries(store.credits || {}).filter(([u]) => dette(u) > 0).sort((a, b) => dette(b[0]) - dette(a[0]));
   return panneau({
     embeds: [{
       title: '🌲  [A] LE MECHET',
@@ -55,25 +56,32 @@ function panelPayload() {
         '',
         'Renouvellement possible 30 jours avant la fin de la licence.',
         '',
-        '## 👑 Président',
-        'Élu par les licenciés, il gère les achats et les parcelles à travailler selon le code de l\'association.',
-        '',
         '## 💰 Travail et crédit',
         'Les membres ne sont pas rémunérés, mais peuvent bénéficier de crédits financés par l\'association.',
         'Le montant est calculé selon le temps de travail effectué par chaque membre.',
         '',
+        '## 🏦 Caisse de l\'association',
+        'Solde : **' + (dernierReleve ? euros(Math.round(dernierReleve.caisse || 0)) : '_en attente des données du serveur FS25_') + '**',
+        '',
+        '## 💳 Crédits en cours',
+        ...(debiteurs.length ? debiteurs.slice(0, 20).map(([u]) => '• <@' + u + '> · `' + (store.membres[u]?.pseudo || '?') + '` · reste à payer **' + euros(dette(u)) + '**') : ['_Aucun crédit en cours._']),
+        '',
         '━━━━━━━━━━━━━━━━━━━━',
         '🌲 **Ensemble, faisons grandir notre association forestière !**',
-      ].join('\n'),
+      ].join('\n').slice(0, 4000),
       color: 0x2E7D32,
-      footer: { text: 'MonCopainBot' },
+      footer: { text: 'MonCopainBot · mis à jour toutes les 5 min' },
     }],
     components: [new ActionRowBuilder().addComponents(
       new ButtonBuilder().setCustomId('asso_rejoindre').setLabel('🪓 Rejoindre').setStyle(ButtonStyle.Success),
       new ButtonBuilder().setCustomId('asso_licence').setLabel('🪪 Ma licence').setStyle(ButtonStyle.Secondary),
       new ButtonBuilder().setCustomId('asso_reglement').setLabel('📜 Règlement').setStyle(ButtonStyle.Secondary),
-      new ButtonBuilder().setCustomId('asso_admin').setLabel('⚙️ Administratif').setStyle(ButtonStyle.Secondary),
+      new ButtonBuilder().setCustomId('asso_admin').setLabel('⚙️ Administratif').setStyle(ButtonStyle.Danger),
+    ), new ActionRowBuilder().addComponents(
+      new ButtonBuilder().setCustomId('asso_credit').setLabel('💳 Crédit').setStyle(ButtonStyle.Success),
+      new ButtonBuilder().setCustomId('asso_remb').setLabel('💶 Rembourser').setStyle(ButtonStyle.Primary),
     )],
+    allowedMentions: { parse: [] },
   });
 }
 
@@ -189,10 +197,6 @@ async function handle(interaction) {
   if (id === 'asso_reglement')       return handleReglement(interaction);
   if (id === 'asso_reglement_edit')  return handleReglementEdit(interaction);
   if (id === 'asso_reglement_modal') return handleReglementModal(interaction);
-  if (id === 'asso_elec_lancer')   return handleLancer(interaction);
-  if (id === 'asso_elec_candidat') return handleCandidat(interaction);
-  if (id === 'asso_elec_vote')     return handleVoteBouton(interaction);
-  if (id === 'asso_elec_choix')    return handleVoteChoix(interaction);
   if (id === 'asso_credit' || id === 'asso_remb') return handleOpButton(interaction);
   if (/^asso_opmodal_(credit|remb)$/.test(id))    return handleOpModal(interaction);
   if (/^asso_op(ok|no)_\d+$/.test(id))            return handleOpDecision(interaction);
@@ -233,34 +237,11 @@ function parts() {
 }
 const creditMax = uid => Math.max(0, Math.round((dernierReleve?.caisse || 0) * (parts().find(x => x.u === uid)?.pct || 0)) - dette(uid));
 
-function salairesPayload() {
-  const caisse = dernierReleve ? euros(Math.round(dernierReleve.caisse || 0)) : '_en attente des données du serveur FS25_';
-  const debiteurs = Object.entries(store.credits || {}).filter(([u]) => dette(u) > 0).sort((a, b) => dette(b[0]) - dette(a[0]));
-  const description = [
-    ...presidentLignes(),
-    '',
-    ...investissement(),
-    '',
-    '## 🏦 Caisse de l\'association',
-    'Solde : **' + caisse + '**',
-    '',
-    '## 💳 Crédits en cours',
-    ...(debiteurs.length ? debiteurs.slice(0, 20).map(([u]) => '• <@' + u + '> · `' + (store.membres[u]?.pseudo || '?') + '` · reste à payer **' + euros(dette(u)) + '**') : ['_Aucun crédit en cours._']),
-  ].join('\n');
-  return {
-    ...panneau({ embeds: [{ title: '💼  LICENCE ET FINANCE', description, color: 0xF1C40F, footer: { text: 'MonCopainBot · mis à jour toutes les 5 min' }, timestamp: new Date().toISOString() }] }),
-    components: [new ActionRowBuilder().addComponents(
-      new ButtonBuilder().setCustomId('asso_credit').setLabel('💳 Crédit').setStyle(ButtonStyle.Success),
-      new ButtonBuilder().setCustomId('asso_remb').setLabel('💶 Rembourser').setStyle(ButtonStyle.Primary))],
-    allowedMentions: { parse: [] },
-  };
-}
-
 async function majSalaires(client) {
   rafraichir();
   const ch = await client.channels.fetch(CHANNEL_ID).catch(() => null);
-  const m = ch && store.salairesMsgId && await ch.messages.fetch(store.salairesMsgId).catch(() => null);
-  if (m) await m.edit(salairesPayload()).catch(() => {});
+  const m = ch && store.panelMsgId && await ch.messages.fetch(store.panelMsgId).catch(() => null);
+  if (m) await m.edit(panelPayload()).catch(() => {});
   await majTravail(client);
 }
 
@@ -410,18 +391,6 @@ async function traiterVirements(client) {
   if (nouveaux.length) await majSalaires(client);
 }
 
-// Section « Membres licenciés » : temps de travail, part (%) et plafond de crédit de chacun
-function investissement() {
-  const tous = parts();
-  const lignes = tous.slice(0, 20).map(x => '🌲 <@' + x.u + '> · `' + x.m.pseudo + '` · ⏱️ ' + duree(x.s) + ' · **' + Math.round(x.pct * 100) + ' %** du travail · 💳 jusqu\'à ' + euros(creditMax(x.u))
-    + ' · 💶 investi ' + euros(auTotal(x.u)));
-  return [
-    '## 🌲  MEMBRES LICENCIÉS',
-    ...(lignes.length ? lignes : ['_Aucun membre licencié pour le moment._']),
-    ...(tous.length > 20 ? ['_… et ' + (tous.length - 20) + ' autres_'] : []),
-  ];
-}
-
 // ── Règlement : texte libre (vide au départ), modifiable par le staff directement depuis Discord ──
 async function handleReglement(interaction) {
   await interaction.reply({ flags: 64, allowedMentions: { parse: [] },
@@ -444,119 +413,10 @@ async function handleReglementModal(interaction) {
   await rep(interaction, '✅ Règlement enregistré. Il s\'affiche avec le bouton **📜 Règlement** du HUB.');
 }
 
-// ── Élection du président ─────────────────────────────────────────────────────
-// store.election = { finCandid, finVote, candidats: { uid: pseudo }, votes: { votant: candidat } } ; store.president = { uid, pseudo, at }
-// Candidatures 24 h (bouton « Me présenter »), puis vote 48 h (bouton « Voter », licenciés uniquement), puis clôture automatique.
-const H = 3600_000, CANDIDATURE = 24 * H, VOTE = 48 * H;
-const COMMISSION = 5000, MOIS_PRESIDENCE = 30 * 24 * H; // commission du président : 5 000 € par mois de présidence (30 jours)
-const phase = () => { const e = store.election; if (!e) return null; const t = Date.now(); return t < e.finCandid ? 'candidature' : t < e.finVote ? 'vote' : 'fini'; };
-const licencie = uid => (store.membres[uid]?.fin || 0) > Date.now();
-
-function presidentLignes() {
-  const e = store.election, ph = phase(), pres = store.president;
-  const noms = e ? Object.entries(e.candidats).map(([u, n]) => '> • <@' + u + '> · `' + n + '`') : [];
-  return [
-    '## 👑  PRÉSIDENT',
-    pres ? '👑 <@' + pres.uid + '> · `' + pres.pseudo + '` · élu ' + ts(pres.at, 'D') + ' · prochaine commission ' + ts(pres.at + ((pres.mois || 0) + 1) * MOIS_PRESIDENCE, 'R') : '_Pas de président pour le moment._',
-    '-# Il gère les achats et les parcelles à travailler, selon le code de l\'association · commission : **' + euros(COMMISSION) + '** par mois de présidence',
-    ...(ph === 'candidature' ? ['', '🗳️ **Élection · candidatures ouvertes** jusqu\'à ' + ts(e.finCandid, 'R') + ' (vote ensuite pendant 48 h)', ...(noms.length ? noms : ['_Aucun candidat pour le moment._'])]
-      : ph === 'vote' ? ['', '🗳️ **Élection · vote ouvert** jusqu\'à ' + ts(e.finVote, 'R') + ' · ' + Object.keys(e.votes).length + ' vote(s)', ...noms] : []),
-  ];
-}
-
-// Panneau « Administratif » (message privé) : président, élection en cours, et les boutons qui vont avec
-function adminPanel(interaction, note) {
-  const ph = phase();
-  const btn = (id, label, style, actif) => new ButtonBuilder().setCustomId(id).setLabel(label).setStyle(style).setDisabled(!actif);
-  return {
-    embeds: [{ title: '⚙️  ADMINISTRATIF · ' + NOM, color: 0x8D6E63, description: [...presidentLignes(), ...(note ? ['', note] : [])].join('\n') }],
-    components: [new ActionRowBuilder().addComponents(
-      btn('asso_elec_lancer', '🗳️ Lancer une élection', ButtonStyle.Success, !ph && estStaff(interaction)),
-      btn('asso_elec_candidat', '🙋 Me présenter', ButtonStyle.Primary, ph === 'candidature'),
-      btn('asso_elec_vote', '🗳️ Voter', ButtonStyle.Primary, ph === 'vote'))],
-    allowedMentions: { parse: [] },
-  };
-}
-
-const handleAdmin = interaction => interaction.reply({ ...adminPanel(interaction), flags: 64 });
-
-async function handleLancer(interaction) {
-  if (!estStaff(interaction)) return rep(interaction, '❌ Réservé au staff.');
-  if (phase()) return rep(interaction, '⚠️ Une élection est déjà en cours.');
-  const t = Date.now();
-  store.election = { finCandid: t + CANDIDATURE, finVote: t + CANDIDATURE + VOTE, candidats: {}, votes: {} };
-  save();
-  await log(interaction.client, '🗳️ Élection lancée · ' + NOM, '0', '', 'Lancée par <@' + interaction.user.id + '> · candidatures jusqu\'à ' + ts(store.election.finCandid, 'f') + ', vote jusqu\'à ' + ts(store.election.finVote, 'f') + '.', 0x3498DB);
-  await interaction.update(adminPanel(interaction, '✅ Élection lancée : candidatures 24 h, puis vote 48 h.'));
-  await majSalaires(interaction.client);
-}
-
-async function handleCandidat(interaction) {
-  const uid = interaction.user.id;
-  if (phase() !== 'candidature') return rep(interaction, '⏱️ Les candidatures sont terminées.');
-  if (!licencie(uid)) return rep(interaction, '🪪 Seuls les **licenciés** peuvent se présenter.');
-  if (store.election.candidats[uid]) return rep(interaction, '✅ Tu es déjà candidat.');
-  store.election.candidats[uid] = store.membres[uid].pseudo;
-  save();
-  await interaction.update(adminPanel(interaction, '🙋 Candidature enregistrée. Le vote s\'ouvre ' + ts(store.election.finCandid, 'R') + '.'));
-  await majSalaires(interaction.client);
-}
-
-async function handleVoteBouton(interaction) {
-  const uid = interaction.user.id, e = store.election;
-  if (phase() !== 'vote') return rep(interaction, '⏱️ Le vote n\'est pas ouvert.');
-  if (!licencie(uid)) return rep(interaction, '🪪 Seuls les **licenciés** peuvent voter.');
-  const cands = Object.entries(e.candidats);
-  if (!cands.length) return rep(interaction, '⚠️ Aucun candidat : l\'élection sera close sans président.');
-  await interaction.reply({ flags: 64, content: '🗳️ Choisis ton candidat (tu peux changer ton vote jusqu\'à ' + ts(e.finVote, 't') + ').' + (e.votes[uid] ? '\nVote actuel : <@' + e.votes[uid] + '>' : ''), allowedMentions: { parse: [] },
-    components: [new ActionRowBuilder().addComponents(new StringSelectMenuBuilder().setCustomId('asso_elec_choix').setPlaceholder('Candidat…')
-      .addOptions(cands.slice(0, 25).map(([u, n]) => ({ label: n, value: u }))))] });
-}
-
-async function handleVoteChoix(interaction) {
-  const uid = interaction.user.id, choix = interaction.values[0];
-  if (phase() !== 'vote') return interaction.update({ content: '⏱️ Le vote est terminé.', components: [] });
-  if (!licencie(uid) || !store.election.candidats[choix]) return interaction.update({ content: '❌ Vote refusé.', components: [] });
-  store.election.votes[uid] = choix;
-  save();
-  await interaction.update({ content: '✅ Vote enregistré pour <@' + choix + '>.', components: [], allowedMentions: { parse: [] } });
-  await majSalaires(interaction.client);
-}
-
-// Clôture : le plus de voix gagne (égalité : le premier inscrit) ; sans vote, le président en place reste
-async function clotureElection(client) {
-  const e = store.election;
-  if (!e || phase() !== 'fini') return;
-  const voix = {};
-  for (const c of Object.values(e.votes)) voix[c] = (voix[c] || 0) + 1;
-  const gagnant = Object.keys(e.candidats).sort((x, y) => (voix[y] || 0) - (voix[x] || 0))[0];
-  store.election = null;
-  if (gagnant && voix[gagnant]) store.president = { uid: gagnant, pseudo: e.candidats[gagnant], at: Date.now(), mois: 0 };
-  save();
-  const resultat = Object.keys(e.candidats).map(u => '• <@' + u + '> · ' + (voix[u] || 0) + ' voix').join('\n') || '_Aucun candidat._';
-  await log(client, '👑 Élection terminée · ' + NOM, '0', '', (gagnant && voix[gagnant] ? 'Nouveau président : <@' + gagnant + '> (' + voix[gagnant] + ' voix)' : 'Aucun vote : pas de changement de président.') + '\n' + resultat, 0xF1C40F);
-  await majSalaires(client);
-}
-
-// Chaque mois de présidence écoulé : une ligne dans les logs admin, le staff verse la commission en jeu à la ferme du président
-async function commissionPresident(client) {
-  const pr = store.president;
-  if (!pr) return;
-  const dus = Math.floor((Date.now() - pr.at) / MOIS_PRESIDENCE);
-  for (pr.mois ||= 0; pr.mois < dus; ) {
-    pr.mois++;
-    await log(client, '💰 Commission du président · ' + NOM, pr.uid, pr.pseudo, 'mois ' + pr.mois + ' de présidence · **' + euros(COMMISSION) + '** à verser en jeu', 0xF1C40F);
-  }
-  save();
-}
-
-let phaseAffichee;
-async function suiviElection(client) {
-  await commissionPresident(client);
-  const ph = phase();
-  if (ph === 'fini') return clotureElection(client);
-  if (ph !== phaseAffichee) { phaseAffichee = ph; await majSalaires(client); } // bascule candidatures -> vote : change le bouton
-}
+// ── Administratif (réservé à l'administration) : travail et crédits des licenciés, en privé ──
+const handleAdmin = interaction => estStaff(interaction)
+  ? interaction.reply({ ...travailPayload(), flags: 64 })
+  : rep(interaction, '❌ Réservé à l\'administration.');
 
 
 // ── Contrôle des licences : un joueur connecté dans la ferme de l'association sans licence valide → alerte dans les logs ──
@@ -589,7 +449,8 @@ async function publier(client, status) {
   if (!ch) return console.error('⚠️ Association : salon introuvable');
   const get = id => id && ch.messages.fetch(id).catch(() => null);
   if (store.journalMsgId) { (await get(store.journalMsgId))?.delete().catch(() => {}); store.journalMsgId = null; save(); } // ancien HUB « MEMBRES LICENCIÉS »
-  const msgs = [['panelMsgId', panelPayload], ['salairesMsgId', salairesPayload]];
+  if (store.salairesMsgId) { (await get(store.salairesMsgId))?.delete().catch(() => {}); store.salairesMsgId = null; save(); } // ancien 2e HUB
+  const msgs = [['panelMsgId', panelPayload]];
   const trouves = await Promise.all(msgs.map(([k]) => get(store[k])));
   if (trouves.every(Boolean)) {
     for (const [i, [, p]] of msgs.entries()) await trouves[i].edit(p()).catch(() => {});
@@ -609,8 +470,7 @@ async function startAssociation(client) {
   setTimeout(() => majSalaires(client).catch(() => {}), 60_000).unref(); // 1er relevé FS25 (les données arrivent juste après le démarrage)
   setInterval(() => majSalaires(client).catch(() => {}), 5 * 60_000).unref();
   setInterval(() => verifierLicences(client).catch(() => {}), 60_000).unref();
-  setInterval(() => suiviElection(client).catch(() => {}), 60_000).unref(); // bascule candidatures -> vote -> clôture
   setInterval(() => traiterVirements(client).catch(() => {}), 60_000).unref();
 }
 
-module.exports = { startAssociation, publier, handle, releve, parts, creditMax, sansLicence, nouveauxVirements, duMois, _suivi: suiviElection, _store: () => store, _setReleve: r => { dernierReleve = r; } };
+module.exports = { startAssociation, publier, handle, releve, parts, creditMax, sansLicence, nouveauxVirements, duMois, _store: () => store, _setReleve: r => { dernierReleve = r; } };
