@@ -14,6 +14,7 @@ const EXPLOITANT_ROLE_ID = ids('EXPLOITANT_ROLE_ID');
 
 // Activités choisissables (liste du serveur, voir droits-texte.js) : le nom est enregistré dans la fiche
 const ACTIVITES = require('./droits-texte').CHOIX.map(a => ({ label: a.emoji + ' ' + a.nom, value: a.nom }));
+const choixActivites = champ => require('./droits-texte').choixPour(champ);
 
 // Couleurs d'embed proposées à l'exploitant (menu déroulant, pas de saisie libre).
 const PRESET_COLORS = [
@@ -74,8 +75,8 @@ function manageMenu(exploit, viewerId, pos) {
 
   const options = [
     { label: '📝 Renommer l\'exploitation', value: 'nom' },
-    { label: '🥇 Activité principale',       value: 'principale' },
-    { label: '🥈 Activité secondaire',       value: 'secondaire' },
+    { label: '🥇 Activité 1 (cultures)',      value: 'principale' },
+    { label: '🥈 Activité 2 (élevage)',      value: 'secondaire' },
     hasOuvriers
       ? { label: '🥉 Activité supplémentaire', value: 'supplementaire' }
       : { label: '🥉 Activité supplémentaire', value: 'supplementaire', description: '🔒 Nécessite un ouvrier' },
@@ -107,8 +108,8 @@ function manageMenu(exploit, viewerId, pos) {
         {
           name: '🚜  Activités',
           value: [
-            '🥇 **Principale :** ' + (exploit.activitePrincipale || '*Non définie*'),
-            '🥈 **Secondaire :** ' + (exploit.activiteSecondaire || '*Non définie*'),
+            '🥇 **Activité 1 :** ' + (exploit.activitePrincipale || '*Non définie*'),
+            '🥈 **Activité 2 :** ' + (exploit.activiteSecondaire || '*Non définie*'),
             '🥉 **Supplémentaire :** ' + (hasOuvriers ? (exploit.activiteSupplementaire || '*Non définie*') : '🔒 *Nécessite un ouvrier*'),
           ].join('\n'),
           inline: false,
@@ -307,8 +308,8 @@ async function handleHubExplManage(interaction) {
   // principale / secondaire / supplementaire
   const menu = new StringSelectMenuBuilder()
     .setCustomId('hub_expl_setact_' + exploit.id + '_' + choice + '_edit')
-    .setPlaceholder('Choisis une activité...')
-    .addOptions(ACTIVITES);
+    .setPlaceholder(choice === 'secondaire' ? 'Choisis ton activité 2 (élevage)...' : choice === 'principale' ? 'Choisis ton activité 1 (cultures)...' : 'Choisis une activité...')
+    .addOptions(choixActivites(choice));
   await interaction.update({
     natif: true, embeds: [{ title: '✏️ ' + exploit.nom, description: 'Choisis la nouvelle activité :', color: 0x5865F2 }],
     components: [new ActionRowBuilder().addComponents(menu)],
@@ -332,10 +333,10 @@ async function handleHubExplSetAct(interaction) {
   if (mode === 'setup' && field === 'principale') {
     const menu = new StringSelectMenuBuilder()
       .setCustomId('hub_expl_setact_' + exploitId + '_secondaire_setup')
-      .setPlaceholder('Choisis ton activité secondaire...')
-      .addOptions(ACTIVITES);
+      .setPlaceholder('Choisis ton activité 2 (élevage)...')
+      .addOptions(choixActivites('secondaire'));
     await interaction.update({
-      natif: true, embeds: [{ title: '✅ Activité principale enregistrée', description: 'Choisis ton **activité secondaire** :', color: 0x2ECC71 }],
+      natif: true, embeds: [{ title: '✅ Activité principale enregistrée', description: 'Choisis ton **activité 2 (élevage)** :', color: 0x2ECC71 }],
       components: [new ActionRowBuilder().addComponents(menu)],
     });
     return;
@@ -509,8 +510,9 @@ function ficheAnnuaire(e, vis) {
   const co = (e.coExploitants || []).filter(id => vis.has(id));
   const dateCrea = new Date(e.createdAt).toLocaleDateString('fr-FR', { day: '2-digit', month: 'long', year: 'numeric' });
   const acts = [e.activitePrincipale, e.activiteSecondaire, ouvriers.length ? e.activiteSupplementaire : null].filter(Boolean);
-  const elevage = acts.filter(a => a.startsWith('Élevage'));
-  const autres  = acts.filter(a => !a.startsWith('Élevage'));
+  const estElevage = a => require('./droits-texte').parNom(a)?.groupe === 'elevage';
+  const elevage = acts.filter(estElevage);
+  const autres  = acts.filter(a => !estElevage(a));
   const slot = (list, i) => (i === 0 ? list[0] : list.slice(1).join(' · ')) || '—';
   return [
     '**Nom :** ' + e.nom,

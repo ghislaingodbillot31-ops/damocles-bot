@@ -13,29 +13,49 @@ const LISTE = [
   'Paillage', 'Transport en bétaillère', 'Monte des chevaux', 'Pose des ruches', 'Forêt (abattage, débardage, fendage, plaquettes)',
 ];
 
-// groupe : regroupement d'affichage dans le panneau · choisir:false = non sélectionnable par une exploitation
+// Activité 1 au choix (cultures, vignes, vergers, serres) + Activité 2 au choix (élevage). La forêt est à part.
+// groupe : regroupement d'affichage dans le panneau · type : 1 ou 2 = liste dans laquelle l'exploitation choisit · choisir:false = non sélectionnable
+const CER = [...T1, 'Broyage', 'Semis classique', 'Semis direct', ...ENGRAIS, 'Moisson'];
+const MARA = [...T1, 'Broyage', 'Semis classique', 'Plantation', ...ENGRAIS, 'Binage / désherbage', 'Récolte de légumes'];
+const TROP = [...T1, 'Broyage', 'Semis classique', 'Plantation', ...ENGRAIS, 'Récolte coton / canne'];
+const FOUR = ['Préparation superficielle', 'Roulage', 'Épierrage', 'Semis direct', ...ENGRAIS];
 const ACTIVITES = [
-  { value: 'cereales', emoji: '🌾', nom: 'Céréalier + Oléagineux', groupe: 'cereales', works: [...T1, 'Broyage', 'Semis classique', 'Semis direct', ...ENGRAIS, 'Moisson'] },
-  { value: 'maraicher', emoji: '🥕', nom: 'Maraîcher racines + verts', groupe: 'maraicher', works: [...T1, 'Broyage', 'Semis classique', 'Plantation', ...ENGRAIS, 'Binage / désherbage', 'Récolte de légumes'] },
-  { value: 'tropical', emoji: '🌴', nom: 'Tropical', groupe: 'tropical', works: [...T1, 'Broyage', 'Semis classique', 'Plantation', ...ENGRAIS, 'Récolte coton / canne'] },
-  { value: 'riz', emoji: '🍚', nom: 'Riziculteur', groupe: 'riz', works: ['Préparation superficielle', 'Roulage', 'Préparation de rizière', 'Semis classique', ...ENGRAIS, 'Moisson'] },
-  { value: 'fourrager', emoji: '🌿', nom: 'Fourrager + Ensileur', groupe: 'fourrager', works: ['Préparation superficielle', 'Roulage', 'Épierrage', 'Semis direct', ...ENGRAIS, 'Fourrage (fauchage, fanage, andainage)', 'Bottelage', 'Enrubannage', 'Ensilage / autochargeuse'] },
-  { value: 'vigne', emoji: '🍇', nom: 'Viticulteur', groupe: 'vigne', works: ['Plantation', ...RANGS, 'Vendange', 'Pressage'] },
-  { value: 'olives', emoji: '🫒', nom: 'Oléiculteur', groupe: 'olives', works: ['Plantation', ...RANGS, 'Récolte des olives', 'Pressage'] },
-  { value: 'serre', emoji: '🍅', nom: 'Culture sous serre', groupe: 'serre', works: ['Gestion des serres · Gestion de la champignonnière'] },
-  { value: 'buffles', emoji: '🐃', nom: 'Buffles + vaches laitières', groupe: 'elevage', works: ELEVAGE },
-  { value: 'viande', emoji: '🥩', nom: 'Vaches à viande', groupe: 'elevage', works: ELEVAGE },
-  { value: 'ovins', emoji: '🐑', nom: 'Moutons + chèvres', groupe: 'elevage', works: ELEVAGE },
-  { value: 'porcs', emoji: '🐖', nom: 'Porcs + poules', groupe: 'elevage', works: ELEVAGE },
-  { value: 'equin', emoji: '🐎', nom: 'Équin + abeilles', groupe: 'elevage', works: [...ELEVAGE, 'Monte des chevaux', 'Pose des ruches'] },
+  { value: 'cereales1', emoji: '🌾', nom: 'Céréalier 1', groupe: 'cereales', type: 1, works: CER },
+  { value: 'cereales2', emoji: '🌻', nom: 'Céréalier 2', groupe: 'cereales', type: 1, works: CER },
+  { value: 'maraicher1', emoji: '🥕', nom: 'Maraîcher 1', groupe: 'maraicher', type: 1, works: MARA },
+  { value: 'maraicher2', emoji: '🥬', nom: 'Maraîcher 2', groupe: 'maraicher', type: 1, works: MARA },
+  { value: 'tropical1', emoji: '🌴', nom: 'Tropical 1', groupe: 'tropical', type: 1, works: TROP },
+  { value: 'tropical2', emoji: '☁️', nom: 'Tropical 2', groupe: 'tropical', type: 1, works: TROP },
+  { value: 'riz', emoji: '🍚', nom: 'Riziculteur', groupe: 'riz', type: 1, works: ['Préparation superficielle', 'Roulage', 'Préparation de rizière', 'Semis classique', ...ENGRAIS, 'Moisson'] },
+  { value: 'fourrager1', emoji: '🌿', nom: 'Fourrager + Ensileur 1', groupe: 'fourrager', type: 1, works: [...FOUR, 'Fourrage (fauchage, fanage, andainage)', 'Bottelage', 'Enrubannage'] },
+  { value: 'fourrager2', emoji: '🌽', nom: 'Fourrager + Ensileur 2', groupe: 'fourrager', type: 1, works: [...FOUR, 'Fourrage (fauchage, fanage, andainage)', 'Enrubannage', 'Ensilage / autochargeuse'] },
+  { value: 'vigne', emoji: '🍇', nom: 'Viticulteur', groupe: 'vigne', type: 1, works: ['Plantation', ...RANGS, 'Vendange', 'Pressage'] },
+  { value: 'olives', emoji: '🫒', nom: 'Oléiculteur', groupe: 'olives', type: 1, works: ['Plantation', ...RANGS, 'Récolte des olives', 'Pressage'] },
+  { value: 'serre1', emoji: '🍅', nom: 'Culture sous serre 1', groupe: 'serre', type: 1, works: ['Gestion des serres · Gestion de la champignonnière'] },
+  { value: 'serre2', emoji: '🍄', nom: 'Culture sous serre 2', groupe: 'serre', type: 1, works: ['Gestion des serres · Gestion de la champignonnière'] },
+  { value: 'buffles', emoji: '🐃', nom: 'Buffles + vaches laitières', groupe: 'elevage', type: 2, works: ELEVAGE },
+  { value: 'viande', emoji: '🥩', nom: 'Vaches à viande', groupe: 'elevage', type: 2, works: ELEVAGE },
+  { value: 'ovins', emoji: '🐑', nom: 'Moutons + chèvres', groupe: 'elevage', type: 2, works: ELEVAGE },
+  { value: 'porcs', emoji: '🐖', nom: 'Porcs + poules', groupe: 'elevage', type: 2, works: ELEVAGE }, // 80 poules maximum
+  { value: 'equin', emoji: '🐎', nom: 'Équin + abeilles', groupe: 'elevage', type: 2, works: [...ELEVAGE, 'Monte des chevaux', 'Pose des ruches'] },
+  { value: 'poules', emoji: '🐔', nom: 'Poules', groupe: 'elevage', type: 2, works: ELEVAGE },
   { value: 'foret', emoji: '🌲', nom: 'Association forestière', groupe: 'foret', choisir: false, works: ['Forêt (abattage, débardage, fendage, plaquettes)'] },
+];
+
+// Anciens noms déjà enregistrés dans les fiches d'exploitation : plus proposés, mais leurs droits restent reconnus
+const ANCIENS = [
+  { nom: 'Céréalier + Oléagineux', works: CER }, { nom: 'Maraîcher racines + verts', works: MARA }, { nom: 'Tropical', works: TROP },
+  { nom: 'Fourrager + Ensileur', works: [...FOUR, 'Fourrage (fauchage, fanage, andainage)', 'Bottelage', 'Enrubannage', 'Ensilage / autochargeuse'] },
+  { nom: 'Culture sous serre', works: ['Gestion des serres · Gestion de la champignonnière'] },
 ];
 
 const COMMUN = '🔓 **Commun à tous** : Gestion des usines · Transport · Livraison · Manutention · Contrats · Réparation · Construction';
 
 // Activités que l'exploitation peut choisir (menu de gestion)
 const CHOIX = ACTIVITES.filter(a => a.choisir !== false);
-const parNom = nom => ACTIVITES.find(a => a.nom === nom);
+const parNom = nom => ACTIVITES.find(a => a.nom === nom) || ANCIENS.find(a => a.nom === nom);
+// Menu d'une case : principale = activité 1 (cultures), secondaire = activité 2 (élevage), supplémentaire = les deux
+const choixPour = champ => CHOIX.filter(a => champ === 'supplementaire' || a.type === (champ === 'secondaire' ? 2 : 1)).map(a => ({ label: a.emoji + ' ' + a.nom, value: a.nom }));
 
 // ── Sous-menu « Mes droits » (information) ───────────────────────────────────
 const texte = value => {
@@ -52,7 +72,7 @@ const payload = value => ({
 
 // ── Panneau du salon privé : ✅ / ❌ selon les activités choisies par l'exploitation ──
 function panneauDroits(exploit) {
-  const choisies = [exploit.activitePrincipale, exploit.activiteSecondaire, exploit.activiteSupplementaire].map(n => n && parNom(n)).filter(Boolean);
+  const choisies = [exploit.activitePrincipale, exploit.activiteSecondaire, exploit.activiteSupplementaire].map(n => n && parNom(n)).filter(Boolean).map(a => ({ emoji: '🌱', ...a }));
   const permis = new Set(choisies.flatMap(a => a.works));
   const SEP = '━━━━━━━━━━━━━━';
   // même liste que « Mes droits » : • remplacé par ✅ (autorisé) ou ❌ (interdit) selon les activités choisies
@@ -62,4 +82,4 @@ function panneauDroits(exploit) {
   return [{ description: lignes.join('\n'), color: exploit.couleur ?? 0x2ECC71 }];
 }
 
-module.exports = { payload, panneauDroits, CHOIX };
+module.exports = { payload, panneauDroits, CHOIX, choixPour, parNom };
