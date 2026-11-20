@@ -64,7 +64,8 @@ const COMMUN = '🔓 **Commun à tous** : Gestion des usines · Transport · Liv
 const CHOIX = ACTIVITES.filter(a => a.choisir !== false);
 const parNom = nom => ACTIVITES.find(a => a.nom === nom) || ELEVAGE_INDIV.find(a => a.nom === nom) || ANCIENS.find(a => a.nom === nom);
 // Menu d'une case : principale = activité 1 (cultures), secondaire = activité 2 (élevage), supplémentaire = les deux
-const choixPour = champ => CHOIX.filter(a => champ === 'supplementaire' || a.type === (champ === 'secondaire' ? 2 : 1)).map(a => ({ label: a.emoji + ' ' + a.nom, value: a.nom }));
+// Élevage : une espèce par entrée (ELEVAGE_INDIV), plus les anciens regroupements
+const choixPour = champ => [...CHOIX.filter(a => a.type === 1), ...ELEVAGE_INDIV].filter(a => champ === 'supplementaire' || (a.type === 1) === (champ !== 'secondaire')).map(a => ({ label: a.emoji + ' ' + a.nom, value: a.nom }));
 
 // ── Sous-menu « Mes droits » (information) ───────────────────────────────────
 const texte = value => {
