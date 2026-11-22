@@ -1,14 +1,14 @@
 <?xml version="1.0" encoding="utf-8" standalone="no"?>
 <modDesc descVersion="92">
     <author>Toi</author>
-    <version>1.4.4.0</version>
+    <version>1.5.0.0</version>
     <title>
         <en>Discord Bridge</en>
         <fr>Pont Discord</fr>
     </title>
     <description>
-        <en><![CDATA[Exports game time, month, weather and farm finances to an XML file (modSettings/FS25_DiscordBridge/status.xml) so an external script can post them on Discord.]]></en>
-        <fr><![CDATA[Exporte l'heure du jeu, le mois, la mÃ©tÃ©o et les finances des fermes dans un fichier XML (modSettings/FS25_DiscordBridge/status.xml) pour qu'un script externe les publie sur Discord.]]></fr>
+        <en><![CDATA[Server-side only. Exports game time, weather, farm finances, statistics and sales counters to XML files (modSettings/FS25_DiscordBridge/) that an external Discord bot reads. Observes the game, never changes it.]]></en>
+        <fr><![CDATA[Côté serveur uniquement. Exporte l'heure, la météo, les finances, les statistiques et les compteurs de ventes des fermes dans des fichiers XML (modSettings/FS25_DiscordBridge/) lus par un bot Discord externe. Observe le jeu sans jamais le modifier.]]></fr>
     </description>
     <iconFilename>icon_discordBridge.dds</iconFilename>
     <multiplayer supported="true"/>

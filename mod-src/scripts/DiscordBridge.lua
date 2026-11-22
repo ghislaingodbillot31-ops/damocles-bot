@@ -1,29 +1,45 @@
 -- ============================================================
---  FS25_DiscordBridge
---  Exporte les données de la partie dans un fichier XML :
---    <profil>/modSettings/FS25_DiscordBridge/status.xml
---  Un script externe (discord_bridge.py) lit ce fichier et
---  met à jour un message Discord.
---  Ne tourne que côté serveur (hôte ou serveur dédié).
+--  FS25_DiscordBridge V2
+--  Exporte l'état de la partie dans <profil>/modSettings/FS25_DiscordBridge/ :
+--    status.xml : heure, météo, fermes (finances, stats), compteurs, joueurs, ouvriers IA  (toutes les 30 s)
+--    full.xml   : sections détaillées pour la commande /fs25 du bot                          (toutes les 2 min)
+--    counters_savegameN.xml : compteurs persistants
+--  Le bot Discord lit ces fichiers par FTP. Le mod ne tourne que côté serveur et n'ouvre aucune connexion.
+--
+--  Règles de sécurité :
+--   - serveur uniquement (rien n'est chargé, écrit ou observé chez un client) ;
+--   - écriture limitée au dossier du mod ; aucune lecture hors de ses propres fichiers ;
+--   - les crochets OBSERVENT : l'original s'exécute d'abord, ses valeurs de retour sont rendues telles quelles,
+--     l'observation tourne dans un pcall (aucune erreur du mod ne remonte dans le jeu) ;
+--   - pas de coordonnées de joueurs ni de droits admin exportés ; nombre de lignes et longueur des textes bornés.
 -- ============================================================
 
 DiscordBridge = {}
-DiscordBridge.modName       = g_currentModName
-DiscordBridge.INTERVAL_MS   = 30000   -- export toutes les 30 s (temps réel)
-DiscordBridge.timer         = 0
-DiscordBridge.LOG_PREFIX    = "[DiscordBridge] "
+DiscordBridge.LOG_PREFIX         = "[DiscordBridge] "
+DiscordBridge.STATUS_INTERVAL_MS = 30000
+DiscordBridge.FULL_INTERVAL_MS   = 120000
+DiscordBridge.WORK_INTERVAL_MS   = 1000
+DiscordBridge.MAX_ROWS           = 1000   -- lignes max par section de full.xml
+DiscordBridge.MAX_STRING         = 200    -- longueur max d'une valeur texte exportée
 
 -- Compteurs persistants : counters[kind][farmId][clé] = valeur
---   "produced"  : litres/unités produits par les animaux et les ruches (clé = fillType)
---   "money_in"  : € gagnés  (clé = MoneyType)
---   "money_out" : € dépensés (clé = MoneyType)
---   "work_vehicle"  : secondes de conduite, moteur allumé, d'un véhicule de la ferme (clé = pseudo du joueur)
---   "work_chainsaw" : secondes de coupe à la tronçonneuse pour la ferme du joueur (clé = pseudo du joueur)
---   "transfer_in"   : € reçus par virement d'une autre ferme (clé = id de la ferme qui envoie)
---   "sold"          : litres/unités vendus à un point de vente (clé = fillType) -> événement hebdomadaire
---   "work_credit" / "work_debit" : hectares travaillés chez un autre joueur (clé = nom de stat), + pour la ferme du véhicule, - pour le propriétaire du champ
-DiscordBridge.counters = { produced = {}, money_in = {}, money_out = {}, work_vehicle = {}, work_chainsaw = {}, transfer_in = {}, sold = {}, work_credit = {}, work_debit = {} }
+--   produced    : litres/unités produits par les animaux et les ruches (clé = fillType)
+--   sold        : litres/unités vendus à un point de vente (clé = fillType)
+--   money_in    : € gagnés  (clé = MoneyType)
+--   money_out   : € dépensés (clé = MoneyType)
+--   transfer_in : € reçus par virement d'une autre ferme (clé = id de la ferme qui envoie)
+--   work_vehicle  : secondes de conduite moteur allumé (clé = pseudo du joueur)
+--   work_chainsaw : secondes de coupe à la tronçonneuse (clé = pseudo du joueur)
+--   work_credit / work_debit : hectares travaillés dans le champ d'une autre ferme (clé = nom de stat) ;
+--                  credit = ferme du véhicule (+), debit = propriétaire du champ (-). Le bot déplace les hectares.
+DiscordBridge.counters = {
+    produced = {}, sold = {}, money_in = {}, money_out = {}, transfer_in = {},
+    work_vehicle = {}, work_chainsaw = {}, work_credit = {}, work_debit = {},
+}
 DiscordBridge.countersDirty = false
+DiscordBridge.statusTimer = 0
+DiscordBridge.fullTimer   = 0
+DiscordBridge.workTimer   = 0
 
 -- Lecture "sûre" d'un champ (évite un crash si l'API change)
 local function safe(fn, default)
@@ -38,16 +54,20 @@ local function isServer()
     return g_currentMission ~= nil and g_currentMission:getIsServer()
 end
 
+local function log(message)
+    print(DiscordBridge.LOG_PREFIX .. message)
+end
+
 -- ------------------------------------------------------------
 --  Compteurs
 -- ------------------------------------------------------------
-function DiscordBridge:addCounter(kind, farmId, fillTypeName, amount)
-    if farmId == nil or fillTypeName == nil or amount == nil or amount <= 0 then
+function DiscordBridge:addCounter(kind, farmId, key, amount)
+    local byFarm = self.counters[kind]
+    if byFarm == nil or farmId == nil or key == nil or type(amount) ~= "number" or amount <= 0 then
         return
     end
-    local byFarm = self.counters[kind]
     byFarm[farmId] = byFarm[farmId] or {}
-    byFarm[farmId][fillTypeName] = (byFarm[farmId][fillTypeName] or 0) + amount
+    byFarm[farmId][key] = (byFarm[farmId][key] or 0) + amount
     self.countersDirty = true
 end
 
@@ -69,14 +89,33 @@ function DiscordBridge:loadCounters()
         local farm  = getXMLInt(xml, key .. "#farm")
         local ft    = getXMLString(xml, key .. "#fillType")
         local value = getXMLFloat(xml, key .. "#value")
-        if self.counters[kind] ~= nil and farm ~= nil and ft ~= nil and value ~= nil then
+        -- un fichier modifié à la main ne doit pas pouvoir injecter n'importe quoi
+        if kind ~= nil and self.counters[kind] ~= nil and farm ~= nil and ft ~= nil and #ft <= self.MAX_STRING
+            and value ~= nil and value > 0 and value < 1e15 then
             self.counters[kind][farm] = self.counters[kind][farm] or {}
             self.counters[kind][farm][ft] = value
         end
         i = i + 1
     end
     delete(xml)
-    print(self.LOG_PREFIX .. "Compteurs chargés : " .. i .. " entrées")
+    log("Compteurs chargés : " .. i .. " entrées")
+end
+
+-- Écrit les <c kind farm fillType value> (fichier de sauvegarde et status.xml partagent le même format)
+local function writeCounters(xml, prefix)
+    local i = 0
+    for kind, byFarm in pairs(DiscordBridge.counters) do
+        for farmId, byKey in pairs(byFarm) do
+            for key, value in pairs(byKey) do
+                local ckey = string.format("%s.c(%d)", prefix, i)
+                setXMLString(xml, ckey .. "#kind",     kind)
+                setXMLInt   (xml, ckey .. "#farm",     farmId)
+                setXMLString(xml, ckey .. "#fillType", key)
+                setXMLFloat (xml, ckey .. "#value",    value)
+                i = i + 1
+            end
+        end
+    end
 end
 
 function DiscordBridge:saveCounters()
@@ -87,176 +126,118 @@ function DiscordBridge:saveCounters()
     if xml == nil or xml == 0 then
         return
     end
-    local i = 0
-    for kind, byFarm in pairs(self.counters) do
-        for farmId, byType in pairs(byFarm) do
-            for ft, value in pairs(byType) do
-                local key = string.format("counters.c(%d)", i)
-                setXMLString(xml, key .. "#kind", kind)
-                setXMLInt(xml, key .. "#farm", farmId)
-                setXMLString(xml, key .. "#fillType", ft)
-                setXMLFloat(xml, key .. "#value", value)
-                i = i + 1
-            end
-        end
-    end
+    writeCounters(xml, "counters")
     saveXMLFile(xml)
     delete(xml)
     self.countersDirty = false
 end
 
 -- ------------------------------------------------------------
---  Production animale (points d'accroche confirmés dans le code FS25)
---
---  1) Lait, lisier, fumier : PlaceableHusbandryMilk / LiquidManure / Straw
---     appellent addHusbandryFillLevelFromTool(farmId, litres, fillType, nil, nil, nil)
---     -> toolType == nil = production par les animaux (un joueur qui décharge a un toolType).
---  2) Laine, œufs : PlaceableHusbandryPallets:updateOutput ajoute
---     productionFactor * globalProductionFactor * litersPerHour * timeAdjustment.
---  3) Miel : PlaceableBeehivePalletSpawner:addFillLevel(fillLevel).
+--  Crochets (observation seule)
+--  hookAfter(table, "méthode", observer) : appelle l'original puis observer(results, self, a1..a6) dans un pcall,
+--  et renvoie exactement les valeurs de l'original. Fonctionne sur une classe ou sur une instance. Serveur uniquement.
+--  Si la méthode n'existe pas (version du jeu différente), le crochet est ignoré et le log le dit.
 -- ------------------------------------------------------------
-local PRODUCED_BY_ANIMALS = { MILK = true, GOATMILK = true, BUFFALOMILK = true, LIQUIDMANURE = true, MANURE = true }
-
-if PlaceableHusbandry ~= nil and PlaceableHusbandry.addHusbandryFillLevelFromTool ~= nil then
-    local original = PlaceableHusbandry.addHusbandryFillLevelFromTool
-    PlaceableHusbandry.addHusbandryFillLevelFromTool = function(placeable, farmId, delta, fillTypeIndex, fillPositionData, toolType, ...)
-        local results = { original(placeable, farmId, delta, fillTypeIndex, fillPositionData, toolType, ...) }
-        if toolType == nil and type(delta) == "number" and delta > 0 then
-            pcall(function()
-                local name = g_fillTypeManager:getFillTypeNameByIndex(fillTypeIndex)
-                if PRODUCED_BY_ANIMALS[name] and isServer() then
-                    local applied = (type(results[1]) == "number" and results[1] > 0) and results[1] or delta
-                    DiscordBridge:addCounter("produced", farmId, name, applied)
-                end
-            end)
-        end
-        return unpack(results)
-    end
-else
-    print(DiscordBridge.LOG_PREFIX .. "PlaceableHusbandry.addHusbandryFillLevelFromTool introuvable : lait/fumier non suivis")
-end
-
-if PlaceableHusbandryPallets ~= nil and PlaceableHusbandryPallets.updateOutput ~= nil then
-    local original = PlaceableHusbandryPallets.updateOutput
-    PlaceableHusbandryPallets.updateOutput = function(placeable, superFunc, foodFactor, productionFactor, globalProductionFactor, ...)
-        local results = { original(placeable, superFunc, foodFactor, productionFactor, globalProductionFactor, ...) }
-        pcall(function()
-            if not placeable.isServer then
-                return
-            end
-            local spec = placeable.spec_husbandryPallets
-            local farmId = placeable:getOwnerFarmId()
-            for _, fillTypeIndex in ipairs(spec.fillTypes) do
-                local litersPerHour = spec.litersPerHour[fillTypeIndex] or 0
-                if litersPerHour > 0 then
-                    local delta = productionFactor * globalProductionFactor * litersPerHour * g_currentMission.environment.timeAdjustment
-                    DiscordBridge:addCounter("produced", farmId, g_fillTypeManager:getFillTypeNameByIndex(fillTypeIndex), delta)
-                end
-            end
-        end)
-        return unpack(results)
-    end
-else
-    print(DiscordBridge.LOG_PREFIX .. "PlaceableHusbandryPallets.updateOutput introuvable : laine/œufs non suivis")
-end
-
-if PlaceableBeehivePalletSpawner ~= nil and PlaceableBeehivePalletSpawner.addFillLevel ~= nil then
-    local original = PlaceableBeehivePalletSpawner.addFillLevel
-    PlaceableBeehivePalletSpawner.addFillLevel = function(placeable, fillLevel, ...)
-        local results = { original(placeable, fillLevel, ...) }
-        pcall(function()
-            if placeable.isServer and type(fillLevel) == "number" and fillLevel > 0 then
-                DiscordBridge:addCounter("produced", placeable:getOwnerFarmId(), "HONEY", fillLevel)
-            end
-        end)
-        return unpack(results)
-    end
-end
-
--- ------------------------------------------------------------
---  Succès : le travail effectué dans un champ appartenant à une autre ferme doit compter pour la ferme du véhicule.
---  Le jeu crédite la ferme du TERRAIN touché. On ne modifie RIEN dans le jeu (une version qui renvoyait une autre ferme
---  faisait planter les contrats de champ) : on OBSERVE. getLastTouchedFarmlandFarmId note quel véhicule vient de toucher
---  quel terrain ; FarmManager:updateFarmStats (stats "...Hectares") est observé juste après : si le propriétaire du terrain
---  n'est pas la ferme du véhicule, le mod compte "work_credit" (ferme du véhicule, +) et "work_debit" (propriétaire, -).
---  Le bot ajoute/retire ces compteurs aux stats exportées. Les valeurs renvoyées au jeu sont toujours celles de l'original.
---  ponytail: noms d'API FS25 non confirmés ; la 1re attribution est écrite dans le log pour vérifier.
--- ------------------------------------------------------------
-local function observeTouch(class)
-    if class == nil or class.getLastTouchedFarmlandFarmId == nil then
+local function hookAfter(target, method, label, observer)
+    if target == nil or target[method] == nil then
+        log(label .. " : " .. method .. " introuvable, non suivi")
         return false
     end
-    local original = class.getLastTouchedFarmlandFarmId
-    class.getLastTouchedFarmlandFarmId = function(vehicle, ...)
-        local results = { original(vehicle, ...) }
-        pcall(function() DiscordBridge.touch = { vehicle = vehicle, land = results[1], t = g_time } end)
+    local original = target[method]
+    target[method] = function(self, a1, a2, a3, a4, a5, a6, ...)
+        local results = { original(self, a1, a2, a3, a4, a5, a6, ...) }
+        if isServer() then
+            pcall(observer, results, self, a1, a2, a3, a4, a5, a6)
+        end
         return unpack(results)
     end
     return true
 end
 
-local touchHooked = observeTouch(Vehicle) or observeTouch(WorkArea)
-print(DiscordBridge.LOG_PREFIX .. (touchHooked and "Succès : travail chez un autre joueur suivi (observation seule)"
-    or "getLastTouchedFarmlandFarmId introuvable : travail chez un autre joueur non suivi"))
+-- Production animale : lait, lisier, fumier (sans outil = produit par les animaux), laine/œufs, miel
+local PRODUCED_BY_ANIMALS = { MILK = true, GOATMILK = true, BUFFALOMILK = true, LIQUIDMANURE = true, MANURE = true }
 
-if FarmManager ~= nil and FarmManager.updateFarmStats ~= nil then
-    local original = FarmManager.updateFarmStats
-    FarmManager.updateFarmStats = function(manager, farmId, statName, delta, ...)
-        local results = { original(manager, farmId, statName, delta, ...) }
-        pcall(function()
-            local t = DiscordBridge.touch
-            if t ~= nil and isServer() and type(delta) == "number" and delta > 0 and type(statName) == "string"
-                and statName:find("Hectares$") and t.land == farmId and math.abs((g_time or 0) - (t.t or 0)) <= 100 then
-                local worker = t.vehicle:getOwnerFarmId()
-                if type(worker) == "number" and worker ~= farmId and worker ~= FarmManager.SPECTATOR_FARM_ID then
-                    if not DiscordBridge.creditLogged then
-                        DiscordBridge.creditLogged = true
-                        print(DiscordBridge.LOG_PREFIX .. "Travail chez un autre joueur : ferme " .. tostring(worker) .. " dans le champ de la ferme " .. tostring(farmId) .. " (" .. statName .. ")")
-                    end
-                    DiscordBridge:addCounter("work_credit", worker, statName, delta)
-                    DiscordBridge:addCounter("work_debit", farmId, statName, delta)
-                end
+hookAfter(PlaceableHusbandry, "addHusbandryFillLevelFromTool", "Lait/fumier",
+    function(results, placeable, farmId, delta, fillTypeIndex, _, toolType)
+        if toolType ~= nil or type(delta) ~= "number" or delta <= 0 or not isServer() then
+            return
+        end
+        local name = g_fillTypeManager:getFillTypeNameByIndex(fillTypeIndex)
+        if PRODUCED_BY_ANIMALS[name] then
+            local applied = (type(results[1]) == "number" and results[1] > 0) and results[1] or delta
+            DiscordBridge:addCounter("produced", farmId, name, applied)
+        end
+    end)
+
+hookAfter(PlaceableHusbandryPallets, "updateOutput", "Laine/œufs",
+    function(_, placeable, _, _, productionFactor, globalProductionFactor)
+        if not placeable.isServer then
+            return
+        end
+        local spec = placeable.spec_husbandryPallets
+        local farmId = placeable:getOwnerFarmId()
+        for _, fillTypeIndex in ipairs(spec.fillTypes) do
+            local litersPerHour = spec.litersPerHour[fillTypeIndex] or 0
+            if litersPerHour > 0 then
+                local delta = productionFactor * globalProductionFactor * litersPerHour * g_currentMission.environment.timeAdjustment
+                DiscordBridge:addCounter("produced", farmId, g_fillTypeManager:getFillTypeNameByIndex(fillTypeIndex), delta)
             end
-        end)
-        return unpack(results)
-    end
-else
-    print(DiscordBridge.LOG_PREFIX .. "FarmManager.updateFarmStats introuvable : travail chez un autre joueur non suivi")
-end
+        end
+    end)
 
--- ------------------------------------------------------------
---  Ventes : tout ce qui est livré à un point de vente passe par SellingStation:addFillLevelFromTool(farmId, delta, fillType, ...)
---  -> "sold" (litres vendus par ferme et par produit). Les animaux ne passent pas par là.
---  ponytail: nom d'API FS25 non confirmé ; la 1re vente est écrite dans le log pour vérifier, à corriger ici si rien ne remonte.
--- ------------------------------------------------------------
-if SellingStation ~= nil and SellingStation.addFillLevelFromTool ~= nil then
-    local original = SellingStation.addFillLevelFromTool
-    SellingStation.addFillLevelFromTool = function(station, farmId, delta, fillTypeIndex, ...)
-        local results = { original(station, farmId, delta, fillTypeIndex, ...) }
-        pcall(function()
-            if isServer() and type(delta) == "number" and delta > 0 then
-                local applied = (type(results[1]) == "number" and results[1] > 0) and results[1] or 0
-                local name = g_fillTypeManager:getFillTypeNameByIndex(fillTypeIndex)
-                if applied > 0 and name ~= nil then
-                    if not DiscordBridge.saleLogged then
-                        DiscordBridge.saleLogged = true
-                        print(DiscordBridge.LOG_PREFIX .. "Vente détectée : ferme " .. tostring(farmId) .. ", " .. name .. ", " .. tostring(applied))
-                    end
-                    DiscordBridge:addCounter("sold", farmId, name, applied)
-                end
+hookAfter(PlaceableBeehivePalletSpawner, "addFillLevel", "Miel",
+    function(_, placeable, fillLevel)
+        if placeable.isServer and type(fillLevel) == "number" and fillLevel > 0 then
+            DiscordBridge:addCounter("produced", placeable:getOwnerFarmId(), "HONEY", fillLevel)
+        end
+    end)
+
+-- Ventes : tout ce qui est livré à un point de vente (la classe hérite d'UnloadingStation) -> litres vendus par produit
+hookAfter(SellingStation, "addFillLevelFromTool", "Ventes",
+    function(results, _, farmId, delta, fillTypeIndex)
+        local applied = type(results[1]) == "number" and results[1] or 0
+        if applied <= 0 or type(delta) ~= "number" or delta <= 0 or not isServer() then
+            return
+        end
+        local name = g_fillTypeManager:getFillTypeNameByIndex(fillTypeIndex)
+        if name ~= nil then
+            if not DiscordBridge.saleLogged then
+                DiscordBridge.saleLogged = true
+                log("Vente détectée : ferme " .. tostring(farmId) .. ", " .. name .. ", " .. tostring(applied))
             end
-        end)
-        return unpack(results)
-    end
-else
-    print(DiscordBridge.LOG_PREFIX .. "SellingStation.addFillLevelFromTool introuvable : ventes non suivies")
-end
+            DiscordBridge:addCounter("sold", farmId, name, applied)
+        end
+    end)
 
--- ------------------------------------------------------------
---  Argent : chaque mouvement passe par g_currentMission:addMoney(montant, ferme, MoneyType)
---  -> "money_in" (gains) / "money_out" (dépenses) par type (SOLD_PRODUCTS, HARVEST_INCOME,
---     SOLD_ANIMALS, MISSIONS, PROPERTY_INCOME, PURCHASE_FUEL, VEHICLE_REPAIR...)
--- ------------------------------------------------------------
+-- Travail chez un autre joueur : le jeu crédite les stats "...Hectares" à la ferme du TERRAIN touché.
+-- getLastTouchedFarmlandFarmId note quel véhicule vient de toucher quel terrain ; updateFarmStats, observé juste après,
+-- déclenche work_credit (ferme du véhicule) / work_debit (propriétaire). Rien n'est modifié dans le jeu.
+local function noteTouch(results, vehicle)
+    DiscordBridge.touch = { vehicle = vehicle, land = results[1], t = g_time }
+end
+local _ = hookAfter(Vehicle, "getLastTouchedFarmlandFarmId", "Travail chez un autre joueur", noteTouch)
+    or hookAfter(WorkArea, "getLastTouchedFarmlandFarmId", "Travail chez un autre joueur", noteTouch)
+
+hookAfter(FarmManager, "updateFarmStats", "Travail chez un autre joueur",
+    function(_, _, farmId, statName, delta)
+        local t = DiscordBridge.touch
+        if t == nil or not isServer() or type(delta) ~= "number" or delta <= 0 or type(statName) ~= "string"
+            or not statName:find("Hectares$") or t.land ~= farmId or math.abs((g_time or 0) - (t.t or 0)) > 100 then
+            return
+        end
+        local worker = t.vehicle:getOwnerFarmId()
+        if type(worker) == "number" and worker ~= farmId and worker ~= FarmManager.SPECTATOR_FARM_ID then
+            if not DiscordBridge.creditLogged then
+                DiscordBridge.creditLogged = true
+                log("Travail chez un autre joueur : ferme " .. tostring(worker) .. " dans le champ de la ferme " .. tostring(farmId) .. " (" .. statName .. ")")
+            end
+            DiscordBridge:addCounter("work_credit", worker, statName, delta)
+            DiscordBridge:addCounter("work_debit", farmId, statName, delta)
+        end
+    end)
+
+-- Argent : chaque mouvement passe par g_currentMission:addMoney(montant, ferme, MoneyType)
+-- -> money_in / money_out par type, et transfer_in pour les virements entre fermes
 function DiscordBridge:getMoneyTypeName(moneyType)
     if self.moneyTypeNames == nil then
         self.moneyTypeNames = {}
@@ -269,56 +250,47 @@ function DiscordBridge:getMoneyTypeName(moneyType)
     return self.moneyTypeNames[moneyType] or "OTHER"
 end
 
+-- Virement = une sortie TRANSFER puis une entrée TRANSFER du même montant (ordre quelconque), mises en relation ici
+function DiscordBridge:matchTransfer(farmId, amount)
+    local queue = self.pendingTransfers or {}
+    self.pendingTransfers = queue
+    for i, p in ipairs(queue) do
+        if p.farmId ~= farmId and math.abs(p.amount + amount) < 0.01 then
+            local from, to = (amount > 0) and p.farmId or farmId, (amount > 0) and farmId or p.farmId
+            self:addCounter("transfer_in", to, tostring(from), math.abs(amount))
+            table.remove(queue, i)
+            return
+        end
+    end
+    queue[#queue + 1] = { farmId = farmId, amount = amount }
+    if #queue > 20 then
+        table.remove(queue, 1)
+    end
+end
+
 function DiscordBridge:hookMoney()
     local mission = g_currentMission
-    if self.moneyHooked or mission == nil or mission.addMoney == nil then
+    if self.moneyHooked or mission == nil then
         return
     end
-    local original = mission.addMoney
-    mission.addMoney = function(m, amount, farmId, moneyType, ...)
-        local results = { original(m, amount, farmId, moneyType, ...) }
-        pcall(function()
-            if m:getIsServer() and type(amount) == "number" and amount ~= 0 and farmId ~= nil then
-                local name = DiscordBridge:getMoneyTypeName(moneyType)
-                if amount > 0 then
-                    DiscordBridge:addCounter("money_in", farmId, name, amount)
-                else
-                    DiscordBridge:addCounter("money_out", farmId, name, -amount)
-                end
-                -- Virement entre fermes = une sortie TRANSFER puis une entrée TRANSFER du même montant (ordre quelconque)
-                -- -> "transfer_in" : ferme qui reçoit, clé = id de la ferme qui envoie
-                if name == "TRANSFER" then
-                    -- liste d'attente : un autre mouvement TRANSFER entre les deux moitiés ne fait plus perdre le virement
-                    local q = DiscordBridge.pendingTransfers or {}
-                    DiscordBridge.pendingTransfers = q
-                    local matched = false
-                    for i, p in ipairs(q) do
-                        if p.farmId ~= farmId and math.abs(p.amount + amount) < 0.01 then
-                            local from, to = (amount > 0) and p.farmId or farmId, (amount > 0) and farmId or p.farmId
-                            DiscordBridge:addCounter("transfer_in", to, tostring(from), math.abs(amount))
-                            table.remove(q, i)
-                            matched = true
-                            break
-                        end
-                    end
-                    if not matched then
-                        q[#q + 1] = { farmId = farmId, amount = amount }
-                        if #q > 20 then table.remove(q, 1) end
-                    end
-                end
-            end
-        end)
-        return unpack(results)
-    end
-    self.moneyHooked = true
+    self.moneyHooked = hookAfter(mission, "addMoney", "Argent", function(_, m, amount, farmId, moneyType)
+        if not m:getIsServer() or type(amount) ~= "number" or amount == 0 or farmId == nil then
+            return
+        end
+        local name = DiscordBridge:getMoneyTypeName(moneyType)
+        DiscordBridge:addCounter(amount > 0 and "money_in" or "money_out", farmId, name, math.abs(amount))
+        if name == "TRANSFER" then
+            DiscordBridge:matchTransfer(farmId, amount)
+        end
+    end)
 end
 
 -- ------------------------------------------------------------
---  Temps de travail par joueur (salaires de l'association)
---  - Véhicule : conduit par un joueur (pas l'IA), moteur allumé -> crédité à la ferme propriétaire du véhicule.
---  - Tronçonneuse : tenue ET en train de couper -> créditée à la ferme du joueur.
---  ponytail: noms d'API FS25 non confirmés (getControllerName, getHeldHandTool, spec_chainsaw.isCutting) ;
---  le premier relevé de tronçonneuse est écrit dans le log pour vérifier, à corriger ici si rien ne remonte.
+--  Temps de travail par joueur (salaires de l'association), relevé une fois par seconde
+--  - Véhicule conduit par un joueur (pas l'IA), moteur allumé -> ferme propriétaire du véhicule
+--  - Tronçonneuse tenue ET en train de couper -> ferme du joueur
+--  ponytail: noms d'API non confirmés (getControllerName, getHeldHandTool, spec_chainsaw.isCutting) ; le premier relevé
+--  de tronçonneuse est écrit dans le log pour vérifier.
 -- ------------------------------------------------------------
 local function playerNick(player)
     local nick = safe(function() return g_currentMission.userManager:getUserByUserId(player.userId):getNickname() end, nil)
@@ -326,9 +298,14 @@ local function playerNick(player)
 end
 
 function DiscordBridge:trackWork(dt)
-    local s = dt / 1000
-    local vehicles = safe(function() return g_currentMission.vehicleSystem.vehicles end, {})
-    for _, v in pairs(vehicles) do
+    self.workTimer = self.workTimer + dt
+    if self.workTimer < self.WORK_INTERVAL_MS then
+        return
+    end
+    local s = self.workTimer / 1000
+    self.workTimer = 0
+
+    for _, v in pairs(safe(function() return g_currentMission.vehicleSystem.vehicles end, {})) do
         if v.spec_enterable ~= nil and safe(function() return v:getIsControlled() end, false)
             and not safe(function() return v:getIsAIActive() end, false)
             and safe(function() return v:getIsMotorStarted() end, false) then
@@ -339,8 +316,7 @@ function DiscordBridge:trackWork(dt)
         end
     end
 
-    local players = safe(function() return g_currentMission.playerSystem.players end, {})
-    for _, p in pairs(players) do
+    for _, p in pairs(safe(function() return g_currentMission.playerSystem.players end, {})) do
         local tool = safe(function() return p:getHeldHandTool() end, nil) or p.currentHandTool
         local spec = type(tool) == "table" and tool.spec_chainsaw or nil
         if spec ~= nil then
@@ -348,7 +324,7 @@ function DiscordBridge:trackWork(dt)
                 self.chainsawLogged = true
                 local keys = {}
                 for k, val in pairs(spec) do if type(val) == "boolean" then keys[#keys + 1] = k .. "=" .. tostring(val) end end
-                print(self.LOG_PREFIX .. "Tronçonneuse détectée, champs : " .. table.concat(keys, " "))
+                log("Tronçonneuse détectée, champs : " .. table.concat(keys, " "))
             end
             if spec.isCutting or spec.isWorking then
                 local farmId = safe(function() return p:getFarmId() end, nil) or p.farmId
@@ -359,52 +335,36 @@ function DiscordBridge:trackWork(dt)
 end
 
 -- ------------------------------------------------------------
---  Possessions (valeurs actuelles) : véhicules, usines, ruches
+--  Possessions (valeurs actuelles) : véhicules, usines, ruches -> exportées comme stats "_owned..."
 -- ------------------------------------------------------------
 function DiscordBridge:collectOwned()
     local owned = {}
     local function add(farmId, key)
-        if farmId == nil then
-            return
+        if farmId ~= nil then
+            owned[farmId] = owned[farmId] or {}
+            owned[farmId][key] = (owned[farmId][key] or 0) + 1
         end
-        owned[farmId] = owned[farmId] or {}
-        owned[farmId][key] = (owned[farmId][key] or 0) + 1
     end
 
-    local vehicles = safe(function() return g_currentMission.vehicleSystem.vehicles end, {})
-    for _, vehicle in pairs(vehicles) do
+    for _, vehicle in pairs(safe(function() return g_currentMission.vehicleSystem.vehicles end, {})) do
         if vehicle.spec_pallet == nil and vehicle.spec_bigBag == nil then
-            local farmId = safe(function() return vehicle:getOwnerFarmId() end, nil)
-            add(farmId, "_ownedVehicles")
-            if vehicle.spec_motorized ~= nil then
-                add(farmId, "_ownedMotorized")
-            end
+            add(safe(function() return vehicle:getOwnerFarmId() end, nil), "_ownedVehicles")
         end
     end
-
-    local placeables = safe(function() return g_currentMission.placeableSystem.placeables end, {})
-    for _, placeable in pairs(placeables) do
+    for _, placeable in pairs(safe(function() return g_currentMission.placeableSystem.placeables end, {})) do
         local farmId = safe(function() return placeable:getOwnerFarmId() end, nil)
-        if placeable.spec_productionPoint ~= nil then
-            add(farmId, "_ownedProductionPoints")
-        end
-        if placeable.spec_beehive ~= nil then
-            add(farmId, "_ownedBeehives")
-        end
+        if placeable.spec_productionPoint ~= nil then add(farmId, "_ownedProductionPoints") end
+        if placeable.spec_beehive ~= nil then add(farmId, "_ownedBeehives") end
     end
     return owned
 end
 
-
 -- ------------------------------------------------------------
---  Export complet générique : full.xml
---  Format : <section name="vehicles"><e k1="v1" k2="v2"/>...</section>
---  Le bot lit n'importe quelle section/colonne sans connaître les champs à l'avance :
---  pour une nouvelle fonction Discord, ajouter une section ICI (ou afficher une colonne existante côté bot).
---  Chaque section est isolée par pcall ; les valeurs indisponibles sont simplement omises.
+--  full.xml : <section name="vehicles"><e k1="v1" k2="v2"/>...</section>
+--  Le bot (commande /fs25) lit n'importe quelle section/colonne sans connaître les champs à l'avance :
+--  pour une nouvelle catégorie, ajouter une section ICI. Chaque section est isolée par pcall ;
+--  les valeurs indisponibles sont omises. Pas de coordonnées ni de droits admin.
 -- ------------------------------------------------------------
-DiscordBridge.FULL_INTERVAL_MS = 60000
-DiscordBridge.fullTimer = 0
 
 -- Niveaux de remplissage -> "WHEAT=1200;BARLEY=300"
 local function fillLevels(storage)
@@ -424,29 +384,25 @@ local function farmName(farmId)
     return f ~= nil and tostring(f.name) or ""
 end
 
--- safe() ne renvoie qu'une valeur : position = pcall direct
-local function posXZ(node)
-    local ok, x, _, z = pcall(getWorldTranslation, node)
-    if ok then return x, z end
-end
-
 local function placeables()
     return safe(function() return g_currentMission.placeableSystem.placeables end, {})
 end
 
--- Chaque section renvoie une liste de lignes { colonne = valeur }
+local function vehicles()
+    return safe(function() return g_currentMission.vehicleSystem.vehicles end, {})
+end
+
 DiscordBridge.sections = {}
 
 DiscordBridge.sections.vehicles = function()
     local rows = {}
-    for _, v in pairs(safe(function() return g_currentMission.vehicleSystem.vehicles end, {})) do
+    for _, v in pairs(vehicles()) do
         if v.spec_pallet == nil and v.spec_bigBag == nil then
-            local x, z = posXZ(v.rootNode)
             local diesel = safe(function() return v:getConsumerFillUnitIndex(FillType.DIESEL) end, nil)
             local farmId = safe(function() return v:getOwnerFarmId() end, nil)
             rows[#rows + 1] = {
                 name = safe(function() return v:getFullName() end, "?"),
-                farm = farmId, farmName = farmName(farmId), x = x, z = z,
+                farm = farmId, farmName = farmName(farmId),
                 price     = safe(function() return v:getPrice() end, nil),
                 sellPrice = safe(function() return v:getSellPrice() end, nil),
                 age       = v.age,
@@ -570,7 +526,8 @@ end
 
 DiscordBridge.sections.contracts = function()
     local rows = {}
-    for _, m in pairs(safe(function() return g_missionManager.missions end, {})) do
+    local missions = safe(function() return g_missionManager:getMissions() end, nil) or safe(function() return g_missionManager.missions end, {})
+    for _, m in pairs(missions) do
         rows[#rows + 1] = {
             type = safe(function() return m.type.name end, "?"), farm = m.farmId, status = m.status,
             reward = safe(function() return m:getReward() end, nil),
@@ -587,13 +544,7 @@ DiscordBridge.sections.players = function()
         local nick = safe(function() return user:getNickname() end, nil)
         if nick ~= nil and nick ~= "" then
             local farm = safe(function() return g_farmManager:getFarmByUserId(user:getId()) end, nil)
-            local player = safe(function() return g_currentMission.playerSystem:getPlayerByUserId(user:getId()) end, nil)
-            local x, z
-            if player ~= nil then x, z = posXZ(player.rootNode) end
-            rows[#rows + 1] = {
-                name = nick, farm = farm and farm.farmId or 0, farmName = farm and tostring(farm.name) or "",
-                x = x, z = z, admin = safe(function() return user:getIsMasterUser() end, nil),
-            }
+            rows[#rows + 1] = { name = nick, farm = farm and farm.farmId or 0, farmName = farm and tostring(farm.name) or "" }
         end
     end
     return rows
@@ -630,13 +581,24 @@ DiscordBridge.sections.environment = function()
     } }
 end
 
+-- Valeur de cellule : nombres compactés, textes bornés ; nil si inexportable
+local function cell(v)
+    if type(v) == "number" then
+        return (string.format("%.2f", v):gsub("%.?0+$", ""))
+    elseif type(v) == "string" then
+        return v ~= "" and string.sub(v, 1, DiscordBridge.MAX_STRING) or nil
+    elseif type(v) == "boolean" then
+        return tostring(v)
+    end
+    return nil
+end
+
 function DiscordBridge:exportFull()
     local xml = createXMLFile("DiscordBridgeFull", self.fullFile, "full")
     if xml == nil or xml == 0 then
-        print(self.LOG_PREFIX .. "Impossible de créer " .. self.fullFile)
+        log("Impossible de créer " .. self.fullFile)
         return
     end
-    setXMLInt(xml, "full#version", 2)
     setXMLString(xml, "full#exportedAt", safe(function() return getDate("%Y-%m-%d %H:%M:%S") end, ""))
     local names = {}
     for name in pairs(self.sections) do names[#names + 1] = name end
@@ -644,17 +606,20 @@ function DiscordBridge:exportFull()
     for si, name in ipairs(names) do
         local ok, rows = pcall(self.sections[name])
         if not ok then
-            print(self.LOG_PREFIX .. "Section " .. name .. " en erreur : " .. tostring(rows))
+            log("Section " .. name .. " en erreur : " .. tostring(rows))
             rows = {}
         end
         local skey = string.format("full.section(%d)", si - 1)
         setXMLString(xml, skey .. "#name", name)
         for ri, row in ipairs(rows) do
+            if ri > self.MAX_ROWS then
+                break
+            end
             local ekey = string.format("%s.e(%d)", skey, ri - 1)
             for k, v in pairs(row) do
-                if v ~= nil and v ~= "" and type(v) ~= "table" and type(v) ~= "function" then
-                    if type(v) == "number" then v = string.format("%.2f", v):gsub("%.?0+$", "") end
-                    setXMLString(xml, ekey .. "#" .. k, tostring(v))
+                local text = cell(v)
+                if text ~= nil then
+                    setXMLString(xml, ekey .. "#" .. k, text)
                 end
             end
         end
@@ -664,182 +629,80 @@ function DiscordBridge:exportFull()
 end
 
 -- ------------------------------------------------------------
---  Cycle de vie du mod
-
-function DiscordBridge:loadMap(name)
-    self.timer = self.INTERVAL_MS -- premier export immédiat
-
-    local settingsDir = getUserProfileAppPath() .. "modSettings/"
-    self.dir  = settingsDir .. "FS25_DiscordBridge/"
-    self.file = self.dir .. "status.xml"
-    self.fullFile = self.dir .. "full.xml"
-
-    createFolder(settingsDir)
-    createFolder(self.dir)
-
-    local savegameIndex = safe(function() return g_currentMission.missionInfo.savegameIndex end, 0)
-    self.countersFile = self.dir .. string.format("counters_savegame%d.xml", savegameIndex)
-    self:loadCounters()
-    if isServer() then
-        self:hookMoney()
-    end
-
-    print(self.LOG_PREFIX .. "Export vers : " .. self.file)
-end
-
-function DiscordBridge:deleteMap()
-    pcall(DiscordBridge.saveCounters, self)
-end
-
-function DiscordBridge:update(dt)
-    if g_currentMission == nil or not g_currentMission:getIsServer() then
-        return
-    end
-
-    pcall(DiscordBridge.trackWork, self, dt)
-
-    self.fullTimer = self.fullTimer + dt
-    if self.fullTimer >= self.FULL_INTERVAL_MS then
-        self.fullTimer = 0
-        local okFull, errFull = pcall(DiscordBridge.exportFull, self)
-        if not okFull then print(self.LOG_PREFIX .. "Erreur export complet : " .. tostring(errFull)) end
-    end
-
-    self.timer = self.timer + dt
-    if self.timer < self.INTERVAL_MS then
-        return
-    end
-    self.timer = 0
-
-    local ok, err = pcall(DiscordBridge.export, self)
-    pcall(DiscordBridge.saveCounters, self)
-    if not ok then
-        print(self.LOG_PREFIX .. "Erreur export : " .. tostring(err))
-    end
-end
-
-function DiscordBridge:export()
-    local mission = g_currentMission
-    local env     = mission.environment
-
-    local xml = createXMLFile("DiscordBridgeStatus", self.file, "discordBridge")
-    if xml == nil or xml == 0 then
-        print(self.LOG_PREFIX .. "Impossible de créer " .. self.file)
-        return
-    end
-
-    setXMLInt(xml, "discordBridge#version", 1)
-    setXMLString(xml, "discordBridge#exportedAt", safe(function() return getDate("%Y-%m-%d %H:%M:%S") end, ""))
-
-    -- ---------- Partie / carte ----------
-    local info = mission.missionInfo
-    setXMLString(xml, "discordBridge.game#savegameName", safe(function() return info.savegameName end, ""))
-    setXMLString(xml, "discordBridge.game#mapTitle",     safe(function() return info.mapTitle end, ""))
-    setXMLFloat (xml, "discordBridge.game#timeScale",    safe(function() return info.timeScale end, 1))
-
-    -- ---------- Temps ----------
-    setXMLInt(xml, "discordBridge.time#hour",        safe(function() return env.currentHour end, 0))
-    setXMLInt(xml, "discordBridge.time#minute",      safe(function() return env.currentMinute end, 0))
-    setXMLInt(xml, "discordBridge.time#day",         safe(function() return env.currentDay end, 0))
-    setXMLInt(xml, "discordBridge.time#dayInPeriod", safe(function() return env.currentDayInPeriod end, 1))
-    setXMLInt(xml, "discordBridge.time#daysPerPeriod", safe(function() return env.daysPerPeriod end, 1))
-    -- period : 1 = début de printemps (mars) ... 12 = février
-    setXMLInt(xml, "discordBridge.time#period",      safe(function() return env.currentPeriod end, 1))
-    setXMLInt(xml, "discordBridge.time#season",      safe(function() return env.currentSeason end, 0))
-    setXMLInt(xml, "discordBridge.time#year",        safe(function() return env.currentYear end, 1))
-
-    -- ---------- Météo (facultatif, ignoré si indispo) ----------
-    local weather = env.weather
+--  status.xml : lu par le bot toutes les minutes (noms de balises et d'attributs = contrat avec parseStatus du bot)
+-- ------------------------------------------------------------
+local function exportGame(xml, mission)
+    local info, env, weather = mission.missionInfo, mission.environment, mission.environment.weather
+    setXMLString(xml, "discordBridge.game#mapTitle",       safe(function() return info.mapTitle end, ""))
+    setXMLFloat (xml, "discordBridge.game#timeScale",      safe(function() return info.timeScale end, 1))
+    setXMLInt   (xml, "discordBridge.time#hour",           safe(function() return env.currentHour end, 0))
+    setXMLInt   (xml, "discordBridge.time#minute",         safe(function() return env.currentMinute end, 0))
+    setXMLInt   (xml, "discordBridge.time#dayInPeriod",    safe(function() return env.currentDayInPeriod end, 1))
+    setXMLInt   (xml, "discordBridge.time#daysPerPeriod",  safe(function() return env.daysPerPeriod end, 1))
+    setXMLInt   (xml, "discordBridge.time#period",         safe(function() return env.currentPeriod end, 1)) -- 1 = mars ... 12 = février
+    setXMLInt   (xml, "discordBridge.time#season",         safe(function() return env.currentSeason end, 0))
+    setXMLInt   (xml, "discordBridge.time#year",           safe(function() return env.currentYear end, 1))
     if weather ~= nil then
-        setXMLFloat(xml, "discordBridge.weather#temperature",
-            safe(function() return weather:getCurrentTemperature() end, -999))
-        setXMLInt(xml, "discordBridge.weather#type",
-            safe(function() return weather:getCurrentWeatherType() end, -1))
+        setXMLFloat(xml, "discordBridge.weather#temperature", safe(function() return weather:getCurrentTemperature() end, -999))
     end
+end
 
-    -- ---------- Fermes : finances + statistiques ----------
+-- Fermes (finances) + toutes leurs statistiques (hectares, bottes, distances...) + possessions
+local function exportFarms(xml)
     local i, s = 0, 0
-    local farms = safe(function() return g_farmManager:getFarms() end, {})
-    for _, farm in pairs(farms) do
+    local function addStat(farmId, name, value)
+        local skey = string.format("discordBridge.stats.stat(%d)", s)
+        setXMLInt   (xml, skey .. "#farm",  farmId)
+        setXMLString(xml, skey .. "#name",  tostring(name))
+        setXMLFloat (xml, skey .. "#value", value)
+        s = s + 1
+    end
+    for _, farm in pairs(safe(function() return g_farmManager:getFarms() end, {})) do
         if farm.farmId ~= nil and farm.farmId ~= FarmManager.SPECTATOR_FARM_ID then
             local key = string.format("discordBridge.farms.farm(%d)", i)
             setXMLInt   (xml, key .. "#id",    farm.farmId)
-            setXMLString(xml, key .. "#name",  tostring(farm.name or ("Ferme " .. farm.farmId)))
+            setXMLString(xml, key .. "#name",  string.sub(tostring(farm.name or ("Ferme " .. farm.farmId)), 1, DiscordBridge.MAX_STRING))
             setXMLFloat (xml, key .. "#money", safe(function() return farm.money end, 0))
             setXMLFloat (xml, key .. "#loan",  safe(function() return farm.loan end, 0))
             i = i + 1
-
-            -- Toutes les statistiques de la ferme (hectares labourés, semés, bottes, distance...)
-            local statistics = safe(function() return farm.stats.statistics end, {})
-            for statName, entry in pairs(statistics) do
-                local value = nil
-                if type(entry) == "table" then
-                    value = entry.total
-                elseif type(entry) == "number" then
-                    value = entry
-                end
+            for statName, entry in pairs(safe(function() return farm.stats.statistics end, {})) do
+                local value = type(entry) == "table" and entry.total or entry
                 if type(value) == "number" then
-                    local skey = string.format("discordBridge.stats.stat(%d)", s)
-                    setXMLInt   (xml, skey .. "#farm",  farm.farmId)
-                    setXMLString(xml, skey .. "#name",  tostring(statName))
-                    setXMLFloat (xml, skey .. "#value", value)
-                    s = s + 1
+                    addStat(farm.farmId, statName, value)
                 end
             end
         end
     end
-
-    -- ---------- Possessions (exportées comme des stats "_owned...") ----------
-    for farmId, values in pairs(self:collectOwned()) do
+    for farmId, values in pairs(DiscordBridge:collectOwned()) do
         for name, value in pairs(values) do
-            local skey = string.format("discordBridge.stats.stat(%d)", s)
-            setXMLInt   (xml, skey .. "#farm",  farmId)
-            setXMLString(xml, skey .. "#name",  name)
-            setXMLFloat (xml, skey .. "#value", value)
-            s = s + 1
+            addStat(farmId, name, value)
         end
     end
+end
 
-    -- ---------- Compteurs production / argent ----------
-    local c = 0
-    for kind, byFarm in pairs(self.counters) do
-        for farmId, byType in pairs(byFarm) do
-            for ft, value in pairs(byType) do
-                local ckey = string.format("discordBridge.counters.c(%d)", c)
-                setXMLString(xml, ckey .. "#kind",     kind)
-                setXMLInt   (xml, ckey .. "#farm",     farmId)
-                setXMLString(xml, ckey .. "#fillType", ft)
-                setXMLFloat (xml, ckey .. "#value",    value)
-                c = c + 1
-            end
-        end
-    end
-
-    -- ---------- Joueurs connectés ----------
+-- Joueurs connectés (pseudo + ferme ; 0 = spectateur ou inconnue)
+local function exportPlayers(xml)
     local j = 0
-    local users = safe(function() return mission.userManager:getUsers() end, {})
-    for _, user in pairs(users) do
+    for _, user in pairs(safe(function() return g_currentMission.userManager:getUsers() end, {})) do
         local nick = safe(function() return user:getNickname() end, nil)
         if nick ~= nil and nick ~= "" then
-            setXMLString(xml, string.format("discordBridge.players.player(%d)#name", j), nick)
-            -- ferme du joueur (contrôle des licences de l'association) ; 0 = spectateur / inconnue
-            local farmId = safe(function() return g_farmManager:getFarmByUserId(user:getId()).farmId end, 0)
-            setXMLInt(xml, string.format("discordBridge.players.player(%d)#farm", j), farmId)
+            local key = string.format("discordBridge.players.player(%d)", j)
+            setXMLString(xml, key .. "#name", string.sub(nick, 1, DiscordBridge.MAX_STRING))
+            setXMLInt(xml, key .. "#farm", safe(function() return g_farmManager:getFarmByUserId(user:getId()).farmId end, 0))
             j = j + 1
         end
     end
-    setXMLInt(xml, "discordBridge.players#count", j)
+end
 
-    -- ---------- Ouvriers IA en cours ----------
-    -- On regroupe : jobs actifs (aiSystem) + vehicules pilotes par l'IA (au cas ou la liste des jobs est vide).
+-- Ouvriers IA en cours : jobs actifs du système IA, sinon véhicules pilotés par l'IA
+local function collectHelpers(mission)
     local found, seen = {}, {}
     local ai = mission.aiSystem
     for _, listName in ipairs({ "activeJobs", "jobs" }) do
         local list = ai ~= nil and ai[listName] or nil
         if type(list) == "table" then
             for _, job in pairs(list) do
-                local running = safe(function() return job.isRunning end, nil)
-                if type(job) == "table" and running ~= false and not seen[job] then
+                if type(job) == "table" and safe(function() return job.isRunning end, nil) ~= false and not seen[job] then
                     seen[job] = true
                     local farmId = safe(function() return job:getStartedFarmId() end, nil)
                     if farmId == nil or farmId == 0 then farmId = job.startedFarmId end
@@ -855,8 +718,7 @@ function DiscordBridge:export()
         end
     end
     if #found == 0 then
-        local vehicles = safe(function() return mission.vehicleSystem.vehicles end, nil) or mission.vehicles or {}
-        for _, veh in pairs(vehicles) do
+        for _, veh in pairs(vehicles()) do
             if safe(function() return veh:getIsAIActive() end, false) == true then
                 found[#found + 1] = {
                     id      = tostring(veh.id or (#found + 1)),
@@ -867,18 +729,93 @@ function DiscordBridge:export()
             end
         end
     end
-    local h = 0
-    for _, w in ipairs(found) do
+    return found
+end
+
+local function exportHelpers(xml, mission)
+    for h, w in ipairs(collectHelpers(mission)) do
         local farm = w.farmId ~= nil and safe(function() return g_farmManager:getFarmById(w.farmId) end, nil) or nil
-        local key = string.format("discordBridge.helpers.helper(%d)", h)
+        local key = string.format("discordBridge.helpers.helper(%d)", h - 1)
         setXMLString(xml, key .. "#id",      w.id)
         setXMLString(xml, key .. "#farm",    farm ~= nil and tostring(farm.name) or "?")
         setXMLString(xml, key .. "#job",     w.title)
         setXMLString(xml, key .. "#vehicle", w.vehicle)
-        h = h + 1
+    end
+end
+
+function DiscordBridge:export()
+    local xml = createXMLFile("DiscordBridgeStatus", self.file, "discordBridge")
+    if xml == nil or xml == 0 then
+        log("Impossible de créer " .. self.file)
+        return
+    end
+    -- chaque bloc est isolé : une erreur dans l'un n'empêche pas d'écrire les autres
+    local mission = g_currentMission
+    for name, fn in pairs({
+        game = exportGame, farms = exportFarms, players = exportPlayers, helpers = exportHelpers,
+        counters = function(x) writeCounters(x, "discordBridge.counters") end,
+    }) do
+        local ok, err = pcall(fn, xml, mission)
+        if not ok then
+            log("Export " .. name .. " en erreur : " .. tostring(err))
+        end
     end
     saveXMLFile(xml)
     delete(xml)
+end
+
+-- ------------------------------------------------------------
+--  Cycle de vie du mod (serveur uniquement)
+-- ------------------------------------------------------------
+function DiscordBridge:loadMap(name)
+    if not isServer() then
+        return
+    end
+    self.enabled = true
+    self.statusTimer = self.STATUS_INTERVAL_MS                -- premier export immédiat
+    self.fullTimer   = self.FULL_INTERVAL_MS - 20000          -- premier export complet 20 s après (décalé du premier)
+
+    local settingsDir = getUserProfileAppPath() .. "modSettings/"
+    self.dir      = settingsDir .. "FS25_DiscordBridge/"
+    self.file     = self.dir .. "status.xml"
+    self.fullFile = self.dir .. "full.xml"
+    createFolder(settingsDir)
+    createFolder(self.dir)
+
+    local savegameIndex = safe(function() return g_currentMission.missionInfo.savegameIndex end, 0)
+    self.countersFile = self.dir .. string.format("counters_savegame%d.xml", savegameIndex)
+    self:loadCounters()
+    self:hookMoney()
+    log("V2 prête. Export vers : " .. self.file)
+end
+
+function DiscordBridge:deleteMap()
+    if self.enabled then
+        pcall(DiscordBridge.saveCounters, self)
+    end
+end
+
+function DiscordBridge:update(dt)
+    if not self.enabled or g_currentMission == nil then
+        return
+    end
+
+    pcall(DiscordBridge.trackWork, self, dt)
+
+    self.fullTimer = self.fullTimer + dt
+    if self.fullTimer >= self.FULL_INTERVAL_MS then
+        self.fullTimer = 0
+        local ok, err = pcall(DiscordBridge.exportFull, self)
+        if not ok then log("Erreur export complet : " .. tostring(err)) end
+    end
+
+    self.statusTimer = self.statusTimer + dt
+    if self.statusTimer >= self.STATUS_INTERVAL_MS then
+        self.statusTimer = 0
+        local ok, err = pcall(DiscordBridge.export, self)
+        pcall(DiscordBridge.saveCounters, self)
+        if not ok then log("Erreur export : " .. tostring(err)) end
+    end
 end
 
 addModEventListener(DiscordBridge)
