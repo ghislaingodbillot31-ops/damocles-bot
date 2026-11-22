@@ -259,6 +259,7 @@ async function resetSalon(channel, avecSucces = false) {
     for (const m of msgs.values()) if (!del.has(m.id)) await m.delete().catch(() => {});
   }
   await require('./fs25-succes-hub').update(lastStatus, channel);
+  await require('./evenements').maj(lastStatus, channel, true).catch((e) => console.warn(`[FS25] Événement : ${e.message}`)); // le salon vient d'être vidé : HUB des événements republié
   if (avecSucces) await recapAll(channel);
 }
 

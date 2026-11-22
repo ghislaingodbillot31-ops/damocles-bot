@@ -382,6 +382,7 @@ async function startFs25Bridge(client) {
         logTo(helperChannel, helperEvents(activeHelpers, lastStatus.helpers));
         logTo(bankChannel, banque);
         await processAchievements(lastStatus, succesChannel).catch((e) => console.warn(`[FS25] Succès : ${e.message}`));
+        await require('./evenements').maj(lastStatus, succesChannel).catch((e) => console.warn(`[FS25] Événement : ${e.message}`));
       }
       embed = buildEmbed(lastStatus, mtime, c);
     } catch (err) {
