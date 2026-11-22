@@ -35,6 +35,7 @@ const BLOCS = [
 `📏 **Limites**
 • 🌱 10 champs max ~
 • 🐝 5 ruches max
+• 🏠 8 serres max
 • 🐄 1 enclos par espèce, **500 animaux max par enclos**
 • 🏭 Usines : selon ton niveau d'industrie
 • 🌾 Fusion des champs : uniquement si chaque champ fait moins de 1,5 ha, sur demande par ticket
