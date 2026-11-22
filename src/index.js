@@ -243,6 +243,7 @@ client.on(Events.InteractionCreate, async interaction => {
       'contrat':      './commands/contrat',
       'maintenance':  './commands/maintenance',
       'loto-tirage':  './commands/loto-tirage',
+      'tirage-au-sort': './commands/tirage-au-sort',
       'niveau':       './commands/niveau',
       'classement':   './commands/classement',
       'xp-admin':     './commands/xp-admin',
@@ -342,6 +343,7 @@ client.on(Events.InteractionCreate, async interaction => {
 
   if (!interaction.isButton()) return;
   const id = interaction.customId;
+  if (id === 'tirage_go') { await require('./commands/tirage-au-sort').bouton(interaction).catch(e => console.error('Tirage :', e.message)); return; }
   if (id.startsWith('nv_')) { await require('./farm/hub2').handle(interaction); return; }
 
   // Boutons HUB des exploitants
