@@ -123,8 +123,7 @@ async function maj(status, channel, force = false) {
   const annonces = attribuer(status, fermes);
   if (change || annonces.length) save();
   if (annonces.length) {
-    await channel.send({ content: annonces.join('\n'), allowedMentions: { parse: [] } }).catch((e) => console.warn(`[FS25] Défi : ${e.message}`));
-    for (const a of annonces) await require('../core/agrilog').agrilog(channel.guild, a); // même ligne dans le salon de logs
+    for (const a of annonces) await require('../core/agrilog').agrilog(channel.guild, a); // uniquement dans le salon de logs (jamais dans le salon du HUB)
   }
 
   const msg = buildMessage(status, fermes);

@@ -22,7 +22,7 @@ const farms = [{ id: 1, name: 'A' }, { id: 2, name: 'Forêt' }];
   assert.strictEqual(ev._etat().points[1].total, 50);
   await ev.maj(avec(f.qte * 2), channel);
   assert.strictEqual(ev._etat().points[1].total, 50);           // pas de double attribution
-  assert.ok(sent.some((m) => m.content && m.content.includes('+50 pts')));
+  assert.ok(!sent.some((m) => m.content)); // aucune annonce dans le salon du HUB (elles vont dans le salon de logs)
   console.log('evenements OK');
 })();
 
