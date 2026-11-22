@@ -21,7 +21,8 @@ DiscordBridge.LOG_PREFIX    = "[DiscordBridge] "
 --   "work_chainsaw" : secondes de coupe à la tronçonneuse pour la ferme du joueur (clé = pseudo du joueur)
 --   "transfer_in"   : € reçus par virement d'une autre ferme (clé = id de la ferme qui envoie)
 --   "sold"          : litres/unités vendus à un point de vente (clé = fillType) -> événement hebdomadaire
-DiscordBridge.counters = { produced = {}, money_in = {}, money_out = {}, work_vehicle = {}, work_chainsaw = {}, transfer_in = {}, sold = {} }
+--   "work_credit" / "work_debit" : hectares travaillés chez un autre joueur (clé = nom de stat), + pour la ferme du véhicule, - pour le propriétaire du champ
+DiscordBridge.counters = { produced = {}, money_in = {}, money_out = {}, work_vehicle = {}, work_chainsaw = {}, transfer_in = {}, sold = {}, work_credit = {}, work_debit = {} }
 DiscordBridge.countersDirty = false
 
 -- Lecture "sûre" d'un champ (évite un crash si l'API change)
@@ -173,31 +174,55 @@ if PlaceableBeehivePalletSpawner ~= nil and PlaceableBeehivePalletSpawner.addFil
 end
 
 -- ------------------------------------------------------------
---  Succès : le travail effectué dans un champ appartenant à une autre ferme
---  est crédité à la ferme du véhicule (celui qui travaille), pas au propriétaire du champ.
---  Les stats de travail (hectares labourés, semés...) utilisent la ferme du terrain touché.
---  ponytail: redirige aussi les autres usages de cette fonction ; si effet de bord, le retirer.
+--  Succès : le travail effectué dans un champ appartenant à une autre ferme doit compter pour la ferme du véhicule.
+--  Le jeu crédite la ferme du TERRAIN touché. On ne modifie RIEN dans le jeu (une version qui renvoyait une autre ferme
+--  faisait planter les contrats de champ) : on OBSERVE. getLastTouchedFarmlandFarmId note quel véhicule vient de toucher
+--  quel terrain ; FarmManager:updateFarmStats (stats "...Hectares") est observé juste après : si le propriétaire du terrain
+--  n'est pas la ferme du véhicule, le mod compte "work_credit" (ferme du véhicule, +) et "work_debit" (propriétaire, -).
+--  Le bot ajoute/retire ces compteurs aux stats exportées. Les valeurs renvoyées au jeu sont toujours celles de l'original.
+--  ponytail: noms d'API FS25 non confirmés ; la 1re attribution est écrite dans le log pour vérifier.
 -- ------------------------------------------------------------
-local function creditWorkerFarm(class)
+local function observeTouch(class)
     if class == nil or class.getLastTouchedFarmlandFarmId == nil then
         return false
     end
     local original = class.getLastTouchedFarmlandFarmId
     class.getLastTouchedFarmlandFarmId = function(vehicle, ...)
-        local landFarmId = original(vehicle, ...)
-        local ok, workerFarmId = pcall(function() return vehicle:getOwnerFarmId() end)
-        if ok and type(workerFarmId) == "number" and workerFarmId ~= FarmManager.SPECTATOR_FARM_ID and landFarmId ~= nil
-            and landFarmId ~= FarmlandManager.NO_OWNER_FARM_ID then
-            return workerFarmId
-        end
-        return landFarmId
+        local results = { original(vehicle, ...) }
+        pcall(function() DiscordBridge.touch = { vehicle = vehicle, land = results[1], t = g_time } end)
+        return unpack(results)
     end
     return true
 end
 
-local hooked = creditWorkerFarm(Vehicle) or creditWorkerFarm(WorkArea)
-print(DiscordBridge.LOG_PREFIX .. (hooked and "Succès : travail crédité à la ferme du véhicule"
-    or "getLastTouchedFarmlandFarmId introuvable : succès crédités au propriétaire du champ"))
+local touchHooked = observeTouch(Vehicle) or observeTouch(WorkArea)
+print(DiscordBridge.LOG_PREFIX .. (touchHooked and "Succès : travail chez un autre joueur suivi (observation seule)"
+    or "getLastTouchedFarmlandFarmId introuvable : travail chez un autre joueur non suivi"))
+
+if FarmManager ~= nil and FarmManager.updateFarmStats ~= nil then
+    local original = FarmManager.updateFarmStats
+    FarmManager.updateFarmStats = function(manager, farmId, statName, delta, ...)
+        local results = { original(manager, farmId, statName, delta, ...) }
+        pcall(function()
+            local t = DiscordBridge.touch
+            if t ~= nil and isServer() and type(delta) == "number" and delta > 0 and type(statName) == "string"
+                and statName:find("Hectares$") and t.land == farmId and math.abs((g_time or 0) - (t.t or 0)) <= 100 then
+                local worker = t.vehicle:getOwnerFarmId()
+                if type(worker) == "number" and worker ~= farmId and worker ~= FarmManager.SPECTATOR_FARM_ID then
+                    if not DiscordBridge.creditLogged then
+                        DiscordBridge.creditLogged = true
+                        print(DiscordBridge.LOG_PREFIX .. "Travail chez un autre joueur : ferme " .. tostring(worker) .. " dans le champ de la ferme " .. tostring(farmId) .. " (" .. statName .. ")")
+                    end
+                    DiscordBridge:addCounter("work_credit", worker, statName, delta)
+                    DiscordBridge:addCounter("work_debit", farmId, statName, delta)
+                end
+            end
+        end)
+        return unpack(results)
+    end
+else
+    print(DiscordBridge.LOG_PREFIX .. "FarmManager.updateFarmStats introuvable : travail chez un autre joueur non suivi")
+end
 
 -- ------------------------------------------------------------
 --  Ventes : tout ce qui est livré à un point de vente passe par SellingStation:addFillLevelFromTool(farmId, delta, fillType, ...)

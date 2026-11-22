@@ -104,8 +104,20 @@ function unescapeXml(s) {
 }
 
 function parseStatus(xml) {
-  const st = parseBrut(xml);
+  const st = deplacerTravail(parseBrut(xml));
   require('./succes-base').appliquer(st.stats, st.counters); // succès : compteurs depuis la remise à zéro
+  return st;
+}
+
+// Travail chez un autre joueur : le jeu crédite le propriétaire du champ ; le mod compte work_credit (+ferme du véhicule) / work_debit (-propriétaire).
+// On déplace ces hectares dans les stats de la ferme qui a réellement travaillé.
+function deplacerTravail(st) {
+  for (const c of st.counters) {
+    if (c.kind !== 'work_credit' && c.kind !== 'work_debit') continue;
+    let s = st.stats.find((x) => x.farm === c.farm && x.name === c.fillType);
+    if (!s) st.stats.push(s = { farm: c.farm, name: c.fillType, value: 0 });
+    s.value = Math.max(0, s.value + (c.kind === 'work_credit' ? c.value : -c.value));
+  }
   return st;
 }
 
@@ -435,9 +447,10 @@ module.exports = {
   buildEmbed, // exporté pour les tests
   getLastFs25Status: () => lastStatus,
   parseStatus, // exporté pour les tests
+  deplacerTravail,
   lireStatutBrut: async () => { // valeurs du jeu sans point zéro (pour figer un nouveau zéro)
     const c = cfg();
     const { data } = await (c.source === 'sftp' ? readViaSftp : readViaFtp)(c, null);
-    return parseBrut(data);
+    return deplacerTravail(parseBrut(data));
   },
 };

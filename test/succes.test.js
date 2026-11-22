@@ -17,3 +17,13 @@ base.figer(JSON.parse(JSON.stringify(sv)), JSON.parse(JSON.stringify(cv)));
 sv[0].value = 70; cv[0].value = 5; base.appliquer(sv, cv);
 assert.strictEqual(sv[0].value, 20); assert.strictEqual(cv[0].value, 0);
 require('fs').unlinkSync(require('../src/core/paths').dataPath('succes-base.json')); console.log('base OK');
+
+// travail chez un autre joueur : les hectares passent du propriétaire du champ à la ferme du véhicule
+{
+  const { deplacerTravail } = require('../src/farm/fs25-bridge');
+  const st = deplacerTravail({ stats: [{ farm: 1, name: 'plowedHectares', value: 10 }], counters: [
+    { kind: 'work_credit', farm: 2, fillType: 'plowedHectares', value: 3 }, { kind: 'work_debit', farm: 1, fillType: 'plowedHectares', value: 3 }] });
+  assert.strictEqual(st.stats.find((x) => x.farm === 1).value, 7);
+  assert.strictEqual(st.stats.find((x) => x.farm === 2).value, 3);
+  console.log('travail OK');
+}
