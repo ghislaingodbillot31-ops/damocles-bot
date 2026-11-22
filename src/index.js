@@ -100,6 +100,8 @@ client.once(Events.ClientReady, async () => {
   boutique.startBoutique(client);
   require('./farm/hub2').init(client);
   setTimeout(() => require('./farm/reset-exploitations').run(client).catch(e => console.error('⚠️ Remise à zéro exploitations :', e.message)), 20_000); // une seule fois
+  try { require('./farm/reset-marche').run(); } catch (e) { console.error('⚠️ Remise à zéro marché :', e.message); } // une seule fois
+  setTimeout(() => require('./farm/reset-succes').run(client).catch(e => console.error('⚠️ Remise à zéro succès :', e.message)), 30_000); // une seule fois
   setTimeout(() => require('./farm/salon-exploitation').refreshAll(client).catch(() => {}), 40_000); // répare un salon resté vide (redémarrage en pleine création)
   // une seule version de chaque panneau : une fois les panneaux republiés, on supprime les anciens
   setTimeout(() => require('./core/nettoyage').nettoyerTout(client).catch(() => {}), 60_000);

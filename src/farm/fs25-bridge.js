@@ -104,6 +104,12 @@ function unescapeXml(s) {
 }
 
 function parseStatus(xml) {
+  const st = parseBrut(xml);
+  require('./succes-base').appliquer(st.stats, st.counters); // succès : compteurs depuis la remise à zéro
+  return st;
+}
+
+function parseBrut(xml) {
   const game = firstTag(xml, 'game');
   const time = firstTag(xml, 'time');
   const weather = firstTag(xml, 'weather');
@@ -428,4 +434,9 @@ module.exports = {
   buildEmbed, // exporté pour les tests
   getLastFs25Status: () => lastStatus,
   parseStatus, // exporté pour les tests
+  lireStatutBrut: async () => { // valeurs du jeu sans point zéro (pour figer un nouveau zéro)
+    const c = cfg();
+    const { data } = await (c.source === 'sftp' ? readViaSftp : readViaFtp)(c, null);
+    return parseBrut(data);
+  },
 };
