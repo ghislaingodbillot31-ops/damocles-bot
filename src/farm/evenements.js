@@ -15,15 +15,17 @@ const NIVEAUX = [
   { niveau: 'difficile', emoji: '🔴', label: 'Difficile', mult: 12, pts: 500 },
 ];
 // ft = nom FS25 du produit ; base = quantité (L) du défi facile (moyen ×4, difficile ×12)
+// fam = famille : un produit dérivé partage la famille de sa matière première (farine ← céréales, sucre ← betteraves) ;
+// les 3 défis de la semaine viennent toujours de 3 familles différentes.
 const PRODUITS = [
-  { ft: 'WHEAT', nom: 'Blé', emoji: '🌾', base: 5000 }, { ft: 'BARLEY', nom: 'Orge', emoji: '🌾', base: 5000 },
-  { ft: 'OAT', nom: 'Avoine', emoji: '🌾', base: 4000 }, { ft: 'CANOLA', nom: 'Colza', emoji: '🌼', base: 4000 },
+  { ft: 'WHEAT', nom: 'Blé', emoji: '🌾', base: 5000, fam: 'cereales' }, { ft: 'BARLEY', nom: 'Orge', emoji: '🌾', base: 5000, fam: 'cereales' },
+  { ft: 'OAT', nom: 'Avoine', emoji: '🌾', base: 4000, fam: 'cereales' }, { ft: 'CANOLA', nom: 'Colza', emoji: '🌼', base: 4000 },
   { ft: 'SUNFLOWER', nom: 'Tournesol', emoji: '🌻', base: 4000 }, { ft: 'SOYBEAN', nom: 'Soja', emoji: '🫘', base: 4000 },
   { ft: 'MAIZE', nom: 'Maïs', emoji: '🌽', base: 8000 }, { ft: 'POTATO', nom: 'Pommes de terre', emoji: '🥔', base: 5000 },
-  { ft: 'SUGARBEET', nom: 'Betteraves', emoji: '🥬', base: 8000 }, { ft: 'MILK', nom: 'Lait', emoji: '🥛', base: 5000 },
+  { ft: 'SUGARBEET', nom: 'Betteraves', emoji: '🥬', base: 8000, fam: 'betterave' }, { ft: 'MILK', nom: 'Lait', emoji: '🥛', base: 5000 },
   { ft: 'EGG', nom: 'Œufs', emoji: '🥚', base: 500 }, { ft: 'WOOL', nom: 'Laine', emoji: '🐑', base: 1000 },
-  { ft: 'HONEY', nom: 'Miel', emoji: '🍯', base: 500 }, { ft: 'FLOUR', nom: 'Farine', emoji: '🥖', base: 2000 },
-  { ft: 'SUGAR', nom: 'Sucre', emoji: '🍬', base: 2000 }, { ft: 'WOODCHIPS', nom: 'Plaquettes de bois', emoji: '🪵', base: 5000 },
+  { ft: 'HONEY', nom: 'Miel', emoji: '🍯', base: 500 }, { ft: 'FLOUR', nom: 'Farine', emoji: '🥖', base: 2000, fam: 'cereales' },
+  { ft: 'SUGAR', nom: 'Sucre', emoji: '🍬', base: 2000, fam: 'betterave' }, { ft: 'WOODCHIPS', nom: 'Plaquettes de bois', emoji: '🪵', base: 5000 },
 ];
 
 let etat = { semaine: null, defis: [], base: {}, fait: {}, points: {}, msgId: null };
@@ -43,7 +45,9 @@ const jourFr = (iso, plus = 0) => new Date(Date.parse(iso) + plus * 86400000).to
 function tirerDefis() {
   const liste = [...PRODUITS];
   for (let i = liste.length - 1; i > 0; i--) { const j = crypto.randomInt(i + 1); [liste[i], liste[j]] = [liste[j], liste[i]]; }
-  return NIVEAUX.map((n, i) => ({ niveau: n.niveau, ft: liste[i].ft, qte: liste[i].base * n.mult, pts: n.pts }));
+  const choix = [];
+  for (const p of liste) if (choix.length < NIVEAUX.length && !choix.some((c) => (c.fam || c.ft) === (p.fam || p.ft))) choix.push(p);
+  return NIVEAUX.map((n, i) => ({ niveau: n.niveau, ft: choix[i].ft, qte: choix[i].base * n.mult, pts: n.pts }));
 }
 
 const vendu = (status, farmId, ft) => status.counters.filter((c) => c.kind === 'sold' && c.farm === farmId && c.fillType === ft).reduce((s, c) => s + c.value, 0);
@@ -61,7 +65,9 @@ const meta = (niveau) => NIVEAUX.find((n) => n.niveau === niveau);
 // Nouvelle semaine : nouveaux défis, compteurs de départ relevés. Renvoie true si changement.
 function rotation(status) {
   const sem = lundi();
-  if (etat.semaine === sem) return false;
+  const fam = (d) => { const p = PRODUITS.find((q) => q.ft === d.ft); return p?.fam || d.ft; };
+  const incoherent = new Set(etat.defis.map(fam)).size < etat.defis.length; // défis déjà tirés avec un produit dérivé d'un autre : on retire
+  if (etat.semaine === sem && !incoherent) return false;
   etat = { ...etat, semaine: sem, defis: tirerDefis(), base: {}, fait: {} };
   for (const f of status.farms) initBase(status, f);
   return true;

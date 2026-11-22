@@ -25,3 +25,19 @@ const farms = [{ id: 1, name: 'A' }, { id: 2, name: 'Forêt' }];
   assert.ok(sent.some((m) => m.content && m.content.includes('+50 pts')));
   console.log('evenements OK');
 })();
+
+// jamais deux produits de la même famille (ex. blé + farine) dans les 3 défis
+for (let i = 0; i < 500; i++) {
+  const fam = ev.tirerDefis().map((x) => { const p = ev.PRODUITS.find((q) => q.ft === x.ft); return p.fam || p.ft; });
+  assert.strictEqual(new Set(fam).size, 3);
+}
+console.log('familles OK');
+
+// défis incohérents (blé + farine) déjà enregistrés -> retirés au prochain relevé
+(async () => {
+  ev._reset({ semaine: ev.lundi(), defis: [{ niveau: 'facile', ft: 'WHEAT', qte: 1, pts: 50 }, { niveau: 'moyen', ft: 'FLOUR', qte: 1, pts: 150 }, { niveau: 'difficile', ft: 'MILK', qte: 1, pts: 500 }], base: {}, fait: {}, points: {}, msgId: null });
+  const ch = { send: async () => ({ id: 'x' }), messages: { fetch: async () => null } };
+  await ev.maj({ farms: [{ id: 1, name: 'A' }], counters: [] }, ch);
+  assert.ok(!(ev._etat().defis.some((d) => d.ft === 'WHEAT') && ev._etat().defis.some((d) => d.ft === 'FLOUR')));
+  console.log('retirage OK');
+})();
