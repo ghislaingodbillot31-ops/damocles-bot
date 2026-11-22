@@ -20,6 +20,11 @@ const BLOCS = [
 • Tu construis uniquement sur tes terrains
 • Chaque exploitation gère son propre porte-monnaie 💰
 
+🚀 **Départ**
+• Le terrain de départ est payé grâce à un **crédit généré par l'association**, à **rembourser au fur et à mesure** 🏦
+• Aucun bâtiment n'est placé à l'avance 🏗️
+• Tous les joueurs démarrent **au même niveau** ⚖️
+
 🌾 **Activités & travaux**
 • Tu choisis tes activités dans la liste officielle (rôle Discord)
 • Tu produis et vends seulement ce qui correspond à tes activités
