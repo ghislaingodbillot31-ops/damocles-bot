@@ -1,14 +1,14 @@
-// ÉVÉNEMENT HEBDOMADAIRE : chaque lundi (heure de Paris), 3 défis de vente (facile / moyen / difficile) sur des produits tirés au sort.
+// DÉFI HEBDOMADAIRE : chaque lundi (heure de Paris), 3 défis de vente (facile / moyen / difficile) sur des produits tirés au sort.
 // Le mod compte les litres vendus aux points de vente (compteur « sold », par ferme et par produit) : le défi se mesure
 // sur ce qui a été vendu depuis le lundi, peu importe l'origine (récolte ou achat à un autre joueur).
-// Récompense : points de classement (50 / 150 / 500), classement cumulé par exploitation dans le HUB.
+// Récompense : points (50 / 150 / 500) ; le classement du HUB compte le nombre de défis relevés (cumulé), les points départagent.
 const fs = require('fs');
 const crypto = require('crypto');
 const { dataPath } = require('../core/paths');
 const { panneauEmbed } = require('../core/embed-format');
 
 const FILE = dataPath('evenements.json');
-const FOOTER = 'MonCopainBot · Événement hebdomadaire';
+const FOOTER = 'MonCopainBot · Défi hebdomadaire';
 const NIVEAUX = [
   { niveau: 'facile', emoji: '🟢', label: 'Facile', mult: 1, pts: 50 },
   { niveau: 'moyen', emoji: '🟠', label: 'Moyen', mult: 4, pts: 150 },
@@ -81,8 +81,8 @@ function attribuer(status, fermes) {
       const fait = (etat.fait[farm.id] ||= []);
       if (fait.includes(d.niveau) || progres(status, farm, d) < d.qte) continue;
       fait.push(d.niveau);
-      const p = (etat.points[farm.id] ||= { nom: farm.name, total: 0 });
-      p.nom = farm.name; p.total += d.pts;
+      const p = (etat.points[farm.id] ||= { nom: farm.name, total: 0, nb: 0 });
+      p.nom = farm.name; p.total += d.pts; p.nb = (p.nb || 0) + 1;
       const m = meta(d.niveau), pr = produit(d.ft);
       annonces.push(`🎯 **${farm.name}** a réussi le défi ${m.emoji} ${m.label} : vendre ${fmt(d.qte)} L de ${pr.emoji} ${pr.nom}  ·  **+${d.pts} pts**`);
     }
@@ -100,12 +100,11 @@ function buildMessage(status, fermes) {
     return [`${m.emoji} **${m.label}**  ·  Vendre **${fmt(d.qte)} L** de ${pr.emoji} **${pr.nom}**  ·  **+${d.pts} pts**`,
       faits.length ? `✅ ${faits.join(', ')}` : null, enCours.length ? `⏳ ${enCours.join(' · ')}` : null].filter(Boolean).join('\n');
   });
-  const semaine = (f) => (etat.fait[f.id] || []).reduce((s, n) => s + (meta(n)?.pts || 0), 0);
-  const classement = fermes.map((f) => ({ f, total: etat.points[f.id]?.total || 0, sem: semaine(f) }))
-    .sort((a, b) => b.total - a.total || a.f.name.localeCompare(b.f.name, 'fr'))
-    .map((r, i) => `${medals[i] || '`' + String(i + 1).padStart(2) + '`'} **${r.f.name}** · ${r.total} pts${r.sem ? ` (+${r.sem} cette semaine)` : ''}`);
+  const classement = fermes.map((f) => ({ f, nb: etat.points[f.id]?.nb || 0, pts: etat.points[f.id]?.total || 0, sem: (etat.fait[f.id] || []).length }))
+    .sort((a, b) => b.nb - a.nb || b.pts - a.pts || a.f.name.localeCompare(b.f.name, 'fr'))
+    .map((r, i) => `${medals[i] || '`' + String(i + 1).padStart(2) + '`'} **${r.f.name}** · ${r.nb} défi${r.nb > 1 ? 's' : ''} relevé${r.nb > 1 ? 's' : ''}${r.sem ? ` (+${r.sem} cette semaine)` : ''}`);
   return { embeds: [panneauEmbed({
-    title: '🎯 ÉVÉNEMENT HEBDOMADAIRE',
+    title: '🎯 DÉFI HEBDOMADAIRE',
     color: 0xE67E22,
     description: [`Du **${jourFr(etat.semaine)}** au **${jourFr(etat.semaine, 6)}** (nouveaux défis chaque lundi)`,
       'Vends au **point de vente** la quantité demandée. Il te manque du stock ? Achète-le à un autre joueur 🤝', '',
@@ -123,7 +122,10 @@ async function maj(status, channel, force = false) {
   const change = rotation(status);
   const annonces = attribuer(status, fermes);
   if (change || annonces.length) save();
-  if (annonces.length) await channel.send({ content: annonces.join('\n'), allowedMentions: { parse: [] } }).catch((e) => console.warn(`[FS25] Événement : ${e.message}`));
+  if (annonces.length) {
+    await channel.send({ content: annonces.join('\n'), allowedMentions: { parse: [] } }).catch((e) => console.warn(`[FS25] Défi : ${e.message}`));
+    for (const a of annonces) await require('../core/agrilog').agrilog(channel.guild, a); // même ligne dans le salon de logs
+  }
 
   const msg = buildMessage(status, fermes);
   const cle = JSON.stringify(msg);

@@ -5,7 +5,7 @@ const ids = require('./ids');
 const ROUTES = [
   // (échanges boutique : demande + décision, dans le salon d'activité)
   // demandes d'échange de points, contrats/besoins (prise, accord, refus, fin, retrait, nouveau besoin)
-  [/^(💱|(✅|❌|⚠️) Échange|(✅|❌) Industrie|🏭|📋|📦|🤝 Accord|❌ (Besoin|Contrat)|🏁|🗑️ \*\*|🆕 \*\*.*\*\* recherche : )/, 'FS25_ACTIVITE_CHANNEL_ID'],
+  [/^(💱|(✅|❌|⚠️) Échange|(✅|❌) Industrie|🏭|📋|📦|🤝 Accord|❌ (Besoin|Contrat)|🏁|🎯 \*\*|🗑️ \*\*|🆕 \*\*.*\*\* recherche : )/, 'FS25_ACTIVITE_CHANNEL_ID'],
   // Le reste (propositions, exploitations) est ignoré
 ];
 
