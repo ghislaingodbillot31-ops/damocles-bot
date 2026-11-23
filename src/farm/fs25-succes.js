@@ -141,7 +141,8 @@ async function processAchievements(status, channel) {
 
   const unlocks = computeUnlocks(status);
   if (unlocks.length && channel) {
-    await sendLines(channel, unlocks.map((u) => unlockLine(u))).catch((e) => console.warn(`[FS25] Annonce succès impossible : ${e.message}`));
+    const logs = await channel.client.channels.fetch(require('../core/logs-salon').SALON_LOGS).catch(() => null);
+    await sendLines(logs || channel, unlocks.map((u) => unlockLine(u))).catch((e) => console.warn(`[FS25] Annonce succès impossible : ${e.message}`));
   }
   await require('./hub2').traiter(status, channel).catch((e) => console.warn(`[FS25] HUB exploitants : ${e.message}`));
   await require('./fs25-succes-hub').update(status, channel, unlocks).catch((e) => console.warn(`[FS25] Hub succès : ${e.message}`));
