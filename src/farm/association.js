@@ -63,6 +63,10 @@ function panelPayload() {
         '## 🏦 Caisse de l\'association',
         'Solde : **' + (dernierReleve ? euros(Math.round(dernierReleve.caisse || 0)) : '_en attente des données du serveur FS25_') + '**',
         '',
+        '## 👥 Adhérents (' + parts().length + ')',
+        ...(parts().length ? parts().slice(0, 25).map(x => '• <@' + x.u + '> · `' + x.m.pseudo + '` · 🚜 ' + duree(x.d.v) + ' · 🪓 ' + duree(x.d.c) + ' · **' + Math.round(x.pct * 100) + ' %**') : ['_Aucun adhérent._']),
+        '-# 🚜 véhicules moteur allumé · 🪓 tronçonneuse · % = part du travail de tous les adhérents',
+        '',
         '## 💳 Crédits en cours',
         ...(debiteurs.length ? debiteurs.slice(0, 20).map(([u]) => '• <@' + u + '> · `' + (store.membres[u]?.pseudo || '?') + '` · reste à payer **' + euros(dette(u)) + '**') : ['_Aucun crédit en cours._']),
         '',
@@ -245,6 +249,7 @@ async function majSalaires(client) {
   const m = ch && store.panelMsgId && await ch.messages.fetch(store.panelMsgId).catch(() => null);
   if (m) await m.edit(panelPayload()).catch(() => {});
   await majTravail(client);
+  await logsNiveaux(client).catch(() => {});
 }
 
 // Message « travail et crédits » dans le salon des logs admin, édité sur place toutes les 5 min
@@ -450,6 +455,26 @@ async function handleResilBouton(interaction) {
   await majSalaires(interaction.client);
 }
 
+
+// ── Niveaux de travail : un palier d'heures franchi (véhicules ou tronçonneuse) = une ligne dans le salon de logs, format des succès ──
+const PALIERS_H = [1, 5, 10, 25, 50, 100, 250, 500, 1000, 2500, 5000];
+async function logsNiveaux(client) {
+  if (!dernierReleve) return;
+  const niv = (store.niveaux ||= {}), premier = !store.niveauxInit, lignes = [];
+  for (const [, m] of actifs()) {
+    const d = dernierReleve.detail?.[m.pseudo.toLowerCase()] || { v: 0, c: 0 };
+    for (const [k, emoji, nom] of [['v', '🚜', 'Véhicules de l\'association'], ['c', '🪓', 'Tronçonneuse']]) {
+      const h = d[k] / 3600, n = PALIERS_H.filter(p => h >= p).length, cle = m.pseudo.toLowerCase() + '|' + k;
+      if (n > (niv[cle] || 0) && !premier) {
+        const suivant = PALIERS_H[n];
+        lignes.push('🏆 **' + m.pseudo + '** a débloqué ' + emoji + ' **' + nom + '**  ·  niv. ' + n + '/' + PALIERS_H.length + ' (' + Math.floor(h) + ' h)  ·  ' + (suivant ? 'prochain : ' + suivant + ' h' : 'série terminée ✅'));
+      }
+      niv[cle] = n;
+    }
+  }
+  store.niveauxInit = true; save();
+  for (const l of lignes) await require('../core/logs-salon').logsSalon(client, l);
+}
 
 // ── Facture annuelle : le 1er décembre, chaque licencié actif reçoit une facture (ticket) selon son travail de l'année ──
 // Cagnotte = TAUX × revenus de l'année de la ferme. Part d'un membre = PLANCHER + (reste) × sa part du travail pondéré (total = cagnotte exacte).
