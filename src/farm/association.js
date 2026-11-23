@@ -250,6 +250,7 @@ async function majSalaires(client) {
   if (m) await m.edit(panelPayload()).catch(() => {});
   await majTravail(client);
   await logsNiveaux(client).catch(() => {});
+  await majDonnees(client).catch(e => console.error('⚠️ Association · données :', e.message));
 }
 
 // Message « travail et crédits » dans le salon des logs admin, édité sur place toutes les 5 min
@@ -548,6 +549,60 @@ async function verifierPaiements(client) {
     await ch?.send('✅ Facture réglée : **' + euros(verse) + '** reçus. Merci !').catch(() => {});
     await log(client, '✅ Facture réglée · ' + NOM, uid, store.membres[uid]?.pseudo || '?', 'Montant : **' + euros(f.montant) + '**', 0x2ECC71);
   }
+}
+
+// ── Salon des données : un message de synthèse + une fiche par adhérent, tous édités sur place toutes les 5 min ──
+const DONNEES_ID = '1574457653776744458';
+const niveauH = s => PALIERS_H.filter(p => s / 3600 >= p).length;
+
+function fichesDonnees() {
+  const st = require('./fs25-bridge').getLastFs25Status(), an = anneeEnCours();
+  const farm = st?.farms?.find(f => f.name === NOM);
+  const presents = new Set((st?.playerFarms || []).filter(p => farm && p.farm === farm.id).map(p => p.name.toLowerCase()));
+  const { pool, rev, l } = calculFacture(an), now = new Date().toISOString();
+  const tot = parts().reduce((x, y) => x + y.s, 0);
+  const synthese = { embeds: [{ title: '📈 SYNTHÈSE · ' + NOM + ' · ' + an, color: 0x2E7D32, timestamp: now, footer: { text: 'MonCopainBot · mis à jour toutes les 5 min' },
+    fields: [
+      { name: '🏦 Caisse', value: euros(Math.round(dernierReleve?.caisse || 0)), inline: true },
+      { name: '💰 Revenus ' + an, value: euros(Math.round(rev)), inline: true },
+      { name: '🧾 Cagnotte factures (' + TAUX * 100 + ' %)', value: euros(pool), inline: true },
+      { name: '👥 Adhérents', value: String(l.length), inline: true },
+      { name: '🟢 En ligne', value: String(l.filter(x => presents.has(x.m.pseudo.toLowerCase())).length), inline: true },
+      { name: '⏱️ Travail cumulé', value: duree(tot), inline: true },
+      { name: '💳 Crédits en cours', value: euros(Object.keys(store.credits || {}).reduce((a, u) => a + dette(u), 0)), inline: true },
+      { name: '💶 Investi par les membres', value: euros(l.reduce((a, x) => a + auTotal(x.u), 0)), inline: true },
+      { name: '🧾 Factures ' + an, value: store.factures?.[an] ? Object.values(store.factures[an]).filter(f => f.paye).length + ' / ' + Object.keys(store.factures[an]).length + ' payées' : '_envoi le 1er décembre_', inline: true },
+    ] }], allowedMentions: { parse: [] } };
+  const fiches = parts().map(p => {
+    const f = l.find(x => x.u === p.u), fa = store.factures?.[an]?.[p.u], k = p.m.pseudo.toLowerCase(), ya = store.an?.[an]?.travail?.[k] || { v: 0, c: 0 };
+    return [p.u, { embeds: [{ title: '👤 ' + p.m.pseudo, color: presents.has(k) ? 0x2ECC71 : 0x95A5A6, timestamp: now, description: '<@' + p.u + '> · ' + (presents.has(k) ? '🟢 en ligne dans la ferme' : '⚫ hors ligne'),
+      fields: [
+        { name: '🪪 Licence', value: 'jusqu\'au ' + ts(p.m.fin, 'D') + ' (' + ts(p.m.fin, 'R') + ')', inline: false },
+        { name: '🚜 Véhicules (total)', value: duree(p.d.v) + ' · niv. ' + niveauH(p.d.v) + '/' + PALIERS_H.length, inline: true },
+        { name: '🪓 Tronçonneuse (total)', value: duree(p.d.c) + ' · niv. ' + niveauH(p.d.c) + '/' + PALIERS_H.length, inline: true },
+        { name: '⏱️ Total', value: duree(p.s), inline: true },
+        { name: '📅 Cette année', value: '🚜 ' + duree(ya.v) + ' · 🪓 ' + duree(ya.c), inline: true },
+        { name: '📊 Part du travail', value: (p.pct * 100).toFixed(1) + ' %' + (tot ? ' · rang ' + (parts().findIndex(x => x.u === p.u) + 1) + '/' + l.length : ''), inline: true },
+        { name: '💶 Investi', value: 'total ' + euros(auTotal(p.u)) + ' · ce mois ' + euros(duMois(p.u)), inline: true },
+        { name: '💳 Crédit', value: 'dispo ' + euros(creditMax(p.u)) + ' · dû ' + euros(dette(p.u)), inline: true },
+        { name: '🧾 Facture ' + an, value: fa ? euros(fa.montant) + (fa.paye ? ' ✅ payée' : ' ⏳ à régler') : 'estimée **' + euros(f?.montant || 0) + '** (' + ((f?.pct || 0) * 100).toFixed(1) + ' %)', inline: true },
+      ] }], allowedMentions: { parse: [] } }];
+  });
+  return [['_synthese', synthese], ...fiches];
+}
+
+async function majDonnees(client) {
+  if (!dernierReleve) return;
+  const ch = await client.channels.fetch(DONNEES_ID).catch(() => null);
+  if (!ch) return;
+  const ids = (store.donneesMsgs ||= {}), fiches = fichesDonnees(), gardes = new Set(fiches.map(([k]) => k));
+  for (const [k, id] of Object.entries(ids)) if (!gardes.has(k)) { (await ch.messages.fetch(id).catch(() => null))?.delete().catch(() => {}); delete ids[k]; }
+  for (const [k, payload] of fiches) {
+    const m = ids[k] && await ch.messages.fetch(ids[k]).catch(() => null);
+    if (m) await m.edit(payload).catch(() => {});
+    else ids[k] = (await ch.send(payload).catch(() => null))?.id;
+  }
+  save();
 }
 
 // ── Contrôle des licences : un joueur connecté dans la ferme de l'association sans licence valide → alerte dans les logs ──
