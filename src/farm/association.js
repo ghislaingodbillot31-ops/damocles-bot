@@ -6,12 +6,12 @@ const ids = require('../core/ids');
 const { panneau } = require('../core/embed-format');
 const { dataPath } = require('../core/paths');
 
-// HUB de l'association [A] Le mechet (sylviculture) : présentation + adhésion.
+// HUB de l'association Association (sylviculture) : présentation + adhésion.
 // Adhésion = 30 000 € versés en jeu à la ferme de l'association → le staff valide dans un ticket → licence d'un an.
 // Le salon contient : le panneau, puis le journal des membres licenciés (mis à jour à chaque adhésion / expiration).
 const CHANNEL_ID = ids('ASSO_CHANNEL_ID', '1571180916863279285');
 const STORE_PATH = dataPath('association.json');
-const NOM        = '[A] Le mechet';
+const NOM        = 'Association';
 const PRIX       = 10000;
 const DUREE      = 365 * 24 * 3600_000; // licence d'un an (temps réel)
 const RENOUV     = 30 * 24 * 3600_000;  // renouvellement possible 30 jours avant l'échéance
@@ -33,7 +33,7 @@ function panelPayload() {
   const debiteurs = Object.entries(store.credits || {}).filter(([u]) => dette(u) > 0).sort((a, b) => dette(b[0]) - dette(a[0]));
   return panneau({
     embeds: [{
-      title: '🌲  [A] LE MECHET',
+      title: '🌲  ASSOCIATION',
       description: [
         '*Association de sylviculture*',
         '━━━━━━━━━━━━━━━━━━━━',
