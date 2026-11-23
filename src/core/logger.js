@@ -6,8 +6,11 @@ async function log(client, type, data) {
   try { if (!data?.noStatus) require('./statusbot').pushEvent(type); } catch {} // compteurs du salon bot-status
   try { require('../moderation/publiclog').publier(client, type, data).catch(() => {}); } catch {} // journal public
   if (data?.publicOnly) return; // événement réservé au statut et au journal public (pas de doublon dans les logs staff)
-  if (!LOG_CHANNEL_ID) return;
-  const channel = client.channels.cache.get(LOG_CHANNEL_ID);
+  // Logs de succès → salon de logs du serveur ; le reste reste dans staff-logs
+  const succes = ['verification_ok', 'member_activated', 'reglement_accepted', 'first_message', 'role_added', 'ticket_taken'].includes(type);
+  const salonId = succes ? require('./logs-salon').SALON_LOGS : LOG_CHANNEL_ID;
+  if (!salonId) return;
+  const channel = client.channels.cache.get(salonId);
   if (!channel) return;
 
   const now = new Date().toLocaleString('fr-FR', { timeZone: 'Europe/Paris' });
