@@ -30,11 +30,14 @@ DiscordBridge.MAX_STRING         = 200    -- longueur max d'une valeur texte exp
 --   transfer_in : € reçus par virement d'une autre ferme (clé = id de la ferme qui envoie)
 --   work_vehicle  : secondes de conduite moteur allumé (clé = pseudo du joueur)
 --   work_chainsaw : secondes de coupe à la tronçonneuse (clé = pseudo du joueur)
+--   km_vehicle    : kilomètres parcourus en véhicule par un joueur (clé = pseudo)
+--   chainsaw_cuts : nombre de coupes à la tronçonneuse (début de coupe, clé = pseudo)
 --   work_credit / work_debit : hectares travaillés dans le champ d'une autre ferme (clé = nom de stat) ;
 --                  credit = ferme du véhicule (+), debit = propriétaire du champ (-). Le bot déplace les hectares.
 DiscordBridge.counters = {
     produced = {}, sold = {}, money_in = {}, money_out = {}, transfer_in = {},
     work_vehicle = {}, work_chainsaw = {}, work_credit = {}, work_debit = {},
+    km_vehicle = {}, chainsaw_cuts = {},
 }
 DiscordBridge.countersDirty = false
 DiscordBridge.statusTimer = 0
@@ -311,7 +314,12 @@ function DiscordBridge:trackWork(dt)
             and safe(function() return v:getIsMotorStarted() end, false) then
             local nick = safe(function() return v:getControllerName() end, nil)
             if nick ~= nil and nick ~= "" then
-                self:addCounter("work_vehicle", safe(function() return v:getOwnerFarmId() end, nil), nick, s)
+                local farm = safe(function() return v:getOwnerFarmId() end, nil)
+                self:addCounter("work_vehicle", farm, nick, s)
+                local kmh = safe(function() return v:getLastSpeed() end, 0) -- km/h, rattaché à la ferme du véhicule comme le temps de conduite
+                if kmh > 1 then
+                    self:addCounter("km_vehicle", farm, nick, kmh * s / 3600)
+                end
             end
         end
     end
@@ -326,9 +334,19 @@ function DiscordBridge:trackWork(dt)
                 for k, val in pairs(spec) do if type(val) == "boolean" then keys[#keys + 1] = k .. "=" .. tostring(val) end end
                 log("Tronçonneuse détectée, champs : " .. table.concat(keys, " "))
             end
-            if spec.isCutting or spec.isWorking then
+            local cutting = (spec.isCutting or spec.isWorking) and true or false
+            local nick = playerNick(p)
+            if cutting then
                 local farmId = safe(function() return p:getFarmId() end, nil) or p.farmId
-                self:addCounter("work_chainsaw", farmId, playerNick(p), s)
+                self:addCounter("work_chainsaw", farmId, nick, s)
+                self.cutting = self.cutting or {}
+                if nick ~= nil and not self.cutting[nick] then
+                    self:addCounter("chainsaw_cuts", farmId, nick, 1) -- nouvelle coupe = passage de « repos » à « coupe »
+                end
+            end
+            if nick ~= nil then
+                self.cutting = self.cutting or {}
+                self.cutting[nick] = cutting
             end
         end
     end
@@ -520,20 +538,6 @@ DiscordBridge.sections.prices = function()
         if price ~= nil and price > 0 then
             rows[#rows + 1] = { fillType = ft.name, title = ft.title, pricePer1000 = price }
         end
-    end
-    return rows
-end
-
-DiscordBridge.sections.contracts = function()
-    local rows = {}
-    local missions = safe(function() return g_missionManager:getMissions() end, nil) or safe(function() return g_missionManager.missions end, {})
-    for _, m in pairs(missions) do
-        rows[#rows + 1] = {
-            type = safe(function() return m.type.name end, "?"), farm = m.farmId, status = m.status,
-            reward = safe(function() return m:getReward() end, nil),
-            field = safe(function() return m.field.fieldId end, nil),
-            completion = safe(function() return m:getCompletion() end, nil),
-        }
     end
     return rows
 end

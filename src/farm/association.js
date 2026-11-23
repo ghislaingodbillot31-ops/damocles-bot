@@ -219,10 +219,10 @@ function releve(status) {
   if (!farm) return null;
   const work = {}, detail = {}; // work[pseudo] = secondes au total ; detail[pseudo] = { v: véhicules, c: tronçonneuse }
   for (const c of status.counters) {
-    if (c.farm !== farm.id || (c.kind !== 'work_vehicle' && c.kind !== 'work_chainsaw')) continue;
-    const k = c.fillType.toLowerCase();
-    work[k] = (work[k] || 0) + c.value;
-    (detail[k] ||= { v: 0, c: 0 })[c.kind === 'work_vehicle' ? 'v' : 'c'] += c.value;
+    if (c.farm !== farm.id || !['work_vehicle', 'work_chainsaw', 'km_vehicle', 'chainsaw_cuts'].includes(c.kind)) continue;
+    const k = c.fillType.toLowerCase(), t = { work_vehicle: 'v', work_chainsaw: 'c', km_vehicle: 'km', chainsaw_cuts: 'cuts' }[c.kind];
+    if (t === 'v' || t === 'c') work[k] = (work[k] || 0) + c.value; // le temps de travail ne compte que véhicule + tronçonneuse
+    (detail[k] ||= { v: 0, c: 0, km: 0, cuts: 0 })[t] += c.value;
   }
   return { work, detail, caisse: farm.money };
 }
@@ -491,14 +491,14 @@ function cumuler(status) {
   const a = ((store.an ||= {})[anneeEnCours()] ||= { rev: 0, travail: {} }), base = (store.cumBase ||= {});
   for (const c of status.counters) {
     if (c.farm !== farm.id) continue;
-    const t = c.kind === 'work_vehicle' ? 'v' : c.kind === 'work_chainsaw' ? 'c' : c.kind === 'money_in' && !HORS_REVENU.test(c.fillType) ? 'r' : null;
+    const t = c.kind === 'work_vehicle' ? 'v' : c.kind === 'work_chainsaw' ? 'c' : c.kind === 'km_vehicle' ? 'km' : c.kind === 'chainsaw_cuts' ? 'cuts' : c.kind === 'money_in' && !HORS_REVENU.test(c.fillType) ? 'r' : null;
     if (!t) continue;
     const k = c.kind + '|' + c.fillType;
     if (c.value < (base[k] || 0)) base[k] = 0;
     const d = c.value - (base[k] || 0);
     base[k] = c.value;
     if (d <= 0) continue;
-    if (t === 'r') a.rev += d; else (a.travail[c.fillType.toLowerCase()] ||= { v: 0, c: 0 })[t] += d;
+    if (t === 'r') a.rev += d; else (a.travail[c.fillType.toLowerCase()] ||= { v: 0, c: 0, km: 0, cuts: 0 })[t] += d;
   }
   save();
 }
@@ -553,6 +553,7 @@ async function verifierPaiements(client) {
 
 // ── Salon des données : un message de synthèse + une fiche par adhérent, tous édités sur place toutes les 5 min ──
 const DONNEES_ID = '1574457653776744458';
+const km = n => (n || 0).toLocaleString('fr-FR', { maximumFractionDigits: 1 }) + ' km';
 const niveauH = s => PALIERS_H.filter(p => s / 3600 >= p).length;
 
 function fichesDonnees() {
@@ -569,18 +570,23 @@ function fichesDonnees() {
       { name: '👥 Adhérents', value: String(l.length), inline: true },
       { name: '🟢 En ligne', value: String(l.filter(x => presents.has(x.m.pseudo.toLowerCase())).length), inline: true },
       { name: '⏱️ Travail cumulé', value: duree(tot), inline: true },
+      { name: '🛣️ Kilomètres (adhérents)', value: km(parts().reduce((a, x) => a + (x.d.km || 0), 0)), inline: true },
+      { name: '🪚 Coupes (adhérents)', value: String(Math.round(parts().reduce((a, x) => a + (x.d.cuts || 0), 0))), inline: true },
       { name: '💳 Crédits en cours', value: euros(Object.keys(store.credits || {}).reduce((a, u) => a + dette(u), 0)), inline: true },
       { name: '💶 Investi par les membres', value: euros(l.reduce((a, x) => a + auTotal(x.u), 0)), inline: true },
       { name: '🧾 Factures ' + an, value: store.factures?.[an] ? Object.values(store.factures[an]).filter(f => f.paye).length + ' / ' + Object.keys(store.factures[an]).length + ' payées' : '_envoi le 1er décembre_', inline: true },
     ] }], allowedMentions: { parse: [] } };
   const fiches = parts().map(p => {
-    const f = l.find(x => x.u === p.u), fa = store.factures?.[an]?.[p.u], k = p.m.pseudo.toLowerCase(), ya = store.an?.[an]?.travail?.[k] || { v: 0, c: 0 };
+    const f = l.find(x => x.u === p.u), fa = store.factures?.[an]?.[p.u], k = p.m.pseudo.toLowerCase(), ya = store.an?.[an]?.travail?.[k] || { v: 0, c: 0, km: 0, cuts: 0 };
     return [p.u, { embeds: [{ title: '👤 ' + p.m.pseudo, color: presents.has(k) ? 0x2ECC71 : 0x95A5A6, timestamp: now, description: '<@' + p.u + '> · ' + (presents.has(k) ? '🟢 en ligne dans la ferme' : '⚫ hors ligne'),
       fields: [
         { name: '🪪 Licence', value: 'jusqu\'au ' + ts(p.m.fin, 'D') + ' (' + ts(p.m.fin, 'R') + ')', inline: false },
         { name: '🚜 Véhicules (total)', value: duree(p.d.v) + ' · niv. ' + niveauH(p.d.v) + '/' + PALIERS_H.length, inline: true },
         { name: '🪓 Tronçonneuse (total)', value: duree(p.d.c) + ' · niv. ' + niveauH(p.d.c) + '/' + PALIERS_H.length, inline: true },
         { name: '⏱️ Total', value: duree(p.s), inline: true },
+        { name: '🛣️ Kilomètres parcourus', value: '**' + km(p.d.km) + '** au total · ' + km(ya.km) + ' cette année', inline: true },
+        { name: '🪚 Coupes à la tronçonneuse', value: '**' + Math.round(p.d.cuts || 0) + '** au total · ' + Math.round(ya.cuts || 0) + ' cette année', inline: true },
+        { name: '⚡ Rythme', value: (p.s ? (p.d.cuts || 0) / (p.d.c / 3600 || 1) : 0).toFixed(1) + ' coupes / h de tronçonneuse · ' + ((p.d.km || 0) / (p.d.v / 3600 || 1)).toFixed(1) + ' km/h de moyenne', inline: true },
         { name: '📅 Cette année', value: '🚜 ' + duree(ya.v) + ' · 🪓 ' + duree(ya.c), inline: true },
         { name: '📊 Part du travail', value: (p.pct * 100).toFixed(1) + ' %' + (tot ? ' · rang ' + (parts().findIndex(x => x.u === p.u) + 1) + '/' + l.length : ''), inline: true },
         { name: '💶 Investi', value: 'total ' + euros(auTotal(p.u)) + ' · ce mois ' + euros(duMois(p.u)), inline: true },
