@@ -36,7 +36,7 @@ const ACTIVITES = [
   { value: 'buffles', emoji: '🐃', nom: 'Buffles + vaches laitières', groupe: 'elevage', type: 2, works: ELEVAGE },
   { value: 'viande', emoji: '🥩', nom: 'Vaches à viande', groupe: 'elevage', type: 2, works: ELEVAGE },
   { value: 'ovins', emoji: '🐑', nom: 'Moutons + chèvres', groupe: 'elevage', type: 2, works: ELEVAGE },
-  { value: 'porcs', emoji: '🐖', nom: 'Porcs + poules', groupe: 'elevage', type: 2, works: ELEVAGE }, // 80 poules maximum
+  { value: 'porcs', emoji: '🐖', nom: 'Porcs', groupe: 'elevage', type: 2, works: ELEVAGE },
   { value: 'equin', emoji: '🐎', nom: 'Équin + abeilles', groupe: 'elevage', type: 2, works: [...ELEVAGE, 'Monte des chevaux', 'Pose des ruches'] },
   { value: 'poules', emoji: '🐔', nom: 'Poules', groupe: 'elevage', type: 2, works: ELEVAGE },
   { value: 'foret', emoji: '🌲', nom: 'Association forestière', groupe: 'foret', choisir: false, works: ['Forêt (abattage, débardage, fendage, plaquettes)'] },
