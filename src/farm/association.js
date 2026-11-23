@@ -228,7 +228,7 @@ const duree = s => Math.floor(s / 3600) + ' h ' + String(Math.floor(s / 60) % 60
 
 // Crédits : credits[uid] = € restant à rembourser, ops[uid] = demande en cours { type: 'credit' | 'remb', montant, ticketId } (une seule à la fois).
 const dette = uid => Math.round((store.credits ||= {})[uid] || 0);
-const rafraichir = () => { dernierReleve = releve(require('./fs25-bridge').getLastFs25Status()) || dernierReleve; };
+const rafraichir = () => { const st = require('./fs25-bridge').getLastFs25Status(); dernierReleve = releve(st) || dernierReleve; cumuler(st); };
 
 // Part du travail de chaque licencié valide (cumul), triée du plus au moins actif
 function parts() {
@@ -390,7 +390,7 @@ async function traiterVirements(client) {
     await log(client, '💶 Virement reçu · ' + NOM, v.uid || '0', v.pseudo || '?', 'Montant : **' + euros(v.montant) + '** depuis la ferme **' + v.ferme + '**\n' + etat,
       !v.uid ? 0xE67E22 : 0x2ECC71);
   }
-  if (nouveaux.length) await majSalaires(client);
+  if (nouveaux.length) { await verifierPaiements(client); await majSalaires(client); }
 }
 
 // ── Règlement : texte libre (vide au départ), modifiable par le staff directement depuis Discord ──
@@ -451,6 +451,80 @@ async function handleResilBouton(interaction) {
 }
 
 
+// ── Facture annuelle : le 1er décembre, chaque licencié actif reçoit une facture (ticket) selon son travail de l'année ──
+// Cagnotte = TAUX × revenus de l'année de la ferme. Part d'un membre = PLANCHER + (reste) × sa part du travail pondéré (total = cagnotte exacte).
+// Travail pondéré = heures véhicule + COEF_COUPE × heures tronçonneuse. Payée par virement en jeu (détecté comme un versement).
+const TAUX = 0.10, PLANCHER = 0.05, COEF_COUPE = 2;
+const HORS_REVENU = /^(TRANSFER|LOAN|INITIAL_MONEY|SHOP_|PROPERTY_)/; // ponytail: noms MoneyType à valider en jeu (ce qui n'est pas du revenu d'exploitation)
+const anneeEnCours = () => Number(mois(Date.now()).slice(0, 4));
+
+// Cumul par année des revenus et du travail (les compteurs du mod sont cumulés depuis l'installation ; baisse = serveur redémarré)
+function cumuler(status) {
+  const farm = status?.farms?.find(f => f.name === NOM);
+  if (!farm) return;
+  const a = ((store.an ||= {})[anneeEnCours()] ||= { rev: 0, travail: {} }), base = (store.cumBase ||= {});
+  for (const c of status.counters) {
+    if (c.farm !== farm.id) continue;
+    const t = c.kind === 'work_vehicle' ? 'v' : c.kind === 'work_chainsaw' ? 'c' : c.kind === 'money_in' && !HORS_REVENU.test(c.fillType) ? 'r' : null;
+    if (!t) continue;
+    const k = c.kind + '|' + c.fillType;
+    if (c.value < (base[k] || 0)) base[k] = 0;
+    const d = c.value - (base[k] || 0);
+    base[k] = c.value;
+    if (d <= 0) continue;
+    if (t === 'r') a.rev += d; else (a.travail[c.fillType.toLowerCase()] ||= { v: 0, c: 0 })[t] += d;
+  }
+  save();
+}
+
+function calculFacture(an) {
+  const a = store.an?.[an] || { rev: 0, travail: {} };
+  const l = actifs().map(([u, m]) => { const t = a.travail[m.pseudo.toLowerCase()] || { v: 0, c: 0 }; return { u, m, t, s: t.v + t.c * COEF_COUPE }; });
+  const tot = l.reduce((x, y) => x + y.s, 0), n = l.length, pool = Math.round(a.rev * TAUX);
+  return { pool, rev: a.rev, l: l.map(x => {
+    const pct = n * PLANCHER >= 1 ? 1 / n : PLANCHER + (1 - n * PLANCHER) * (tot ? x.s / tot : 1 / n);
+    return { ...x, pct, montant: Math.round(pool * pct) };
+  }) };
+}
+
+async function facturer(client) {
+  const an = anneeEnCours();
+  if (mois(Date.now()).slice(5) !== '12' || (store.factures ||= {})[an]) return;
+  cumuler(require('./fs25-bridge').getLastFs25Status());
+  const { pool, rev, l } = calculFacture(an);
+  if (!l.length || pool < 1) return; // rien à facturer : on réessaiera à la prochaine vérification
+  store.factures[an] = {}; // marqué avant l'envoi : jamais deux fois
+  save();
+  const guild = client.guilds.cache.get(process.env.GUILD_ID) || client.guilds.cache.first();
+  for (const x of l) {
+    const member = await guild.members.fetch(x.u).catch(() => null);
+    if (!member) continue;
+    try {
+      const ticket = await require('../moderation/tickets').ouvrirSalon(guild, member, { prefix: 'facture', objet: 'Facture ' + an + ' · ' + NOM,
+        welcome: 'Verse **' + euros(x.montant) + '** en jeu à la ferme **' + NOM + '** : le paiement sera détecté automatiquement.' });
+      await ticket.send({ ...panneau({ embeds: [{ title: '🧾 Facture ' + an + ' · ' + NOM, color: 0xF1C40F, timestamp: new Date().toISOString(),
+        description: ['Joueur : <@' + x.u + '> (`' + x.m.pseudo + '`)', 'Montant : **' + euros(x.montant) + '** (' + (x.pct * 100).toFixed(1) + ' % de la cagnotte de ' + euros(pool) + ')',
+          'Ton travail : 🚜 ' + duree(x.t.v) + ' · 🪓 ' + duree(x.t.c), '', 'Verse ce montant en jeu à la ferme **' + NOM + '** (Finances → Transférer de l\'argent).'].join('\n') }] }), allowedMentions: { users: [x.u] } });
+      store.factures[an][x.u] = { montant: x.montant, ticketId: ticket.id, at: Date.now(), paye: false };
+      save();
+    } catch (err) { console.error('⚠️ Association · facture :', err.message); }
+  }
+  await log(client, '🧾 Factures ' + an + ' envoyées · ' + NOM, '0', '', l.length + ' membre(s) · revenus ' + euros(Math.round(rev)) + ' · cagnotte **' + euros(pool) + '** (' + TAUX * 100 + ' %) · minimum ' + PLANCHER * 100 + ' % par membre', 0x2ECC71);
+}
+
+// Facture réglée = versements du joueur depuis l'émission ≥ montant
+async function verifierPaiements(client) {
+  for (const [uid, f] of Object.entries(store.factures?.[anneeEnCours()] || {})) {
+    if (f.paye) continue;
+    const verse = (store.versements || []).filter(v => v.uid === uid && v.at >= f.at).reduce((a, v) => a + v.montant, 0);
+    if (verse < f.montant) continue;
+    f.paye = true; save();
+    const ch = await client.channels.fetch(f.ticketId).catch(() => null);
+    await ch?.send('✅ Facture réglée : **' + euros(verse) + '** reçus. Merci !').catch(() => {});
+    await log(client, '✅ Facture réglée · ' + NOM, uid, store.membres[uid]?.pseudo || '?', 'Montant : **' + euros(f.montant) + '**', 0x2ECC71);
+  }
+}
+
 // ── Contrôle des licences : un joueur connecté dans la ferme de l'association sans licence valide → alerte dans les logs ──
 // Une alerte par connexion (le joueur est oublié quand il se déconnecte ou quitte la ferme).
 const alertes = new Set();
@@ -503,6 +577,8 @@ async function startAssociation(client) {
   setInterval(() => majSalaires(client).catch(() => {}), 5 * 60_000).unref();
   setInterval(() => verifierLicences(client).catch(() => {}), 60_000).unref();
   setInterval(() => traiterVirements(client).catch(() => {}), 60_000).unref();
+  setInterval(() => facturer(client).catch(e => console.error('⚠️ Facture :', e.message)), 3600_000).unref(); // 1er décembre : factures annuelles
+  setTimeout(() => facturer(client).catch(() => {}), 90_000).unref();
 }
 
 module.exports = { startAssociation, publier, handle, releve, parts, creditMax, sansLicence, nouveauxVirements, duMois, _store: () => store, _setReleve: r => { dernierReleve = r; } };
