@@ -35,30 +35,25 @@ function panelPayload() {
     embeds: [{
       title: '🌲  ASSOCIATION',
       description: [
-        '*Association de sylviculture*',
         '━━━━━━━━━━━━━━━━━━━━',
         '',
         '## 🪓 L\'association',
-        '**' + NOM + '** est une exploitation commune dédiée exclusivement aux travaux forestiers.',
+        '**' + NOM + '** est une exploitation commune dédiée à tous types de travaux.',
         'Le matériel est financé par l\'association et mis à disposition de ses membres licenciés.',
         '',
         '## 🪪 Adhésion',
         '• Droit d\'entrée : **' + euros(PRIX) + '**',
-        '• Licence valable **1 an en jeu**',
-        '• Accès aux machines et aux travaux forestiers.',
-        '',
-        'Chaque membre peut également investir dans l\'association par virement depuis sa ferme.',
+        '• La licence est valable **1 an**',
         '',
         '## 📋 Comment rejoindre ?',
         '1. Clique sur « Rejoindre l\'association » pour ouvrir un ticket avec le staff.',
         '2. Verse **' + euros(PRIX) + '** à **' + NOM + '** (Finances → Transférer de l\'argent).',
-        '3. Après vérification, tu obtiens le statut **LICENCIÉ**.',
+        '3. Après vérification d\'un admin, tu obtiens le statut **LICENCIÉ**.',
         '',
         'Renouvellement possible 30 jours avant la fin de la licence.',
         '',
         '## 💰 Travail et crédit',
-        'Les membres ne sont pas rémunérés, mais peuvent bénéficier de crédits financés par l\'association.',
-        'Le montant est calculé selon le temps de travail effectué par chaque membre.',
+        'Les membres sont rémunérés en décembre en fonction du temps de travail et de l\'argent disponible.',
         '',
         '## 🏦 Caisse de l\'association',
         'Solde : **' + (dernierReleve ? euros(Math.round(dernierReleve.caisse || 0)) : '_en attente des données du serveur FS25_') + '**',
@@ -71,7 +66,6 @@ function panelPayload() {
         ...(debiteurs.length ? debiteurs.slice(0, 20).map(([u]) => '• <@' + u + '> · `' + (store.membres[u]?.pseudo || '?') + '` · reste à payer **' + euros(dette(u)) + '**') : ['_Aucun crédit en cours._']),
         '',
         '━━━━━━━━━━━━━━━━━━━━',
-        '🌲 **Ensemble, faisons grandir notre association forestière !**',
       ].join('\n').slice(0, 4000),
       color: 0x2E7D32,
       footer: { text: 'MonCopainBot · mis à jour toutes les 5 min' },
@@ -111,6 +105,9 @@ async function log(client, title, uid, pseudo, extra, color) {
     extra && String(extra).replace(/\s*\n+\s*/g, ' · '), now].filter(Boolean).join(' · ');
   await ch?.send({ embeds: [{ description: ligne.slice(0, 4000), color, footer: { text: 'MonCopainBot · Log' }, timestamp: new Date().toISOString() }],
     allowedMentions: { parse: [] } }).catch(err => console.error('⚠️ Log association :', err.message));
+  // Même événement dans le salon de logs du serveur : une ligne, emoji + noms en gras (format des autres logs)
+  await require('../core/logs-salon').logsSalon(client, (emoji ? emoji + ' ' : '') + '**' + texte + '**' + (uid !== '0' ? ' : **' + pseudo + '**' : '')
+    + (extra ? ' · ' + String(extra).replace(/\s*\n+\s*/g, ' · ') : ''));
 }
 
 // Licences arrivées à échéance : loggées une seule fois, puis retirées du journal
