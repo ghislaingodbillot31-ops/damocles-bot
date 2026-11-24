@@ -112,7 +112,7 @@ async function maj(st = status(), force = false) {
 // Appelé par fs25-succes à chaque vérification (15 min)
 async function traiter(st, annonces) {
   const montees = N.actualiser(st);
-  if (annonces && montees.length) {
+  if (false && annonces && montees.length) { // annonces « ⭐ passe niveau » désactivées pour le moment
     await annonces.send({
       content: montees.map(m => '⭐ **' + m.farm.name + '** passe **niveau ' + m.a + '** !').join('\n'),
       allowedMentions: { parse: [] },
