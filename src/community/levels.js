@@ -173,6 +173,7 @@ async function flush() {
 }
 
 async function announceLevelUp(userId, level) {
+  return; // annonces 🎉 désactivées pour le moment (retirer cette ligne pour les rétablir)
   if (!_client || !LEVELUP_CHANNEL) return;
   const ch = _client.channels.cache.get(LEVELUP_CHANNEL)
     || await _client.channels.fetch(LEVELUP_CHANNEL).catch(() => null);
