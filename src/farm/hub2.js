@@ -40,7 +40,13 @@ function headPayload(st) {
 }
 
 // Classement (niveau puis succès) affiché dans le HUB des exploitants, mis à jour en place à chaque vérification
-const classement = st => N.classement(st).map((x, k) => (['🥇', '🥈', '🥉'][k] || '`' + (k + 1) + '.`') + ' **' + x.farm.name + '** · niv. ' + x.f.niveau + ' · ' + x.f.score + ' succès').join('\n') || '_Aucune exploitation._';
+// Sous chaque ferme : les activités choisies par l'exploitation du même nom (ligne vide si aucune).
+const activitesDe = nom => {
+  const e = exp.getAll().find(x => x.nom && x.nom.trim().toLowerCase() === nom.trim().toLowerCase());
+  const acts = e ? [e.activitePrincipale, e.activiteSecondaire, ...(e.activitesSup || []), e.activiteSupplementaire].filter(Boolean) : [];
+  return '\n　↳ ' + (acts.length ? acts.join(' · ') : '*Aucune activité choisie*');
+};
+const classement = st => N.classement(st).map((x, k) => (['🥇', '🥈', '🥉'][k] || '`' + (k + 1) + '.`') + ' **' + x.farm.name + '** · niv. ' + x.f.niveau + ' · ' + x.f.score + ' succès' + activitesDe(x.farm.name)).join('\n') || '_Aucune exploitation._';
 
 // HUB « Commerce & Contrat » (message séparé) : mêmes boutons et mêmes fonctions que l'ancien HUB des exploitants (hub_* gérés dans index.js).
 const commercePayload = () => panneau({
