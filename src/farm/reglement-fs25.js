@@ -44,6 +44,8 @@ const BLOCS = [
 • Adaptées à ton niveau d'industrie, sur ton exploitation
 • Autorisée seulement si tu produis au moins un ingrédient majeur de la recette (ex : vaches laitières → laiterie)
 • L'eau ne compte pas comme ingrédient 💧
+• Chaque exploitant peut **acheter les usines de la carte** : limite de **1 usine d'origine** par exploitant 🏭
+• Les **terrains de moins de 1 ha** servent à placer tes futures usines 📐
 
 🧹 **Propreté**
 • Ne laisse aucune ressource éparpillée sur la carte hors de ton exploitation : balles, balles enrubannées, tas de cailloux, d'herbe…
