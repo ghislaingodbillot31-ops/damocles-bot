@@ -28,7 +28,7 @@ function fiche(farm) {
 // Recalcule score et niveau de toutes les fermes. Renvoie les montées de niveau.
 // Une ferme vue pour la première fois est enregistrée sans annonce.
 // Barème des succès : en changer le nom recalcule UNE fois le score et le niveau de toutes les fermes (sans annonce)
-const BAREME = 'paliers-2026-11';
+const BAREME = 'paliers-2026-11-brut';
 
 function actualiser(status) {
   const montees = [];
