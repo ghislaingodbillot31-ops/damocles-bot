@@ -16,8 +16,15 @@ const SERIES = require('./fs25-succes-config');
 const TIER_EMOJIS = ['🥉', '🥈', '🥇', '🏅', '🎖️', '🏆', '👑', '💎', '🌟'];
 const BAR_LENGTH = 8;
 
-let baselineDone = false;
+// Paliers déjà atteints, gardés sur disque : un redémarrage (ou une lecture incomplète du serveur) ne ré-annonce plus de succès.
+const FILE_REACHED = require('../core/paths').dataPath('succes-reached.json');
 const reached = new Map(); // farmId -> Map(seriesId -> nombre de paliers atteints)
+let baselineDone = false;
+try {
+  for (const [f, m] of Object.entries(JSON.parse(require('fs').readFileSync(FILE_REACHED, 'utf-8')))) reached.set(f, new Map(Object.entries(m)));
+  baselineDone = true;
+} catch { /* premier démarrage : relevé silencieux */ }
+const saveReached = () => { try { require('fs').writeFileSync(FILE_REACHED, JSON.stringify(Object.fromEntries([...reached].map(([f, m]) => [f, Object.fromEntries(m)]))), 'utf-8'); } catch { /* disque indisponible */ } };
 let lastStatus = null;
 let statsLogged = false;
 
@@ -84,9 +91,9 @@ function bar(value, from, to) {
 function computeUnlocks(status) {
   const unlocks = [];
   for (const farm of status.farms) {
-    const isNewFarm = !reached.has(farm.id);
-    const farmMap = reached.get(farm.id) || new Map();
-    reached.set(farm.id, farmMap);
+    const isNewFarm = !reached.has(String(farm.id));
+    const farmMap = reached.get(String(farm.id)) || new Map();
+    reached.set(String(farm.id), farmMap);
 
     for (const series of SERIES) {
       const value = seriesValue(series, farm.id, status);
@@ -100,6 +107,7 @@ function computeUnlocks(status) {
     }
   }
   baselineDone = true;
+  saveReached();
   return unlocks;
 }
 
