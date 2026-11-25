@@ -84,6 +84,7 @@ async function refresh() {
   const payload = await construire();
   const m = await publier(_channel, _msg?.id || loadJson(MSG_FILE, {}).id, payload).catch(() => null);
   if (m) { _msg = m; saveJson(MSG_FILE, { id: m.id }); }
+  await require('./nettoyage').epurer(_client, _channel.id, true, true).catch(() => {}); // un seul Centre de contrôle dans le salon
 }
 
 // Salon : l'ID configuré s'il existe, sinon le salon nommé « bot-status »
