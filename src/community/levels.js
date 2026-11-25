@@ -306,6 +306,7 @@ async function refreshLeaderboard(rapport) {
   try {
     const ch = await _channel();
     if (ch) await _rebuild(ch, rapport);
+    await require('../moderation/invitations').refreshHub(_client).catch(() => {}); // classement sous le HUB communautaire
   } finally { _refreshing = false; }
 }
 

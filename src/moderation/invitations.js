@@ -94,8 +94,9 @@ async function handleReglementButton(interaction) {
 // Met à jour le HUB sur place (appelé quand le classement bouge)
 async function refreshHub(client) {
   const channel = await salon(client);
-  const m = channel && store.rankMsgId && await channel.messages.fetch(store.rankMsgId).catch(() => null);
-  if (m) await m.edit(classementPayload()).catch(() => {});
+  if (!channel) return;
+  const rang = await publier(channel, store.rankMsgId, classementPayload(), null, 'Classement du HUB').catch(() => null);
+  if (rang && rang.id !== store.rankMsgId) { store.rankMsgId = rang.id; save(); }
 }
 
 async function handleRolesButton(interaction) {

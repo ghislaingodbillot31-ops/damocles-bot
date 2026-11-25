@@ -5,6 +5,7 @@
 async function publier(channel, msgId, payload, avantEnvoi, nom) {
   const m = msgId && await channel.messages.fetch(msgId).catch(() => null);
   if (m && await m.edit(payload).then(() => true, () => false)) { noter(channel, nom, 'modifié'); return m; }
+  if (m) await m.delete().catch(() => {}); // non modifiable (posté par l'ancien bot) : supprimé pour éviter un doublon
   if (avantEnvoi) await avantEnvoi();
   const msg = await channel.send(payload);
   noter(channel, nom, 'republié');
