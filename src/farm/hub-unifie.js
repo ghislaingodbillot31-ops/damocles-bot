@@ -5,6 +5,7 @@ const { ActionRowBuilder, ButtonBuilder, ButtonStyle } = require('discord.js');
 const { dataPath } = require('../core/paths');
 const { panneau } = require('../core/embed-format');
 
+const HUB_ACTUEL = require('../core/ids')('EXPLOITANTS_HUB_CHANNEL_ID', '1569517803747152033');
 const FICHIER = dataPath('hub-unifie.json');
 const MOIS = ['Mars', 'Avril', 'Mai', 'Juin', 'Juillet', 'Août', 'Septembre', 'Octobre', 'Novembre', 'Décembre', 'Janvier', 'Février'];
 const SAISONS = { 1: '🌸 Printemps', 2: '☀️ Été', 3: '🍂 Automne', 4: '❄️ Hiver' };
@@ -80,6 +81,10 @@ async function maj(client, forcerSalon) {
   if (!ch) return;
   const p = payload();
   const hash = JSON.stringify(p);
+  if (forcerSalon && forcerSalon === HUB_ACTUEL) { // remplace l'ancien HUB : tous les messages du bot dans ce salon sont retirés
+    for (const m of (await ch.messages.fetch({ limit: 100 }).catch(() => new Map())).values()) if (m.author.id === client.user.id) await m.delete().catch(() => {});
+    mem.msgId = null;
+  }
   const vieux = mem.msgId ? await ch.messages.fetch(mem.msgId).catch(() => null) : null;
   if (vieux && !forcerSalon && mem.hash === hash) return;
   let msg = null;
@@ -88,6 +93,12 @@ async function maj(client, forcerSalon) {
   ecrire({ salonId, msgId: msg.id, hash });
 }
 
-function init(client) { setInterval(() => maj(client).catch(e => console.warn('⚠️ HUB unifié :', e.message)), 60_000); }
+function init(client) {
+  // première fois : le HUB unifié prend la place de l'ancien dans son salon (ensuite il s'édite en place)
+  if (!lire().salonId) setTimeout(() => maj(client, HUB_ACTUEL).catch(e => console.warn('⚠️ HUB unifié :', e.message)), 45_000);
+  setInterval(() => maj(client).catch(e => console.warn('⚠️ HUB unifié :', e.message)), 60_000); }
 
-module.exports = { maj, init, payload };
+// vrai quand le HUB unifié a remplacé l'ancien dans son salon : hub2.maj() ne republie plus rien
+const remplace = () => lire().salonId === HUB_ACTUEL;
+
+module.exports = { maj, init, payload, remplace };

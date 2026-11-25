@@ -72,7 +72,7 @@ const commercePayload = () => panneau({
 // ── Mise à jour des messages (édition en place) ───────────────────────────────
 let enCours = false;
 async function maj(st = status(), force = false) {
-  if (!client || !st || enCours) return;
+  if (!client || !st || enCours || require('./hub-unifie').remplace()) return; // HUB unifié en place : l'ancien ne republie plus
   enCours = true;
   try {
     const channel = client.channels.cache.get(HUB2_CHANNEL) || await client.channels.fetch(HUB2_CHANNEL).catch(() => null);
