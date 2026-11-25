@@ -51,12 +51,12 @@ const exploitations = st => {
 const commerce = () => ({
   title: '🤝  COMMERCE', color: 0xF0B232,
   fields: [['📋  Contrat', 'Propose tes services ou cherche un joueur'], ['📦  Besoin', 'Recherche une matière première'], ['🏪  Marché', 'Produits en vente sur le serveur'], ['🛒  Boutique', 'Points de classement contre argent en jeu']]
-    .map(([name, value]) => ({ name, value, inline: true })),
+    .flatMap(([name, value], i) => [{ name, value, inline: true }, ...(i % 2 ? [{ name: '​', value: '​', inline: true }] : [])]), // champ vide après 2 : grille 2×2 (Discord en met 3 par ligne sinon)
   footer: { text: 'MonCopainBot' },
 });
 
 // Libellés centrés et complétés par des espaces insécables : les boutons ont tous à peu près la même largeur (Discord n'impose pas de taille)
-const LARGEUR = 15;
+const LARGEUR = 13; // 5 boutons ≈ la largeur d'un embed (~520 px) : libellés courts
 const egal = t => { const n = Math.max(0, LARGEUR - [...t].length), g = Math.floor(n / 2); return ' '.repeat(g) + t + ' '.repeat(n - g); };
 const etiquette = t => new ButtonBuilder().setCustomId('hubu_' + t).setLabel(egal(t.toUpperCase())).setStyle(ButtonStyle.Secondary).setDisabled(true);
 const bouton = (id, label, style) => new ButtonBuilder().setCustomId(id).setLabel(egal(label)).setStyle(style);
@@ -65,15 +65,16 @@ function payload() {
   const st = require('./fs25-succes').getStatus();
   const d = require('./fs25-bridge').getLastFs25Status();
   const info = Object.fromEntries(require('./hub-info').get().boutons.map(b => [b.key, b]));
-  const rangeeInfo = ['reglement', 'drive', 'motdepasse', 'mods'].filter(k => info[k]?.actif)
-    .map(k => bouton('hubinfo_' + k, info[k].label, ButtonStyle.Secondary));
-  const param = info.parametre?.actif ? [bouton('hubinfo_parametre', info.parametre.label, ButtonStyle.Secondary)] : [];
+  const COURT = { reglement: '📜 Règlement', drive: '📁 Drive', motdepasse: '🔑 Mot de passe', mods: '📦 Mods' }; // libellés courts propres au HUB (les textes des fenêtres restent ceux de /bouton-info)
+  const rangeeInfo = Object.keys(COURT).filter(k => info[k]?.actif)
+    .map(k => bouton('hubinfo_' + k, COURT[k], ButtonStyle.Secondary));
+  const param = info.parametre?.actif ? [bouton('hubinfo_parametre', '⚙️ Paramètres', ButtonStyle.Secondary)] : [];
   return panneau({
     embeds: [serveur(d), exploitations(st), commerce()],
     components: [
       new ActionRowBuilder().addComponents(etiquette('Serveur'), ...rangeeInfo),
       new ActionRowBuilder().addComponents(etiquette('Exploitation'),
-        bouton('hub_expl', '🌾 Mon exploitation', ButtonStyle.Success), bouton('nv_succes', '🏆 Succès', ButtonStyle.Primary),
+        bouton('hub_expl', '🌾 Ma ferme', ButtonStyle.Success), bouton('nv_succes', '🏆 Succès', ButtonStyle.Primary),
         bouton('nv_act', '🛒 Activités', ButtonStyle.Primary), ...param),
       new ActionRowBuilder().addComponents(etiquette('Commerce'),
         bouton('hub_contrat', '📋 Contrat', ButtonStyle.Success), bouton('hub_besoin', '📦 Besoin', ButtonStyle.Success),
