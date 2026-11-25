@@ -23,11 +23,12 @@ function ranking(status) {
 
 function buildMessage(status) {
   const rank = ranking(status);
+  const defis = require('./evenements').resume(status);
   const lines = rank.map((r, i) => `${MEDALS[i] || '`' + String(i + 1).padStart(2) + '`'} **${r.farm.name}** · ${r.done} / ${r.total} niveaux`);
   const embed = panneauEmbed({
     title: '🏆 HUB DES SUCCÈS',
     color: 0xF1C40F,
-    description: '**Classement des exploitations**\n' + (lines.join('\n') || '_Aucune exploitation._'),
+    description: ['**Classement des exploitations**', lines.join('\n') || '_Aucune exploitation._', ...(defis ? ['', '**🎯 Défis de la semaine**', defis] : [])].join('\n').slice(0, 4000),
     footer: { text: FOOTER },
     timestamp: new Date().toISOString(),
   });

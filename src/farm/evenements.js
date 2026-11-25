@@ -5,10 +5,8 @@
 const fs = require('fs');
 const crypto = require('crypto');
 const { dataPath } = require('../core/paths');
-const { panneauEmbed } = require('../core/embed-format');
 
 const FILE = dataPath('evenements.json');
-const FOOTER = 'MonCopainBot · Défi hebdomadaire';
 const NIVEAUX = [
   { niveau: 'facile', emoji: '🟢', label: 'Facile', mult: 1, pts: 50 },
   { niveau: 'moyen', emoji: '🟠', label: 'Moyen', mult: 4, pts: 150 },
@@ -90,27 +88,16 @@ function attribuer(status, fermes) {
   return annonces;
 }
 
-function buildMessage(status, fermes) {
-  const medals = ['🥇', '🥈', '🥉'];
-  const blocs = etat.defis.map((d) => {
+// Bloc « défis de la semaine » affiché dans le HUB des succès : une ligne par défi.
+function resume(status) {
+  if (!status || !etat.defis.length) return '';
+  const fermes = status.farms.filter((f) => f.name && !require('./niveaux').estForet(f));
+  const lignes = etat.defis.map((d) => {
     const m = meta(d.niveau), pr = produit(d.ft);
     const faits = fermes.filter((f) => (etat.fait[f.id] || []).includes(d.niveau)).map((f) => f.name);
-    const enCours = fermes.filter((f) => !faits.includes(f.name)).map((f) => ({ f, v: progres(status, f, d) })).filter((x) => x.v > 0)
-      .sort((a, b) => b.v - a.v).slice(0, 3).map((x) => `${x.f.name} ${fmt(x.v)}/${fmt(d.qte)}`);
-    return [`${m.emoji} **${m.label}**  ·  Vendre **${fmt(d.qte)} L** de ${pr.emoji} **${pr.nom}**  ·  **+${d.pts} pts**`,
-      faits.length ? `✅ ${faits.join(', ')}` : null, enCours.length ? `⏳ ${enCours.join(' · ')}` : null].filter(Boolean).join('\n');
+    return `${m.emoji} Vendre **${fmt(d.qte)} L** de ${pr.emoji} ${pr.nom} · **+${d.pts} pts**${faits.length ? `\n✅ ${faits.join(', ')}` : ''}`;
   });
-  const classement = fermes.map((f) => ({ f, nb: etat.points[f.id]?.nb || 0, pts: etat.points[f.id]?.total || 0, sem: (etat.fait[f.id] || []).length }))
-    .sort((a, b) => b.nb - a.nb || b.pts - a.pts || a.f.name.localeCompare(b.f.name, 'fr'))
-    .map((r, i) => `${medals[i] || '`' + String(i + 1).padStart(2) + '`'} **${r.f.name}** · ${r.nb} défi${r.nb > 1 ? 's' : ''} relevé${r.nb > 1 ? 's' : ''}${r.sem ? ` (+${r.sem} cette semaine)` : ''}`);
-  return { embeds: [panneauEmbed({
-    title: '🎯 DÉFI HEBDOMADAIRE',
-    color: 0xE67E22,
-    description: [`Du **${jourFr(etat.semaine)}** au **${jourFr(etat.semaine, 6)}** (nouveaux défis chaque lundi)`,
-      'Vends au **point de vente** la quantité demandée. Il te manque du stock ? Achète-le à un autre joueur 🤝', '',
-      ...blocs.flatMap((b) => [b, '']), '**🏆 Classement des exploitations**', classement.join('\n') || '_Aucune exploitation._'].join('\n').slice(0, 4000),
-    footer: { text: FOOTER },
-  })] };
+  return [`Du **${jourFr(etat.semaine)}** au **${jourFr(etat.semaine, 6)}** · nouveaux défis chaque lundi`, ...lignes].join('\n');
 }
 
 let derniereCle = null;
@@ -126,13 +113,14 @@ async function maj(status, channel, force = false) {
     for (const a of annonces) await require('../core/agrilog').agrilog(channel.guild, a); // uniquement dans le salon de logs (jamais dans le salon du HUB)
   }
 
-  const msg = buildMessage(status, fermes);
-  const cle = JSON.stringify(msg);
+  if (etat.msgId) { // ancien message du défi, désormais intégré au HUB des succès
+    await channel.messages.fetch(etat.msgId).then((m) => m?.delete()).catch(() => {});
+    etat.msgId = null; save();
+  }
+  const cle = resume(status);
   if (!force && cle === derniereCle) return;
-  const m = !force && etat.msgId ? await channel.messages.fetch(etat.msgId).catch(() => null) : null;
-  if (m) await m.edit(msg);
-  else { etat.msgId = (await channel.send(msg)).id; save(); }
   derniereCle = cle;
+  await require('./fs25-succes-hub').update(status, channel).catch((e) => console.warn(`[FS25] Hub succès : ${e.message}`));
 }
 
-module.exports = { maj, lundi, tirerDefis, PRODUITS, _etat: () => etat, _reset: (e) => { etat = e; derniereCle = null; } };
+module.exports = { maj, resume, lundi, tirerDefis, PRODUITS, _etat: () => etat, _reset: (e) => { etat = e; derniereCle = null; } };
