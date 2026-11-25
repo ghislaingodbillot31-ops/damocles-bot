@@ -46,6 +46,10 @@ module.exports = {
       .setDescription('Ajouter (ou retirer avec un négatif) de l\'XP à un membre')
       .addUserOption(o => o.setName('membre').setDescription('Le membre').setRequired(true))
       .addIntegerOption(o => o.setName('montant').setDescription('XP à ajouter (négatif pour retirer)').setRequired(true)))
+    .addSubcommand(s => s.setName('retirer')
+      .setDescription('Retirer des points de classement (XP) à un membre')
+      .addUserOption(o => o.setName('membre').setDescription('Le membre').setRequired(true))
+      .addIntegerOption(o => o.setName('montant').setDescription('Points à retirer').setRequired(true).setMinValue(1)))
     .addSubcommand(s => s.setName('bareme')
       .setDescription('Voir ou modifier les points d\'XP gagnés par action')
       .addStringOption(o => o.setName('cle').setDescription('Le gain à consulter/modifier').setRequired(false)
@@ -61,9 +65,9 @@ module.exports = {
   async execute(interaction) {
     const sub = interaction.options.getSubcommand();
 
-    if (sub === 'ajouter') {
+    if (sub === 'ajouter' || sub === 'retirer') {
       const membre  = interaction.options.getUser('membre');
-      const montant = interaction.options.getInteger('montant');
+      const montant = interaction.options.getInteger('montant') * (sub === 'retirer' ? -1 : 1);
       const r = levels.adminAjuster(membre.id, montant);
       await interaction.reply({
         embeds: [{ description: (montant >= 0 ? '➕ ' : '➖ ') + Math.abs(montant) + ' XP → <@' + membre.id + '>\nNouveau total : **' + r.xp.toLocaleString('fr-FR') + ' XP** (niveau ' + r.level + ')', color: 0x2ECC71 }],
