@@ -33,18 +33,25 @@ function serveur(d) {
     const lignes = d.farms.map(f => f.name.slice(0, w).padEnd(w) + '  ' + eur(f.money).padStart(a) + '  ' + (f.loan > 0 ? eur(f.loan) : '—').padStart(l));
     champs.push({ name: '💰  Finances', value: ['```', tete, '─'.repeat(tete.length), ...lignes, '```'].join('\n').slice(0, 1024) });
   }
-  champs.push({ name: '👨‍🌾  Joueurs en ligne (' + d.players.length + ')', value: (d.players.map(n => '• ' + n).join('\n') || '_Personne_').slice(0, 1024) });
+  champs.push({ name: '👨‍🌾  Joueurs en ligne (' + d.players.length + ')', value: (d.players.join(' · ') || '_Personne_').slice(0, 1024) });
   return { title: '🟢  ' + NOM(), color: 0x23A559, fields: champs };
 }
 
-const exploitations = st => ({
-  title: '🌾  EXPLOITATIONS · CLASSEMENT', color: 0x5865F2,
-  description: ((st && require('./hub2').classement(st)) || '_Aucune exploitation._').slice(0, 3800) + '\n\n*Un niveau ne baisse jamais · niveaux 1 à 20*',
-});
+// Une ferme = nom en gras + stats en code, activités en petit dessous (comme la maquette)
+const exploitations = st => {
+  const h = require('./hub2');
+  const lignes = st ? require('./niveaux').classement(st).map((x, k) =>
+    (['🥇', '🥈', '🥉'][k] || '`' + (k + 1) + '.`') + ' **' + x.farm.name + '**  `niv. ' + x.f.niveau + ' · ' + x.f.score + ' succès`\n-# ' + (h.actsDe(x.farm.name).join(' · ') || 'Aucune activité choisie')) : [];
+  return {
+    title: '🌾  EXPLOITATIONS · CLASSEMENT', color: 0x5865F2,
+    description: (lignes.join('\n') || '_Aucune exploitation._').slice(0, 3800) + '\n\n-# Un niveau ne baisse jamais · niveaux 1 à 20',
+  };
+};
 
 const commerce = () => ({
   title: '🤝  COMMERCE', color: 0xF0B232,
-  description: ['📋  **Contrat** · propose tes services ou cherche un joueur', '📦  **Besoin** · recherche une matière première', '🏪  **Marché** · produits en vente sur le serveur', '🛒  **Boutique** · points de classement contre argent en jeu'].join('\n'),
+  fields: [['📋  Contrat', 'Propose tes services ou cherche un joueur'], ['📦  Besoin', 'Recherche une matière première'], ['🏪  Marché', 'Produits en vente sur le serveur'], ['🛒  Boutique', 'Points de classement contre argent en jeu']]
+    .map(([name, value]) => ({ name, value, inline: true })),
   footer: { text: 'MonCopainBot' },
 });
 
@@ -96,6 +103,13 @@ async function maj(client, forcerSalon) {
 function init(client) {
   // première fois : le HUB unifié prend la place de l'ancien dans son salon (ensuite il s'édite en place)
   if (!lire().salonId) setTimeout(() => maj(client, HUB_ACTUEL).catch(e => console.warn('⚠️ HUB unifié :', e.message)), 45_000);
+  // au démarrage : retire tout autre message du bot resté dans le salon (ancien statut, ancien HUB), sauf le HUB unifié
+  setTimeout(async () => {
+    const mem = lire(); if (!mem.salonId || !mem.msgId) return;
+    const ch = await client.channels.fetch(mem.salonId).catch(() => null);
+    for (const m of (await ch?.messages.fetch({ limit: 100 }).catch(() => new Map()) || new Map()).values())
+      if (m.author.id === client.user.id && m.id !== mem.msgId) await m.delete().catch(() => {});
+  }, 90_000);
   setInterval(() => maj(client).catch(e => console.warn('⚠️ HUB unifié :', e.message)), 60_000); }
 
 // vrai quand le HUB unifié a remplacé l'ancien dans son salon : hub2.maj() ne republie plus rien

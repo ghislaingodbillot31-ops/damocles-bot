@@ -41,9 +41,12 @@ function headPayload(st) {
 
 // Classement (niveau puis succès) affiché dans le HUB des exploitants, mis à jour en place à chaque vérification
 // Sous chaque ferme : les activités choisies par l'exploitation du même nom (ligne vide si aucune).
-const activitesDe = nom => {
+const actsDe = nom => {
   const e = exp.getAll().find(x => x.nom && x.nom.trim().toLowerCase() === nom.trim().toLowerCase());
-  const acts = e ? [e.activitePrincipale, e.activiteSecondaire, ...(e.activitesSup || []), e.activiteSupplementaire].filter(Boolean) : [];
+  return e ? [e.activitePrincipale, e.activiteSecondaire, ...(e.activitesSup || []), e.activiteSupplementaire].filter(Boolean) : [];
+};
+const activitesDe = nom => {
+  const acts = actsDe(nom);
   return '\n　↳ ' + (acts.length ? acts.join(' · ') : '*Aucune activité choisie*');
 };
 const classement = st => N.classement(st).map((x, k) => (['🥇', '🥈', '🥉'][k] || '`' + (k + 1) + '.`') + ' **' + x.farm.name + '** · niv. ' + x.f.niveau + ' · ' + x.f.score + ' succès' + activitesDe(x.farm.name)).join('\n') || '_Aucune exploitation._';
@@ -174,4 +177,4 @@ function init(c) {
   });
 }
 
-module.exports = { init, traiter, maj, handle, classement };
+module.exports = { init, traiter, maj, handle, classement, actsDe };

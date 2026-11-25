@@ -404,6 +404,7 @@ async function startFs25Bridge(client) {
       embed = offlineEmbed(c, err.message);
     }
     try {
+      if (require('./hub-unifie').remplace()) return; // HUB unifié dans ce salon : il porte déjà le statut, plus de message de statut séparé
       const json = panneauEmbed(embed.toJSON());
       const boutons = require('./hub-info').buildMessage(['reglement', 'drive', 'motdepasse', 'mods']).components; // boutons d'information sous le statut
       const key = JSON.stringify({ ...json, timestamp: 0, boutons });
