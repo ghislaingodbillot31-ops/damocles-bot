@@ -86,7 +86,8 @@ Légende : **Env** = clé de configuration ; **Code** = fichier source ; **Donn�
 | 📋・staff-logs | `LOG_CHANNEL_ID` | Logs du bot, sanctions, départs, « 🔄 Panneaux actualisés » (rapport groupé 15 s) | `core/logger.js`, `panneau-sync.js`, `core/restart.js` |
 | ouvrier-ia | `FS25_OUVRIERS_CHANNEL_ID` | Annonces des ouvriers IA | `fs25-bridge.js` |
 | 🔑・staff-info, 💬・staff-général, ⚠️・staff-alertes, 🛠️・staff-commandes, sihg-refonte | — | manuel | — |
-| test-asso, association-stat | — | **tests** (à nettoyer si inutiles) | `association.js` (stats) |
+| test-asso | `LOGS_ID` codé en dur (1571329280410001488) | **Pas un salon de test** : logs admin de l'association + message « travail et crédits » (5 min) | `farm/association.js` |
+| association-stat | `DONNEES_ID` codé en dur (1574457653776744458) | **Pas un salon de test** : « SYNTHÈSE · Association » + fiches membres | `farm/association.js` |
 
 ---
 ## 3. Commandes slash (enregistrées avec `node src/deploy-commands.js`)
