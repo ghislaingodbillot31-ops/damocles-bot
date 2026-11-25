@@ -104,7 +104,7 @@ function refreshHub(client) {
 async function majHub(client) {
   const channel = await salon(client);
   if (!channel) return;
-  const rang = await publier(channel, store.rankMsgId, classementPayload(), null, 'Classement du HUB').catch(() => null);
+  const rang = await publier(channel, store.rankMsgId, classementPayload(), null).catch(() => null); // sans nom : mise à jour routine, pas de rapport dans les logs
   if (rang && rang.id !== store.rankMsgId) { store.rankMsgId = rang.id; save(); }
 }
 
