@@ -55,8 +55,11 @@ const commerce = () => ({
   footer: { text: 'MonCopainBot' },
 });
 
-const etiquette = t => new ButtonBuilder().setCustomId('hubu_' + t).setLabel(t.toUpperCase()).setStyle(ButtonStyle.Secondary).setDisabled(true);
-const bouton = (id, label, style) => new ButtonBuilder().setCustomId(id).setLabel(label).setStyle(style);
+// Libellés centrés et complétés par des espaces insécables : les boutons ont tous à peu près la même largeur (Discord n'impose pas de taille)
+const LARGEUR = 15;
+const egal = t => { const n = Math.max(0, LARGEUR - [...t].length), g = Math.floor(n / 2); return ' '.repeat(g) + t + ' '.repeat(n - g); };
+const etiquette = t => new ButtonBuilder().setCustomId('hubu_' + t).setLabel(egal(t.toUpperCase())).setStyle(ButtonStyle.Secondary).setDisabled(true);
+const bouton = (id, label, style) => new ButtonBuilder().setCustomId(id).setLabel(egal(label)).setStyle(style);
 
 function payload() {
   const st = require('./fs25-succes').getStatus();
@@ -73,8 +76,8 @@ function payload() {
         bouton('hub_expl', '🌾 Mon exploitation', ButtonStyle.Success), bouton('nv_succes', '🏆 Succès', ButtonStyle.Primary),
         bouton('nv_act', '🛒 Activités', ButtonStyle.Primary), ...param),
       new ActionRowBuilder().addComponents(etiquette('Commerce'),
-        bouton('hub_contrat', '📋 Contrat', ButtonStyle.Primary), bouton('hub_besoin', '📦 Besoin', ButtonStyle.Primary),
-        bouton('hub_marche', '🏪 Marché', ButtonStyle.Success), bouton('hub_boutique', '🛒 Boutique', ButtonStyle.Secondary)),
+        bouton('hub_contrat', '📋 Contrat', ButtonStyle.Success), bouton('hub_besoin', '📦 Besoin', ButtonStyle.Success),
+        bouton('hub_marche', '🏪 Marché', ButtonStyle.Success), bouton('hub_boutique', '🛒 Boutique', ButtonStyle.Success)),
     ],
   });
 }
