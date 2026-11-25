@@ -13,6 +13,7 @@ const kC = (c) => `c|${c.kind}|${c.farm}|${c.fillType}`;
 
 // Valeurs du jeu moins le point zéro (jamais négatif)
 function appliquer(stats, counters) {
+  return; // ancien niveau conservé : valeurs brutes du jeu, plus de point zéro
   for (const s of stats) s.value = Math.max(0, s.value - (base[kS(s)] || 0));
   for (const c of counters) c.value = Math.max(0, c.value - (base[kC(c)] || 0));
 }

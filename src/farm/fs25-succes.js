@@ -17,7 +17,7 @@ const TIER_EMOJIS = ['🥉', '🥈', '🥇', '🏅', '🎖️', '🏆', '👑', 
 const BAR_LENGTH = 8;
 
 // Paliers déjà atteints, gardés sur disque : un redémarrage (ou une lecture incomplète du serveur) ne ré-annonce plus de succès.
-const FILE_REACHED = require('../core/paths').dataPath('succes-reached.json');
+const FILE_REACHED = require('../core/paths').dataPath('succes-reached-2.json');
 const reached = new Map(); // farmId -> Map(seriesId -> nombre de paliers atteints)
 let baselineDone = false;
 try {
