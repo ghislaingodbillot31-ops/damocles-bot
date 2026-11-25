@@ -174,4 +174,4 @@ function init(c) {
   });
 }
 
-module.exports = { init, traiter, maj, handle };
+module.exports = { init, traiter, maj, handle, classement };

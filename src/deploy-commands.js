@@ -7,6 +7,7 @@ const commands = [
   require('./commands/sanction').data.toJSON(),
   require('./commands/bouton').data.toJSON(),
   require('./commands/bouton-info').data.toJSON(),
+  require('./commands/hub-unifie').data.toJSON(),
   require('./commands/analyse').data.toJSON(),
   require('./commands/anniversaire').data.toJSON(),
   require('./commands/verifier').data.toJSON(),

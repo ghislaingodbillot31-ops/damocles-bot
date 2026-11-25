@@ -98,6 +98,7 @@ client.once(Events.ClientReady, async () => {
   levels.startLevels(client);
   boutique.startBoutique(client);
   require('./farm/hub2').init(client);
+  require('./farm/hub-unifie').init(client);
   setTimeout(() => require('./farm/salon-exploitation').refreshAll(client).catch(() => {}), 40_000); // répare un salon resté vide (redémarrage en pleine création)
   // une seule version de chaque panneau : une fois les panneaux republiés, on supprime les anciens
   setTimeout(() => require('./core/nettoyage').nettoyerTout(client).catch(() => {}), 60_000);
@@ -253,6 +254,7 @@ client.on(Events.InteractionCreate, async interaction => {
       'succes':       './commands/succes',
       'succes-maj':   './commands/succes-maj',
       'fs25':         './commands/fs25',
+      'hub-unifie':   './commands/hub-unifie',
       'nettoyer':     './commands/purge',
     };
     const cmdPath = cmdMap[interaction.commandName];
