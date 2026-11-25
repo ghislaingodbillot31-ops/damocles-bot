@@ -35,7 +35,25 @@ async function startTickets(client) {
   if (existant) await existant.edit(panneauTicket());
   else await channel.send(panneauTicket());
   await require('../core/nettoyage').epurer(client, channel.id, false);
+  await reactiverTickets(client, channel.guild).catch(e => console.warn('⚠️ Tickets existants :', e.message));
   console.log('🎫 Tickets · prêt (#' + channel.name + ')');
+}
+
+// Tickets ouverts par l'ancien bot : leur message d'accueil (boutons morts) est repris tel quel par le bot actuel.
+async function reactiverTickets(client, guild) {
+  for (const ch of (await guild.channels.fetch()).values()) {
+    const uid = ch?.messages && /\| ID: (\d{17,20})/.exec(ch.topic || '')?.[1];
+    if (!uid) continue;
+    const msgs = [...(await ch.messages.fetch({ limit: 50 }).catch(() => new Map())).values()];
+    const vieux = msgs.find(m => m.author.id !== client.user.id && m.components.some(r => r.components.some(c => /^ticket_(take|close)_/.test(c.customId || ''))));
+    if (!vieux) continue;
+    const row = new ActionRowBuilder().addComponents(
+      new ButtonBuilder().setCustomId('ticket_take_' + uid).setLabel('✋ Prise en charge').setStyle(ButtonStyle.Primary),
+      new ButtonBuilder().setCustomId('ticket_close_' + uid).setLabel('🔒 Clôturer').setStyle(ButtonStyle.Danger));
+    await ch.send(panneau({ content: vieux.content || '', embeds: vieux.embeds.map(e => e.toJSON()), components: [row] }));
+    await vieux.delete().catch(() => {});
+    console.log('🎫 Ticket réactivé : #' + ch.name);
+  }
 }
 
 // Crée le salon privé d'un ticket (joueur + rôle support) et y poste le message d'accueil avec les boutons
