@@ -255,9 +255,16 @@ async function _viderSalon(ch) {
   }
 }
 
+// Message du classement s'il existe ET appartient au bot actuel (un message de l'ancien bot n'est pas modifiable : il est supprimé pour être republié)
+async function mien(ch, id) {
+  const m = id && await ch.messages.fetch(id).catch(() => null);
+  if (m && m.author.id !== _client.user.id) { await m.delete().catch(() => {}); return null; }
+  return m || null;
+}
+
 // Reconstruit : vide le salon, puis poste (1) explication et (2) classement.
 async function _rebuild(ch, rapport) {
-  const [b0, m0] = await Promise.all([_baremeMsgId, _leaderboardMsgId].map(id => id && ch.messages.fetch(id).catch(() => null)));
+  const [b0, m0] = await Promise.all([_baremeMsgId, _leaderboardMsgId].map(id => mien(ch, id)));
   if (b0 && m0) { // en place : on modifie les deux messages, on retire seulement le reste (annonces 🎉)
     await b0.edit({ embeds: [baremeEmbed()] }).catch(() => {});
     await m0.edit({ embeds: [classementEmbed()] }).catch(() => {});
@@ -284,7 +291,7 @@ async function editLeaderboard() {
     const ch = await _channel();
     if (!ch) return;
     if (_leaderboardMsgId) {
-      const msg = await ch.messages.fetch(_leaderboardMsgId).catch(() => null);
+      const msg = await mien(ch, _leaderboardMsgId);
       if (msg) { await msg.edit({ embeds: [classementEmbed()] }).catch(() => {}); return; }
     }
     await _rebuild(ch); // message perdu → on reconstruit tout
