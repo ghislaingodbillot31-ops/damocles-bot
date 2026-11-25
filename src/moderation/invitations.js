@@ -92,7 +92,16 @@ async function handleReglementButton(interaction) {
 }
 
 // Met à jour le HUB sur place (appelé quand le classement bouge)
-async function refreshHub(client) {
+// Au plus une mise à jour toutes les 5 min (le gain d'XP vocal l'appelait chaque minute) ; les appels intermédiaires sont regroupés.
+const HUB_REFRESH_MS = 5 * 60_000;
+let _hubLast = 0, _hubTimer = null;
+function refreshHub(client) {
+  if (_hubTimer) return Promise.resolve();
+  const attente = Math.max(0, _hubLast + HUB_REFRESH_MS - Date.now());
+  _hubTimer = setTimeout(() => { _hubTimer = null; _hubLast = Date.now(); majHub(client).catch(() => {}); }, attente);
+  return Promise.resolve();
+}
+async function majHub(client) {
   const channel = await salon(client);
   if (!channel) return;
   const rang = await publier(channel, store.rankMsgId, classementPayload(), null, 'Classement du HUB').catch(() => null);
