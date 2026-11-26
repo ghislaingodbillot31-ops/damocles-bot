@@ -630,7 +630,12 @@ async function publier(client, status) {
   if (status) dernierReleve = releve(status);
   const ch = await client.channels.fetch(CHANNEL_ID).catch(() => null);
   if (!ch) return console.error('⚠️ Association : salon introuvable');
-  const get = id => id && ch.messages.fetch(id).catch(() => null);
+  // panneau d'un ancien bot (« Deleted User », boutons morts) : supprimé et republié par le bot actuel
+  const get = async id => {
+    const m = id && await ch.messages.fetch(id).catch(() => null);
+    if (m && m.author.id !== client.user.id) { await m.delete().catch(() => {}); return null; }
+    return m;
+  };
   if (store.journalMsgId) { (await get(store.journalMsgId))?.delete().catch(() => {}); store.journalMsgId = null; save(); } // ancien HUB « MEMBRES LICENCIÉS »
   if (store.salairesMsgId) { (await get(store.salairesMsgId))?.delete().catch(() => {}); store.salairesMsgId = null; save(); } // ancien 2e HUB
   const msgs = [['panelMsgId', panelPayload]];
@@ -639,7 +644,7 @@ async function publier(client, status) {
     for (const [i, [, p]] of msgs.entries()) await trouves[i].edit(p()).catch(() => {});
   } else { // ordre cassé ou nouveau message : on reposte tout dans le bon ordre
     const anciens = await ch.messages.fetch({ limit: 50 }).catch(() => null); // aussi les HUB publiés par une autre instance (données séparées)
-    for (const m of anciens?.values() || []) if (m.author.id === client.user.id && !m.flags.has(64)) await m.delete().catch(() => {});
+    for (const m of anciens?.values() || []) if (!m.flags.has(64) && (m.author.id === client.user.id || m.components?.length)) await m.delete().catch(() => {}); // aussi les panneaux à boutons d'un ancien bot
     for (const [k, p] of msgs) store[k] = (await ch.send(p())).id;
     save();
   }
