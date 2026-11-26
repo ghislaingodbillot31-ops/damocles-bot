@@ -178,9 +178,15 @@ async function handleHubExplCreerModal(interaction) {
 
 // Bouton « ⚙️ Gérer mon exploitation » du salon privé : ouvre le menu de gestion
 async function handleHubExplGerer(interaction) {
-  const exploit = exp.getById(interaction.customId.replace('hub_expl_gerer_', ''));
+  let exploit = exp.getById(interaction.customId.replace('hub_expl_gerer_', ''));
+  // bouton périmé / salon repris : la fiche du salon où l'on clique fait foi si le joueur la gère
+  const duSalon = exp.getAll().find(x => x.salonId === interaction.channelId);
+  if (duSalon && (!exploit || !canManage(interaction, exploit)) && canManage(interaction, duSalon)) exploit = duSalon;
   if (!exploit) return interaction.reply({ content: '❌ Exploitation introuvable.', flags: 64 });
-  if (!canManage(interaction, exploit)) return interaction.reply({ content: '❌ Seul un exploitant (ou un admin) peut gérer cette exploitation.', flags: 64 });
+  if (!canManage(interaction, exploit)) {
+    console.warn('⚠️ Gérer refusé :', interaction.user.id, 'bouton', exploit.id, 'owner', exploit.ownerId, 'co', (exploit.coExploitants || []).join(','), 'salon', interaction.channelId, 'fiche du salon', duSalon?.id);
+    return interaction.reply({ content: '❌ Seul un exploitant (ou un admin) peut gérer cette exploitation.', flags: 64 });
+  }
   await interaction.reply({ natif: true, ...manageMenu(exploit, interaction.user.id), flags: 64 });
   autoClean(interaction, 120000);
 }
