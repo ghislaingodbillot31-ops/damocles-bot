@@ -1,7 +1,7 @@
 // Bouton « 👑 Administrateur » du salon d'une exploitation : crédit fictif en jeu, à rembourser obligatoirement.
 // Le bot ne donne pas l'argent en jeu : il garde la dette de l'exploitation (champ credit, en €) et son historique.
 // Attribuer un crédit = la dette monte · Remboursement anticipé = la dette baisse (jamais sous 0).
-const { ActionRowBuilder, ButtonBuilder, ButtonStyle, StringSelectMenuBuilder, ModalBuilder, TextInputBuilder, TextInputStyle, PermissionFlagsBits } = require('discord.js');
+const { ActionRowBuilder, ButtonBuilder, ButtonStyle, StringSelectMenuBuilder, UserSelectMenuBuilder, ModalBuilder, TextInputBuilder, TextInputStyle, PermissionFlagsBits } = require('discord.js');
 const exp = require('./exploitation');
 const { logsSalon } = require('../core/logs-salon');
 
@@ -21,6 +21,7 @@ async function ouvrir(i) {
     embeds: [{ title: '👑 Administrateur · ' + e.nom, description: '💳 **Crédit à rembourser :** ' + eur(e.credit || 0) + '\n\nChoisis une action :', color: 0xF1C40F }],
     components: [new ActionRowBuilder().addComponents(new StringSelectMenuBuilder().setCustomId('cred_sel_' + e.id).setPlaceholder('Que veux-tu faire ?')
       .addOptions([...Object.entries(LABEL).map(([value, label]) => ({ label, value, description: value === 'attribuer' ? 'Choisir un montant' : 'Choisir le montant remboursé' })),
+        { label: '👤 Attribuer à un joueur', value: 'proprio', description: 'Donne cette exploitation, son salon et son HUB à un joueur' },
         { label: '🔄 RESET', value: 'reset', description: 'Remet à zéro crédit, niveau industriel et activités (propriétaire intact)' }]))],
     flags: 64,
   });
@@ -30,6 +31,10 @@ async function ouvrir(i) {
 async function choisir(i) {
   if (!estAdmin(i)) return i.reply({ content: '❌ Réservé aux administrateurs.', flags: 64 });
   const id = i.customId.replace('cred_sel_', ''), mode = i.values[0];
+  if (mode === 'proprio') return i.update({ // le sélecteur est traité par hub.handleHubExplAdmOwner (transfert + salon + HUB)
+    embeds: [{ title: '👤 Attribuer ' + (exp.getById(id)?.nom || '?'), description: 'Choisis le **nouveau propriétaire** : il reçoit l\'exploitation, le salon privé et le HUB de gestion. L\'ancien propriétaire perd l\'accès.', color: 0xE67E22 }],
+    components: [new ActionRowBuilder().addComponents(new UserSelectMenuBuilder().setCustomId('hub_expl_admowner_' + id).setPlaceholder('Choisis le joueur').setMinValues(1).setMaxValues(1))],
+  });
   if (mode === 'reset') return i.update({
     embeds: [{ title: '⚠️ Confirmer le RESET', description: 'Remettre à zéro **crédit**, **niveau industriel** et **activités** de **' + (exp.getById(id)?.nom || '?') + '** ?\nLe propriétaire, les co-exploitants et les ouvriers ne changent pas. Action **irréversible**.', color: 0xE74C3C }],
     components: [new ActionRowBuilder().addComponents(
