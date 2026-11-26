@@ -16,7 +16,7 @@
 
 DiscordBridge = {}
 DiscordBridge.LOG_PREFIX         = "[DiscordBridge] "
-DiscordBridge.STATUS_INTERVAL_MS = 30000
+DiscordBridge.STATUS_INTERVAL_MS = 10000
 DiscordBridge.FULL_INTERVAL_MS   = 120000
 DiscordBridge.WORK_INTERVAL_MS   = 1000
 DiscordBridge.MAX_ROWS           = 1000   -- lignes max par section de full.xml

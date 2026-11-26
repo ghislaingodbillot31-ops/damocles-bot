@@ -198,21 +198,21 @@
     "semantic_hash": ""
   },
   "src/commands/xp-admin.js": {
-    "mtime": 1793631814.5137484,
-    "seen": 1793675940.4105926,
-    "ast_hash": "dc9a54cc554dd8b54eed01965ac06d09",
+    "mtime": 1795590900.98662,
+    "seen": 1795696270.979517,
+    "ast_hash": "013d3e20b80735c15615f4877bc4a96b",
     "semantic_hash": ""
   },
   "src/deploy-commands.js": {
-    "mtime": 1794825114.3244638,
-    "seen": 1795044881.9565809,
-    "ast_hash": "5eb4a7c109047a13a329ce4af1fa8ad4",
+    "mtime": 1795596888.6018534,
+    "seen": 1795696270.9795394,
+    "ast_hash": "9f01a31f82b4c485405d1ab1b138b6fc",
     "semantic_hash": ""
   },
   "src/index.js": {
-    "mtime": 1795032360.4199247,
-    "seen": 1795044881.9565983,
-    "ast_hash": "34ec4f909fa2938178d075ff7ba252a4",
+    "mtime": 1795596888.6519578,
+    "seen": 1795696270.9795663,
+    "ast_hash": "4d6a998db2269f2358caa1e507d6f311",
     "semantic_hash": ""
   },
   "test/panneau-sync.test.js": {
@@ -234,9 +234,9 @@
     "semantic_hash": ""
   },
   "web/admin.html": {
-    "mtime": 1794210869.3353434,
-    "seen": 1794275569.2294226,
-    "ast_hash": "1c474b899949cdd726e694c50f9ab35f",
+    "mtime": 1795165741.390304,
+    "seen": 1795171028.5587068,
+    "ast_hash": "a6794dc62595c309ba9c988a1b51fe92",
     "semantic_hash": ""
   },
   "web/index.html": {
@@ -378,15 +378,15 @@
     "semantic_hash": ""
   },
   "src/community/levels.js": {
-    "mtime": 1793722412.791216,
-    "seen": 1794184491.6949995,
-    "ast_hash": "50597e98d47a7a4989efc69af47d3d51",
+    "mtime": 1795591381.0074267,
+    "seen": 1795696270.9795232,
+    "ast_hash": "6dc58b8a0f9f86d7f76bacb32bba8495",
     "semantic_hash": ""
   },
   "src/community/suggestions.js": {
-    "mtime": 1794587524.177715,
-    "seen": 1794680808.1838515,
-    "ast_hash": "6011a77879cb2605024de314d009b780",
+    "mtime": 1795166827.1445787,
+    "seen": 1795171028.558651,
+    "ast_hash": "bbecd58a167d0ef55168f1e9b383920a",
     "semantic_hash": ""
   },
   "src/community/temptext.js": {
@@ -402,9 +402,9 @@
     "semantic_hash": ""
   },
   "src/core/agrilog.js": {
-    "mtime": 1795032759.5106916,
-    "seen": 1795044881.9565706,
-    "ast_hash": "e8ecee6692883a9655a59102849e4d34",
+    "mtime": 1795347866.7763717,
+    "seen": 1795696270.9795275,
+    "ast_hash": "0a12ff563017562246f2204506f45b6a",
     "semantic_hash": ""
   },
   "src/core/config.js": {
@@ -432,9 +432,9 @@
     "semantic_hash": ""
   },
   "src/core/logger.js": {
-    "mtime": 1793631814.5172548,
-    "seen": 1793675940.410605,
-    "ast_hash": "13320559cdad7d8e59e4e8dbe84f50fb",
+    "mtime": 1795447349.5703013,
+    "seen": 1795696270.979532,
+    "ast_hash": "658d9c73c3188b56ee914d1d70a097e3",
     "semantic_hash": ""
   },
   "src/core/nettoyage.js": {
@@ -468,9 +468,9 @@
     "semantic_hash": ""
   },
   "src/core/statusbot.js": {
-    "mtime": 1793631814.520763,
-    "seen": 1793675940.410609,
-    "ast_hash": "03991b7ae2c429811aafb2b4578dd6ea",
+    "mtime": 1795592894.1088767,
+    "seen": 1795696270.9795387,
+    "ast_hash": "02a31d53b5ab68230e402247653baf4e",
     "semantic_hash": ""
   },
   "src/farm/boutique.js": {
@@ -480,27 +480,27 @@
     "semantic_hash": ""
   },
   "src/farm/exploitation.js": {
-    "mtime": 1794986855.4363117,
-    "seen": 1795044881.9565837,
-    "ast_hash": "207d20b92f1183301b473fe268832484",
+    "mtime": 1795596499.7591631,
+    "seen": 1795696270.9795456,
+    "ast_hash": "87e54fd4fdf47a07e84c56b465939b53",
     "semantic_hash": ""
   },
   "src/farm/fs25-bridge.js": {
-    "mtime": 1795032891.2187588,
-    "seen": 1795044881.9565847,
-    "ast_hash": "68997f496b71bb1bdc4ab3f45847ba85",
+    "mtime": 1795597440.533573,
+    "seen": 1795696270.9795465,
+    "ast_hash": "a3bd83a8a5798a1d557acb508dedfb79",
     "semantic_hash": ""
   },
   "src/farm/hub-info.js": {
-    "mtime": 1795032759.250359,
-    "seen": 1795044881.9565885,
-    "ast_hash": "c4ff4c28ee26138e41b98f2001c193de",
+    "mtime": 1795165857.0436685,
+    "seen": 1795171028.5586772,
+    "ast_hash": "45fac6c3bd956188c36b806487f2e438",
     "semantic_hash": ""
   },
   "src/farm/hub.js": {
-    "mtime": 1795027585.7434275,
-    "seen": 1795044881.9565892,
-    "ast_hash": "95c9c5a2bb3bb250ec7acc325b8337c3",
+    "mtime": 1795694489.7194154,
+    "seen": 1795696270.9795527,
+    "ast_hash": "e6e004d254cbdeb0305214dabcb00de1",
     "semantic_hash": ""
   },
   "src/farm/marche-seed.json": {
@@ -510,15 +510,15 @@
     "semantic_hash": ""
   },
   "src/farm/marche.js": {
-    "mtime": 1794424986.895512,
-    "seen": 1794680808.1838737,
-    "ast_hash": "395eb4b9faf87113f613f92bf2bde454",
+    "mtime": 1795166990.9084785,
+    "seen": 1795171028.5586815,
+    "ast_hash": "1a0ab8d40a9af262a8c735dc722fc9f5",
     "semantic_hash": ""
   },
   "src/farm/panneau-sync.js": {
-    "mtime": 1793631814.5192616,
-    "seen": 1793675940.4106162,
-    "ast_hash": "7c83fcd1b65446a42c4f9e254c9add59",
+    "mtime": 1795591375.9227936,
+    "seen": 1795696270.979559,
+    "ast_hash": "5fd8ea76b0da93f644585b2cc5c8edac",
     "semantic_hash": ""
   },
   "src/farm/simple.js": {
@@ -552,9 +552,9 @@
     "semantic_hash": ""
   },
   "src/moderation/invitations.js": {
-    "mtime": 1793723384.6214619,
-    "seen": 1794184491.6950285,
-    "ast_hash": "73e308fe6708def45100c346b3d54786",
+    "mtime": 1795614452.9043467,
+    "seen": 1795696270.9795706,
+    "ast_hash": "609127f2a187c8bb3f8a0e9bf3de4cfb",
     "semantic_hash": ""
   },
   "src/moderation/publiclog.js": {
@@ -576,9 +576,9 @@
     "semantic_hash": ""
   },
   "src/moderation/tickets.js": {
-    "mtime": 1793631814.521261,
-    "seen": 1793675940.410624,
-    "ast_hash": "ef0c9dbf6789fe456b26cbcf441b913d",
+    "mtime": 1795590781.9408498,
+    "seen": 1795696270.9795742,
+    "ast_hash": "90da3fb89cbcf44a7c5c59e3068dd823",
     "semantic_hash": ""
   },
   "src/moderation/verification.js": {
@@ -594,9 +594,9 @@
     "semantic_hash": ""
   },
   "src/web/admin-api.js": {
-    "mtime": 1794425083.895633,
-    "seen": 1794680808.1838872,
-    "ast_hash": "fff3553ee02c7fe7a13048a0e446c417",
+    "mtime": 1795165727.0682366,
+    "seen": 1795171028.5586996,
+    "ast_hash": "36e9e687a5b0ff769c859659e58de69f",
     "semantic_hash": ""
   },
   "src/web/dashboard.js": {
@@ -606,9 +606,9 @@
     "semantic_hash": ""
   },
   "mod-src/scripts/DiscordBridge.lua": {
-    "mtime": 1794702668.1529672,
-    "seen": 1795044881.9565387,
-    "ast_hash": "f68f60ec0d10e90ba9ce74509a3d6e04",
+    "mtime": 1795450813.164747,
+    "seen": 1795696270.9794939,
+    "ast_hash": "8bcf9053eb081fd3fde13afb01415042",
     "semantic_hash": ""
   },
   "src/commands/succes-maj.js": {
@@ -624,27 +624,27 @@
     "semantic_hash": ""
   },
   "src/farm/fs25-succes-config.js": {
-    "mtime": 1794720065.4334996,
-    "seen": 1795044881.956586,
-    "ast_hash": "4c5de956df9cde24222afb4c073739de",
+    "mtime": 1795165994.5311933,
+    "seen": 1795171028.5586746,
+    "ast_hash": "ccb04c050e83dc30ed094b4b95ee41f2",
     "semantic_hash": ""
   },
   "src/farm/fs25-succes-hub.js": {
-    "mtime": 1793712900.96927,
-    "seen": 1794184491.695018,
-    "ast_hash": "5163fd8dc9add5c0fd1ac2b38158eee0",
+    "mtime": 1795606512.0329013,
+    "seen": 1795696270.9795494,
+    "ast_hash": "57b30bf5ff97df96fea8d799b9760ba1",
     "semantic_hash": ""
   },
   "src/farm/fs25-succes.js": {
-    "mtime": 1794273275.2364106,
-    "seen": 1794275569.2293978,
-    "ast_hash": "56bfd8d85c452ed486a830fa4f596ba5",
+    "mtime": 1795593355.920328,
+    "seen": 1795696270.9795504,
+    "ast_hash": "01b7e0128ae71a8b2b75ead1f2181a3b",
     "semantic_hash": ""
   },
   "test/succes.test.js": {
-    "mtime": 1793676775.7716935,
-    "seen": 1793694719.3120384,
-    "ast_hash": "1fdedba6911408acfd445bff120f4d09",
+    "mtime": 1795356703.8381054,
+    "seen": 1795696270.9795804,
+    "ast_hash": "e1696998cd4d573a04641b91aaf2180b",
     "semantic_hash": ""
   },
   "src/farm/liste-succes.md": {
@@ -666,9 +666,9 @@
     "semantic_hash": ""
   },
   "src/farm/hub2.js": {
-    "mtime": 1795033144.1520655,
-    "seen": 1795044881.9565902,
-    "ast_hash": "f850f6e8cf142ecc31c094f49e3fc040",
+    "mtime": 1795597431.0323117,
+    "seen": 1795696270.9795535,
+    "ast_hash": "89b669b3cd7650b4b3efda7ed1ec5116",
     "semantic_hash": ""
   },
   "src/farm/niveaux-config.js": {
@@ -678,9 +678,9 @@
     "semantic_hash": ""
   },
   "src/farm/niveaux.js": {
-    "mtime": 1795025534.1168053,
-    "seen": 1795044881.9565942,
-    "ast_hash": "6850ba894d29733199001268e2453fd0",
+    "mtime": 1795593862.2511013,
+    "seen": 1795696270.9795582,
+    "ast_hash": "4f25e41609b617e2f175686db9bdd2a1",
     "semantic_hash": ""
   },
   "src/farm/liste-succes-niveaux.md": {
@@ -696,9 +696,9 @@
     "semantic_hash": ""
   },
   "src/farm/association.js": {
-    "mtime": 1795021103.844309,
-    "seen": 1795044881.9565814,
-    "ast_hash": "8d0f50b2877b6bb2549f93d712f83b3b",
+    "mtime": 1795694860.5217175,
+    "seen": 1795696270.9795413,
+    "ast_hash": "bbe3be8784846a78ccd652c8e8d084f6",
     "semantic_hash": ""
   },
   "src/commands/fs25.js": {
@@ -707,22 +707,10 @@
     "ast_hash": "26a3fd81d1154a37a44113a005c7e503",
     "semantic_hash": ""
   },
-  "src/commands/loto-tirage.js": {
-    "mtime": 1794825114.3034103,
-    "seen": 1795044881.9565525,
-    "ast_hash": "fe3161ac5212c138f850481a03966a9a",
-    "semantic_hash": ""
-  },
-  "src/community/loto.js": {
-    "mtime": 1794826589.3660834,
-    "seen": 1795044881.9565666,
-    "ast_hash": "a4325336280b23a0dc2d9363db780f76",
-    "semantic_hash": ""
-  },
   "src/farm/droits-texte.js": {
-    "mtime": 1795029703.0494103,
-    "seen": 1795044881.956583,
-    "ast_hash": "a3bcdd0350f83b69df34463a6d1a8f1a",
+    "mtime": 1795437753.7176225,
+    "seen": 1795696270.9795434,
+    "ast_hash": "250d2b4d444249000d188c55e2f4e133",
     "semantic_hash": ""
   },
   "src/farm/fs25-data.js": {
@@ -744,9 +732,123 @@
     "semantic_hash": ""
   },
   "src/farm/salon-exploitation.js": {
-    "mtime": 1795032366.8017652,
-    "seen": 1795044881.9565964,
-    "ast_hash": "ef66284854a83a891ee672cdf2429da9",
+    "mtime": 1795590708.01328,
+    "seen": 1795696270.979563,
+    "ast_hash": "a1804e7a2420421c362a21d5b6b1b5b9",
+    "semantic_hash": ""
+  },
+  "src/core/logs-salon.js": {
+    "mtime": 1795166827.0315175,
+    "seen": 1795171028.5586598,
+    "ast_hash": "711efab0919fcaa609974059d59e4c51",
+    "semantic_hash": ""
+  },
+  "src/farm/activites-sup.js": {
+    "mtime": 1795168318.9321973,
+    "seen": 1795171028.5586672,
+    "ast_hash": "a758496a13bb5af840966cdc58e60227",
+    "semantic_hash": ""
+  },
+  "src/farm/credit.js": {
+    "mtime": 1795694565.9496412,
+    "seen": 1795696270.9795427,
+    "ast_hash": "1137274ae71e2e4ba63e44d0c8450c28",
+    "semantic_hash": ""
+  },
+  "src/farm/reglement-fs25.js": {
+    "mtime": 1795516500.4317224,
+    "seen": 1795696270.9795597,
+    "ast_hash": "b5d671c7b4c9a069ae89880a0f334f98",
+    "semantic_hash": ""
+  },
+  "src/farm/succes-paliers.js": {
+    "mtime": 1795165726.743562,
+    "seen": 1795171028.558688,
+    "ast_hash": "06123e8bc5f86dac4c6a453612b42ac0",
+    "semantic_hash": ""
+  },
+  "_build/creer-classement.js": {
+    "mtime": 1795591273.494576,
+    "seen": 1795696270.9794729,
+    "ast_hash": "a77e7bac2d5c008f132b09f7fc3822d2",
+    "semantic_hash": ""
+  },
+  "_build/etat-salons.js": {
+    "mtime": 1795590177.3315814,
+    "seen": 1795696270.9794745,
+    "ast_hash": "26a55a0dc07f68f768817618ff1c57aa",
+    "semantic_hash": ""
+  },
+  "_build/purge-ancien.js": {
+    "mtime": 1795589958.4102433,
+    "seen": 1795696270.9794755,
+    "ast_hash": "075e33ce707ac6346520b530e2a24654",
+    "semantic_hash": ""
+  },
+  "_build/structure.js": {
+    "mtime": 1795591802.8053856,
+    "seen": 1795696270.9794762,
+    "ast_hash": "8747bc84240662adf7fab895c0eac798",
+    "semantic_hash": ""
+  },
+  "_build/vider-panneaux.js": {
+    "mtime": 1795590221.5983248,
+    "seen": 1795696270.979477,
+    "ast_hash": "be6b2f244515107e61a68afeb40a3580",
+    "semantic_hash": ""
+  },
+  "src/commands/hub-unifie.js": {
+    "mtime": 1795597013.127534,
+    "seen": 1795696270.9795063,
+    "ast_hash": "a000efff9f17e027e47a76311704e44f",
+    "semantic_hash": ""
+  },
+  "src/commands/tirage-au-sort.js": {
+    "mtime": 1795346570.2844949,
+    "seen": 1795696270.979515,
+    "ast_hash": "8101d5e360b41e9aa69ef9b5f0786209",
+    "semantic_hash": ""
+  },
+  "src/farm/evenements.js": {
+    "mtime": 1795606512.0329013,
+    "seen": 1795696270.9795444,
+    "ast_hash": "0e2a1048ac327c3ee3c6f20dc65c725b",
+    "semantic_hash": ""
+  },
+  "src/farm/hub-unifie.js": {
+    "mtime": 1795597834.0518155,
+    "seen": 1795696270.979552,
+    "ast_hash": "28bff74c9ba57a8b3ba8f54d9a5af74d",
+    "semantic_hash": ""
+  },
+  "src/farm/reset-marche.js": {
+    "mtime": 1795346117.5005624,
+    "seen": 1795696270.9795616,
+    "ast_hash": "6454f4e0e85a6487f6f86d42a6742dc1",
+    "semantic_hash": ""
+  },
+  "src/farm/reset-succes.js": {
+    "mtime": 1795346098.5829432,
+    "seen": 1795696270.979562,
+    "ast_hash": "30231a5de827ad4ffb8617b423ef1ce5",
+    "semantic_hash": ""
+  },
+  "src/farm/succes-base.js": {
+    "mtime": 1795593355.945892,
+    "seen": 1795696270.9795644,
+    "ast_hash": "9b401eb1d0611c5cf04c7cb054302937",
+    "semantic_hash": ""
+  },
+  "test/evenements.test.js": {
+    "mtime": 1795352518.206647,
+    "seen": 1795696270.9795787,
+    "ast_hash": "c6696417a86e962a9d6873dbfc39c872",
+    "semantic_hash": ""
+  },
+  "CAHIER-DES-CHARGES.md": {
+    "mtime": 1795592012.8806639,
+    "seen": 1795696270.979581,
+    "ast_hash": "e0ef569d3f89b57c9adb832572188192",
     "semantic_hash": ""
   }
 }

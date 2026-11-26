@@ -16,7 +16,7 @@
  *   FS25_PASS         mot de passe FTP                         (obligatoire)
  *   FS25_PATH         chemin de status.xml sur le serveur      (obligatoire)
  *   FS25_OUVRIERS_CHANNEL_ID salon des annonces d'ouvriers IA   (défaut : salon des connexions)
- *   FS25_REFRESH      secondes entre deux mises à jour         (défaut : 30)
+ *   FS25_REFRESH      secondes entre deux mises à jour         (défaut : 10)
  *   FS25_SERVER_NAME  nom affiché                              (défaut : Serveur FS25)
  *
  * Utilisation (dans ton fichier principal, après la création du client) :
@@ -43,7 +43,7 @@ const cfg = () => ({
   user: process.env.FS25_USER,
   pass: process.env.FS25_PASS,
   path: process.env.FS25_PATH,
-  refresh: parseInt(process.env.FS25_REFRESH || '30', 10),
+  refresh: parseInt(process.env.FS25_REFRESH || '10', 10),
   serverName: process.env.FS25_SERVER_NAME || 'Serveur FS25',
 });
 
