@@ -1,5 +1,5 @@
-// Salon « ressources » : produits de la carte par blocs de 10.
-// 🟢 = le produit est dans son meilleur mois de vente (facteurs de prix du jeu, prix-mois.json) ; dessous, top 3 des ventes DU MOIS EN COURS.
+// Salon « ressources » : liste des produits de la carte.
+// Texte vert = le produit est dans son meilleur mois de vente (facteurs de prix du jeu, prix-mois.json) ; dessous, top 3 des ventes DU MOIS EN COURS.
 const fs = require('fs');
 const { EmbedBuilder } = require('discord.js');
 const { dataPath } = require('../core/paths');
@@ -9,7 +9,7 @@ const PRIX_MOIS = require('./prix-mois.json'); // fillType -> 12 facteurs (péri
 const FOOTER = 'MonCopainBot · Ressources';
 const MEDALS = ['🥇', '🥈', '🥉'];
 const MOIS = ['Mars', 'Avril', 'Mai', 'Juin', 'Juillet', 'Août', 'Septembre', 'Octobre', 'Novembre', 'Décembre', 'Janvier', 'Février'];
-const PAR_BLOC = 10;
+const MAX = 3600; // caractères de texte par message (limite d'un embed : 4096, avec la légende et le bloc de code)
 const STORE = dataPath('ressources-mois.json');
 
 // Meilleur mois de vente atteint ? (un produit au prix constant toute l'année n'est jamais « vert »)
@@ -41,7 +41,7 @@ function ventesDuMois(status) {
   return { ...status, counters: sold.map((c) => ({ ...c, value: c.value >= (saved.base[id(c)] || 0) ? c.value - (saved.base[id(c)] || 0) : c.value })) };
 }
 
-// -> tableau de blocs de texte (10 produits chacun)
+// -> tableau de messages { texte, vert } découpés par taille
 function blocs(rows, status, period) {
   const lignes = rows
     .filter((r) => FR[r.fillType]) // seulement la liste officielle
@@ -49,18 +49,22 @@ function blocs(rows, status, period) {
     .sort((a, b) => a.nom.localeCompare(b.nom, 'fr'))
     .map((r) => {
       const top = status ? classement(status, r.cle).filter((v) => v.litres >= 0.5).slice(0, 3) : [];
-      return { vert: estMeilleur(r.cle, period), txt: `${estMeilleur(r.cle, period) ? '🟢' : '⚪'} **${r.nom}**` +
+      const vert = estMeilleur(r.cle, period);
+      return { vert, txt: (vert ? '\u001b[1;32m' : '\u001b[1;37m') + r.nom + '\u001b[0m' + // texte coloré : bloc ```ansi (couleurs visibles sur ordinateur)
         (top.length ? '\n' + top.map((v, i) => `${MEDALS[i]} ${v.nom} ${Math.round(v.litres).toLocaleString('fr-FR')} L`).join(' · ') : '') };
     });
   const out = [];
-  for (let i = 0; i < lignes.length; i += PAR_BLOC) {
-    const b = lignes.slice(i, i + PAR_BLOC);
-    out.push({ texte: b.map((l) => l.txt).join('\n\n'), vert: b.some((l) => l.vert) });
+  let cur = [];
+  const fermer = () => { if (cur.length) out.push({ texte: '```ansi\n' + cur.map((l) => l.txt).join('\n') + '\n```', vert: cur.some((l) => l.vert) }); cur = []; };
+  for (const l of lignes) {
+    if (cur.reduce((n, x) => n + x.txt.length + 1, 0) + l.txt.length > MAX) fermer();
+    cur.push(l);
   }
+  fermer();
   return out;
 }
 
-// Crée / met à jour les messages du salon (un message par bloc de 10, édité seulement s'il a changé, sans notification).
+// Crée / met à jour les messages du salon (édité seulement s'il a changé, sans notification).
 async function publier(channel) {
   const bridge = require('./fs25-bridge');
   const { sections } = await bridge.lireDonneesCompletes();
@@ -70,7 +74,7 @@ async function publier(channel) {
   const mois = MOIS[status.period - 1];
   const embeds = parts.map((p, i) => new EmbedBuilder().setColor(p.vert ? 0x2ECC71 : 0x95A5A6)
     .setTitle(i === 0 ? `🌾 RESSOURCES · ${mois.toUpperCase()} (année ${status.year})` : null)
-    .setDescription((i === 0 ? '🟢 = meilleur mois de vente · classement : ventes du mois en cours\n\n' : '') + p.texte)
+    .setDescription((i === 0 ? 'Texte vert = meilleur mois de vente · classement : ventes du mois en cours\n' : '') + p.texte)
     .setFooter({ text: `${FOOTER} · ${i + 1}/${parts.length}` }));
   const msgs = [...(await channel.messages.fetch({ limit: 100 })).values()]
     .filter((m) => m.author.id === channel.client.user.id && m.embeds[0]?.footer?.text?.startsWith(FOOTER))
