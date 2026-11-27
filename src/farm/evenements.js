@@ -1,16 +1,16 @@
 // DÉFI HEBDOMADAIRE : chaque lundi (heure de Paris), 3 défis de vente (facile / moyen / difficile) sur des produits tirés au sort.
 // Le mod compte les litres vendus aux points de vente (compteur « sold », par ferme et par produit) : le défi se mesure
 // sur ce qui a été vendu depuis le lundi, peu importe l'origine (récolte ou achat à un autre joueur).
-// Récompense : points (50 / 150 / 500) ; le classement du HUB compte le nombre de défis relevés (cumulé), les points départagent.
+// Récompense : points (500 / 1000 / 3000) ; le classement du HUB compte le nombre de défis relevés (cumulé), les points départagent.
 const fs = require('fs');
 const crypto = require('crypto');
 const { dataPath } = require('../core/paths');
 
 const FILE = dataPath('evenements.json');
 const NIVEAUX = [
-  { niveau: 'facile', emoji: '🟢', label: 'Facile', mult: 1, pts: 50 },
-  { niveau: 'moyen', emoji: '🟠', label: 'Moyen', mult: 4, pts: 150 },
-  { niveau: 'difficile', emoji: '🔴', label: 'Difficile', mult: 12, pts: 500 },
+  { niveau: 'facile', emoji: '🟢', label: 'Facile', mult: 1, pts: 500 },
+  { niveau: 'moyen', emoji: '🟠', label: 'Moyen', mult: 4, pts: 1000 },
+  { niveau: 'difficile', emoji: '🔴', label: 'Difficile', mult: 12, pts: 3000 },
 ];
 // ft = nom FS25 du produit ; base = quantité (L) du défi facile (moyen ×4, difficile ×12)
 // fam = famille : un produit dérivé partage la famille de sa matière première (farine ← céréales, sucre ← betteraves) ;
@@ -80,9 +80,9 @@ function attribuer(status, fermes) {
       if (fait.includes(d.niveau) || progres(status, farm, d) < d.qte) continue;
       fait.push(d.niveau);
       const p = (etat.points[farm.id] ||= { nom: farm.name, total: 0, nb: 0 });
-      p.nom = farm.name; p.total += d.pts; p.nb = (p.nb || 0) + 1;
+      p.nom = farm.name; p.total += meta(d.niveau).pts; p.nb = (p.nb || 0) + 1;
       const m = meta(d.niveau), pr = produit(d.ft);
-      annonces.push(`🎯 **${farm.name}** a réussi le défi ${m.emoji} ${m.label} : vendre ${fmt(d.qte)} L de ${pr.emoji} ${pr.nom}  ·  **+${d.pts} pts**`);
+      annonces.push(`🎯 **${farm.name}** a réussi le défi ${m.emoji} ${m.label} : vendre ${fmt(d.qte)} L de ${pr.emoji} ${pr.nom}  ·  **+${meta(d.niveau).pts} pts**`);
     }
   }
   return annonces;
@@ -95,7 +95,7 @@ function resume(status) {
   const lignes = etat.defis.map((d) => {
     const m = meta(d.niveau), pr = produit(d.ft);
     const faits = fermes.filter((f) => (etat.fait[f.id] || []).includes(d.niveau)).map((f) => f.name);
-    return `${m.emoji} Vendre **${fmt(d.qte)} L** de ${pr.emoji} ${pr.nom} · **+${d.pts} pts**${faits.length ? `\n✅ ${faits.join(', ')}` : ''}`;
+    return `${m.emoji} Vendre **${fmt(d.qte)} L** de ${pr.emoji} ${pr.nom} · **+${meta(d.niveau).pts} pts**${faits.length ? `\n✅ ${faits.join(', ')}` : ''}`;
   });
   return [`Du **${jourFr(etat.semaine)}** au **${jourFr(etat.semaine, 6)}** · nouveaux défis chaque lundi`, ...lignes].join('\n');
 }
