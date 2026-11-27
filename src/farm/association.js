@@ -7,14 +7,14 @@ const { panneau } = require('../core/embed-format');
 const { dataPath } = require('../core/paths');
 
 // HUB de l'association Association (sylviculture) : présentation + adhésion.
-// Adhésion = 30 000 € versés en jeu à la ferme de l'association → le staff valide dans un ticket → licence d'un an.
+// Adhésion = 30 000 € versés en jeu à la ferme de l'association → le staff valide dans un ticket → licence à vie.
 // Le salon contient : le panneau, puis le journal des membres licenciés (mis à jour à chaque adhésion / expiration).
 const CHANNEL_ID = ids('ASSO_CHANNEL_ID', '1571180916863279285');
 const STORE_PATH = dataPath('association.json');
 const NOM        = 'Association';
 const PRIX       = 10000;
-const DUREE      = 365 * 24 * 3600_000; // licence d'un an (temps réel)
-const RENOUV     = 30 * 24 * 3600_000;  // renouvellement possible 30 jours avant l'échéance
+const A_VIE      = 253402300799000;     // licence à vie : fin = 31/12/9999 (jamais atteinte, donc toutes les vérifications « fin > maintenant » restent valables)
+const jusqua     = fin => fin >= A_VIE ? 'à vie' : 'jusqu\'au ' + ts(fin, 'D') + ' (' + ts(fin, 'R') + ')';
 const LOGS_ID    = '1571329280410001488'; // logs admin de l'association (logs sur une ligne + message « travail et crédits » mis à jour toutes les 5 min)
 
 // { panelMsgId, journalMsgId, membres: { userId: { pseudo, fin } }, demandes: { userId: { pseudo, ticketId, msgId } } }
@@ -43,14 +43,14 @@ function panelPayload() {
         '',
         '## 🪪 Adhésion',
         '• Droit d\'entrée : **' + euros(PRIX) + '**',
-        '• La licence est valable **1 an**',
+        '• La licence est valable **à vie**',
         '',
         '## 📋 Comment rejoindre ?',
         '1. Clique sur « Rejoindre l\'association » pour ouvrir un ticket avec le staff.',
         '2. Verse **' + euros(PRIX) + '** à **' + NOM + '** (Finances → Transférer de l\'argent).',
         '3. Après vérification d\'un admin, tu obtiens le statut **LICENCIÉ**.',
         '',
-        'Renouvellement possible 30 jours avant la fin de la licence.',
+        'Aucun renouvellement : une fois licencié, tu l\'es pour toujours.',
         '',
         '## 💰 Travail et crédit',
         'Les membres sont rémunérés en décembre en fonction du temps de travail et de l\'argent disponible.',
@@ -124,13 +124,13 @@ async function expirer(client) {
 async function handleLicence(interaction) {
   const m = store.membres[interaction.user.id];
   if (!m || m.fin <= Date.now()) return rep(interaction, '🪪 Tu n\'as pas de licence active' + (m ? ' (expirée le ' + ts(m.fin, 'D') + ')' : '') + '. Clique sur **Rejoindre l\'association**.');
-  await rep(interaction, '🪪 Licence **' + NOM + '** active jusqu\'au ' + ts(m.fin, 'D') + ' (' + ts(m.fin, 'R') + ').');
+  await rep(interaction, '🪪 Licence **' + NOM + '** active ' + jusqua(m.fin) + '.');
 }
 
 async function handleRejoindre(interaction) {
   const uid = interaction.user.id;
   const m = store.membres[uid];
-  if (m && m.fin - Date.now() > RENOUV) return rep(interaction, '🪪 Tu as déjà une licence active jusqu\'au ' + ts(m.fin, 'D') + '.');
+  if (m && m.fin > Date.now()) return rep(interaction, '🪪 Tu as déjà une licence active ' + jusqua(m.fin) + '.');
   const d = store.demandes[uid];
   if (d && await interaction.client.channels.fetch(d.ticketId).catch(() => null)) return rep(interaction, '⏳ Ta demande est déjà en cours : <#' + d.ticketId + '>');
   await interaction.showModal(new ModalBuilder().setCustomId('asso_modal').setTitle('Rejoindre ' + NOM).addComponents(
@@ -173,9 +173,8 @@ async function handleDecision(interaction) {
   delete store.demandes[uid];
   let statut, color;
   if (ok) {
-    const fin = Math.max(Date.now(), store.membres[uid]?.fin || 0) + DUREE; // renouvellement : s'ajoute à la licence en cours
-    store.membres[uid] = { pseudo: d.pseudo, fin }; // statut LICENCIÉ : droit de travailler pour l'association
-    statut = '✅ Licence activée par <@' + interaction.user.id + '> jusqu\'au ' + ts(fin, 'D') + '.';
+    store.membres[uid] = { pseudo: d.pseudo, fin: A_VIE }; // statut LICENCIÉ : droit de travailler pour l'association, à vie
+    statut = '✅ Licence à vie activée par <@' + interaction.user.id + '>.';
     color = 0x2ECC71;
   } else {
     statut = '❌ Demande refusée par <@' + interaction.user.id + '>.';
@@ -183,7 +182,7 @@ async function handleDecision(interaction) {
   }
   save();
   await log(interaction.client, ok ? '✅ Versement reçu · LICENCIÉ · ' + NOM : '❌ Adhésion refusée · ' + NOM, uid, d.pseudo,
-    ok ? 'Versement : **' + euros(PRIX) + '** · licence jusqu\'au ' + ts(store.membres[uid].fin, 'D') + ' · validé par <@' + interaction.user.id + '>'
+    ok ? 'Versement : **' + euros(PRIX) + '** · licence à vie · validé par <@' + interaction.user.id + '>'
        : 'Refusé par <@' + interaction.user.id + '>', ok ? 0x2ECC71 : 0xE74C3C);
   await interaction.update({ ...panneau({ embeds: [demandeEmbed(uid, d, statut, color)] }), components: [], allowedMentions: { parse: [] } });
   if (ok) await majSalaires(interaction.client);
@@ -423,7 +422,7 @@ async function handleReglementModal(interaction) {
 function adminPayload() {
   const p = travailPayload(), l = actifs().slice(0, 25);
   if (l.length) p.components = [new ActionRowBuilder().addComponents(new StringSelectMenuBuilder().setCustomId('asso_resil')
-    .setPlaceholder('🚫 Résilier un membre…').addOptions(l.map(([u, m]) => ({ label: m.pseudo.slice(0, 100), value: u, description: 'Licence jusqu\'au ' + new Date(m.fin).toLocaleDateString('fr-FR') }))))];
+    .setPlaceholder('🚫 Résilier un membre…').addOptions(l.map(([u, m]) => ({ label: m.pseudo.slice(0, 100), value: u, description: m.fin >= A_VIE ? 'Licence à vie' : 'Licence jusqu\'au ' + new Date(m.fin).toLocaleDateString('fr-FR') }))))];
   return p;
 }
 const handleAdmin = interaction => estStaff(interaction)
@@ -574,7 +573,7 @@ function fichesDonnees() {
     const f = l.find(x => x.u === p.u), fa = store.factures?.[an]?.[p.u], k = p.m.pseudo.toLowerCase(), ya = store.an?.[an]?.travail?.[k] || { v: 0, c: 0 };
     return [p.u, { embeds: [{ title: '👤 ' + p.m.pseudo, color: presents.has(k) ? 0x2ECC71 : 0x95A5A6, timestamp: now, description: '<@' + p.u + '> · ' + (presents.has(k) ? '🟢 en ligne dans la ferme' : '⚫ hors ligne'),
       fields: [
-        { name: '🪪 Licence', value: 'jusqu\'au ' + ts(p.m.fin, 'D') + ' (' + ts(p.m.fin, 'R') + ')', inline: false },
+        { name: '🪪 Licence', value: jusqua(p.m.fin), inline: false },
         { name: '🚜 Véhicules (total)', value: duree(p.d.v) + ' · niv. ' + niveauH(p.d.v) + '/' + PALIERS_H.length, inline: true },
         { name: '🪓 Tronçonneuse (total)', value: duree(p.d.c) + ' · niv. ' + niveauH(p.d.c) + '/' + PALIERS_H.length, inline: true },
         { name: '⏱️ Total', value: duree(p.s), inline: true },
@@ -652,6 +651,10 @@ async function publier(client, status) {
 }
 
 async function startAssociation(client) {
+  // licences en cours au passage à « à vie » : prolongées (les licences déjà expirées le restent : nouvelle adhésion nécessaire)
+  let migre = 0;
+  for (const m of Object.values(store.membres)) if (m.fin > Date.now() && m.fin < A_VIE) { m.fin = A_VIE; migre++; }
+  if (migre) { save(); console.log('🌲 Association · ' + migre + ' licence(s) passée(s) à vie'); }
   try { await publier(client); console.log('🌲 Association · prêt (' + actifs().length + ' membre(s))'); }
   catch (err) { console.error('⚠️ Association :', err.message); }
   setInterval(() => expirer(client).catch(() => {}), 6 * 3600_000).unref(); // logge et retire les licences expirées
