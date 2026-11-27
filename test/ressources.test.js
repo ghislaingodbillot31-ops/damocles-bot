@@ -7,6 +7,7 @@ assert.deepStrictEqual(classement(st, 'WHEAT'), [{ nom: 'B', litres: 30 }, { nom
 
 assert.ok(estMeilleur('WHEAT', 11));   // blé : pic en janvier (période 11)
 assert.ok(!estMeilleur('WHEAT', 6));   // août : creux
+assert.ok(estMeilleur('PEA', 9) && !estMeilleur('WHEAT', 9)); // novembre : pois à 98 % du pic (vert), blé à 89 % (non)
 assert.ok(!estMeilleur('CHEESE', 11)); // pas de facteurs : jamais vert
 
 const [b] = blocs([{ fillType: 'WHEAT' }, { fillType: 'X_MOD' }, { fillType: 'CHEESE' }], st, 11);

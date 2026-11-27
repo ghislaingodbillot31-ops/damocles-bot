@@ -15,7 +15,7 @@ const STORE = dataPath('ressources-mois.json');
 // Meilleur mois de vente atteint ? (un produit au prix constant toute l'année n'est jamais « vert »)
 function estMeilleur(cle, period) {
   const f = PRIX_MOIS[cle];
-  return !!f && Math.max(...f) > Math.min(...f) && f[period - 1] >= Math.max(...f);
+  return !!f && Math.max(...f) > Math.min(...f) && f[period - 1] >= 0.95 * Math.max(...f); // ≥ 95 % du meilleur prix de l'année : « vert »
 }
 
 // Exploitations classées par quantité vendue d'un produit (compteurs `sold` du mod).
@@ -74,7 +74,7 @@ async function publier(channel) {
   const mois = MOIS[status.period - 1];
   const embeds = parts.map((p, i) => new EmbedBuilder().setColor(p.vert ? 0x2ECC71 : 0x95A5A6)
     .setTitle(i === 0 ? `🌾 RESSOURCES · ${mois.toUpperCase()} (année ${status.year})` : null)
-    .setDescription((i === 0 ? 'Texte vert = meilleur mois de vente · classement : ventes du mois en cours\n' : '') + p.texte)
+    .setDescription((i === 0 ? 'Texte vert = prix au plus haut de l\'année (≥ 95 %) · classement : ventes du mois en cours\n' : '') + p.texte)
     .setFooter({ text: `${FOOTER} · ${i + 1}/${parts.length}` }));
   const msgs = [...(await channel.messages.fetch({ limit: 100 })).values()]
     .filter((m) => m.author.id === channel.client.user.id && m.embeds[0]?.footer?.text?.startsWith(FOOTER))
