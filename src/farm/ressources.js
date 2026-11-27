@@ -9,7 +9,7 @@ const PRIX_MOIS = require('./prix-mois.json'); // fillType -> 12 facteurs (péri
 const FOOTER = 'MonCopainBot · Ressources';
 const MEDALS = ['🥇', '🥈', '🥉'];
 const MOIS = ['Mars', 'Avril', 'Mai', 'Juin', 'Juillet', 'Août', 'Septembre', 'Octobre', 'Novembre', 'Décembre', 'Janvier', 'Février'];
-const MAX = 3600; // caractères de texte par message (limite d'un embed : 4096, avec la légende et le bloc de code)
+const LARGEUR = 50; // caractères : largeur commune des blocs (à ajuster si les blocs paraissent trop larges ou trop étroits)
 const STORE = dataPath('ressources-mois.json');
 
 // Meilleur mois de vente atteint ? (un produit au prix constant toute l'année n'est jamais « vert »)
@@ -55,15 +55,19 @@ function blocs(rows, status, period) {
       return { vert, nom: r.nom, txt: (vert ? '\u001b[1;32m' : '\u001b[1;37m') + r.nom + '\u001b[0m' + // texte coloré : bloc ```ansi (couleurs visibles sur ordinateur)
         (top.length ? '\n' + top.map((v, i) => `${MEDALS[i]} \u001b[1;34m${v.nom}\u001b[0m ${Math.round(v.litres).toLocaleString('fr-FR')} L`).join(' · ') : '') };
     });
-  const out = [];
-  let cur = [];
-  const fermer = () => { if (cur.length) out.push({ texte: '```ansi\n' + cur.map((l) => l.txt).join('\n') + '\n```', vert: cur.some((l) => l.vert), de: initiale(cur[0].nom), a: initiale(cur[cur.length - 1].nom) }); cur = []; };
+  // un bloc par lettre
+  const parLettre = new Map();
   for (const l of lignes) {
-    if (cur.reduce((n, x) => n + x.txt.length + 1, 0) + l.txt.length > MAX) fermer();
-    cur.push(l);
+    const k = initiale(l.nom);
+    if (!parLettre.has(k)) parLettre.set(k, []);
+    parLettre.get(k).push(l);
   }
-  fermer();
-  return out;
+  return [...parLettre].map(([lettre, ls]) => {
+    // 1re ligne complétée par des espaces : tous les blocs ont ainsi la même largeur (le bloc de code s'ajuste à sa ligne la plus longue)
+    const txts = ls.map((l) => l.txt);
+    txts[0] = txts[0].replace(/^([^\n]*)/, (m) => m + ' '.repeat(Math.max(0, LARGEUR - (ls[0].nom.length))));
+    return { texte: '```ansi\n' + txts.join('\n') + '\n```', vert: ls.some((l) => l.vert), lettre };
+  });
 }
 
 // Crée / met à jour les messages du salon (édité seulement s'il a changé, sans notification).
@@ -75,10 +79,10 @@ async function publier(channel) {
   if (!parts.length) throw new Error('section prices vide dans full.xml');
   const mois = MOIS[status.period - 1];
   const embeds = parts.map((p, i) => new EmbedBuilder().setColor(p.vert ? 0x2ECC71 : 0x95A5A6)
-    .setTitle(`🌾 ${p.de === p.a ? p.de : `${p.de} → ${p.a}`} · ${mois} (année ${status.year})`)
-    // même légende sur chaque bloc : elle fixe la largeur de l'embed, donc tous les blocs ont la même taille
-    .setDescription('Vert = prix ≥ 95 % du maximum annuel · Top 3 : ventes du mois en cours\n' + p.texte)
-    .setFooter({ text: `${FOOTER} · ${i + 1}/${parts.length}` }));
+    .setTitle(p.lettre)
+    .setDescription(p.texte)
+    // pied de page identique et long sur chaque bloc : il fixe la même largeur à tous les embeds
+    .setFooter({ text: `${FOOTER} · ${mois} (année ${status.year}) · Vert = prix ≥ 95 % du maximum annuel · Top 3 = ventes du mois en cours` }));
   const msgs = [...(await channel.messages.fetch({ limit: 100 })).values()]
     .filter((m) => m.author.id === channel.client.user.id && m.embeds[0]?.footer?.text?.startsWith(FOOTER))
     .sort((a, b) => a.createdTimestamp - b.createdTimestamp);
