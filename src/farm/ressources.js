@@ -41,6 +41,8 @@ function ventesDuMois(status) {
   return { ...status, counters: sold.map((c) => ({ ...c, value: c.value >= (saved.base[id(c)] || 0) ? c.value - (saved.base[id(c)] || 0) : c.value })) };
 }
 
+const initiale = (nom) => nom.normalize('NFD')[0].toUpperCase(); // « Épinards » -> E
+
 // -> tableau de messages { texte, vert } découpés par taille
 function blocs(rows, status, period) {
   const lignes = rows
@@ -50,12 +52,12 @@ function blocs(rows, status, period) {
     .map((r) => {
       const top = status ? classement(status, r.cle).filter((v) => v.litres >= 0.5).slice(0, 3) : [];
       const vert = estMeilleur(r.cle, period);
-      return { vert, txt: (vert ? '\u001b[1;32m' : '\u001b[1;37m') + r.nom + '\u001b[0m' + // texte coloré : bloc ```ansi (couleurs visibles sur ordinateur)
+      return { vert, nom: r.nom, txt: (vert ? '\u001b[1;32m' : '\u001b[1;37m') + r.nom + '\u001b[0m' + // texte coloré : bloc ```ansi (couleurs visibles sur ordinateur)
         (top.length ? '\n' + top.map((v, i) => `${MEDALS[i]} \u001b[1;34m${v.nom}\u001b[0m ${Math.round(v.litres).toLocaleString('fr-FR')} L`).join(' · ') : '') };
     });
   const out = [];
   let cur = [];
-  const fermer = () => { if (cur.length) out.push({ texte: '```ansi\n' + cur.map((l) => l.txt).join('\n') + '\n```', vert: cur.some((l) => l.vert) }); cur = []; };
+  const fermer = () => { if (cur.length) out.push({ texte: '```ansi\n' + cur.map((l) => l.txt).join('\n') + '\n```', vert: cur.some((l) => l.vert), de: initiale(cur[0].nom), a: initiale(cur[cur.length - 1].nom) }); cur = []; };
   for (const l of lignes) {
     if (cur.reduce((n, x) => n + x.txt.length + 1, 0) + l.txt.length > MAX) fermer();
     cur.push(l);
@@ -73,8 +75,9 @@ async function publier(channel) {
   if (!parts.length) throw new Error('section prices vide dans full.xml');
   const mois = MOIS[status.period - 1];
   const embeds = parts.map((p, i) => new EmbedBuilder().setColor(p.vert ? 0x2ECC71 : 0x95A5A6)
-    .setTitle(i === 0 ? `🌾 RESSOURCES · ${mois.toUpperCase()} (année ${status.year})` : null)
-    .setDescription((i === 0 ? 'Texte vert = prix au plus haut de l\'année (≥ 95 %) · classement : ventes du mois en cours\n' : '') + p.texte)
+    .setTitle(`🌾 ${p.de === p.a ? p.de : `${p.de} → ${p.a}`} · ${mois} (année ${status.year})`)
+    // même légende sur chaque bloc : elle fixe la largeur de l'embed, donc tous les blocs ont la même taille
+    .setDescription('Vert = prix ≥ 95 % du maximum annuel · Top 3 : ventes du mois en cours\n' + p.texte)
     .setFooter({ text: `${FOOTER} · ${i + 1}/${parts.length}` }));
   const msgs = [...(await channel.messages.fetch({ limit: 100 })).values()]
     .filter((m) => m.author.id === channel.client.user.id && m.embeds[0]?.footer?.text?.startsWith(FOOTER))
