@@ -81,20 +81,17 @@ async function publier(channel) {
   const status = bridge.getLastFs25Status() || await bridge.lireStatutUneFois();
   const parts = blocs(sections.prices || [], ventesDuMois(status), status.period);
   if (!parts.length) throw new Error('section prices vide dans full.xml');
-  const mois = MOIS[status.period - 1];
   const embeds = parts.map((p, i) => new EmbedBuilder().setColor(p.vert ? 0x2ECC71 : 0x95A5A6)
     .setTitle(p.lettre)
-    .setDescription(p.texte)
-    // pied de page identique et long sur chaque bloc : il fixe la même largeur à tous les embeds
-    .setFooter({ text: `${FOOTER} · ${mois} (année ${status.year}) · Vert = prix ≥ 95 % du maximum annuel · Top 3 = ventes du mois en cours` }));
+    .setDescription(p.texte));
   const msgs = [...(await channel.messages.fetch({ limit: 100 })).values()]
-    .filter((m) => m.author.id === channel.client.user.id && m.embeds[0]?.footer?.text?.startsWith(FOOTER))
+    .filter((m) => m.author.id === channel.client.user.id && (m.embeds[0]?.footer?.text?.startsWith(FOOTER) || /^\p{L} → \p{L}$/u.test(m.embeds[0]?.title || '')))
     .sort((a, b) => a.createdTimestamp - b.createdTimestamp);
   for (let i = 0; i < embeds.length; i++) {
     const n = embeds[i].toJSON();
     const o = msgs[i]?.embeds[0];
     if (!msgs[i]) await channel.send({ embeds: [embeds[i]] });
-    else if (o.description !== n.description || o.title !== (n.title || null) || o.color !== n.color || o.footer?.text !== n.footer.text) await msgs[i].edit({ embeds: [embeds[i]] });
+    else if (o.description !== n.description || o.title !== (n.title || null) || o.color !== n.color || o.footer) await msgs[i].edit({ embeds: [embeds[i]] });
   }
   for (const m of msgs.slice(embeds.length)) await m.delete().catch(() => {});
 }
