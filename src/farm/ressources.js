@@ -51,7 +51,7 @@ function blocs(rows, status, period) {
       const top = status ? classement(status, r.cle).filter((v) => v.litres >= 0.5).slice(0, 3) : [];
       const vert = estMeilleur(r.cle, period);
       return { vert, txt: (vert ? '\u001b[1;32m' : '\u001b[1;37m') + r.nom + '\u001b[0m' + // texte coloré : bloc ```ansi (couleurs visibles sur ordinateur)
-        (top.length ? '\n' + top.map((v, i) => `${MEDALS[i]} ${v.nom} ${Math.round(v.litres).toLocaleString('fr-FR')} L`).join(' · ') : '') };
+        (top.length ? '\n' + top.map((v, i) => `${MEDALS[i]} \u001b[1;34m${v.nom}\u001b[0m ${Math.round(v.litres).toLocaleString('fr-FR')} L`).join(' · ') : '') };
     });
   const out = [];
   let cur = [];

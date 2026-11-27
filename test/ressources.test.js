@@ -11,7 +11,7 @@ assert.ok(estMeilleur('PEA', 9) && !estMeilleur('WHEAT', 9)); // novembre : pois
 assert.ok(!estMeilleur('DIESEL', 11)); // pas de facteurs : jamais vert
 
 const [b] = blocs([{ fillType: 'WHEAT' }, { fillType: 'X_MOD' }, { fillType: 'DIESEL' }], st, 11);
-assert.strictEqual(b.texte, '```ansi\n\u001b[1;32mBlé de printemps\u001b[0m\n🥇 B 30 L · 🥈 A 15 L\n\u001b[1;37mDiesel\u001b[0m\n```'); // vert si meilleur mois, sans interligne ni prix
+assert.strictEqual(b.texte, '```ansi\n\u001b[1;32mBlé de printemps\u001b[0m\n🥇 \u001b[1;34mB\u001b[0m 30 L · 🥈 \u001b[1;34mA\u001b[0m 15 L\n\u001b[1;37mDiesel\u001b[0m\n```'); // vert si meilleur mois, sans interligne ni prix
 assert.ok(b.vert);
 const tous = Object.keys(require('../src/farm/ressources-fr')).map((fillType) => ({ fillType }));
 const parts = blocs(tous, null, 1);
