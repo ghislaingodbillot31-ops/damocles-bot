@@ -3,16 +3,21 @@ const { EmbedBuilder } = require('discord.js');
 
 const FOOTER = 'MonCopainBot · Ressources';
 const FR = require('./ressources-fr');
+const MEDALS = ['🥇', '🥈', '🥉'];
 const euro = (v) => `${Math.round(Number(v)).toLocaleString('fr-FR')} €`;
 
 // -> tableau de blocs de texte ≤ 3800 caractères (un embed chacun)
-function blocs(rows) {
+function blocs(rows, status) {
   const lignes = rows
     .filter((r) => FR[r.fillType]) // seulement la liste officielle
-    .map((r) => ({ nom: FR[r.fillType], prix: Number(r.pricePer1000) }))
+    .map((r) => ({ cle: r.fillType, nom: FR[r.fillType], prix: Number(r.pricePer1000) }))
     .filter((r) => r.prix > 0)
     .sort((a, b) => a.nom.localeCompare(b.nom, 'fr'))
-    .map((r) => `**${r.nom}** · ${euro(r.prix)} / 1000 L`);
+    .map((r) => {
+      const top = status ? classement(status, r.cle).filter((v) => v.litres >= 0.5).slice(0, 3) : [];
+      return `**${r.nom}** · ${euro(r.prix)} / 1000 L` + (top.length ? '
+' + top.map((v, i) => `${MEDALS[i]} ${v.nom} ${Math.round(v.litres).toLocaleString('fr-FR')} L`).join(' · ') : '');
+    });
   const out = [];
   let cur = '';
   for (const l of lignes) {
@@ -26,10 +31,12 @@ function blocs(rows) {
 // Crée / met à jour les messages du salon (édition en place, sans notification).
 async function publier(channel) {
   const { sections, exportedAt } = await require('./fs25-bridge').lireDonneesCompletes();
-  const parts = blocs(sections.prices || []);
+  const bridge = require('./fs25-bridge');
+  const status = bridge.getLastFs25Status() || await bridge.lireStatutUneFois();
+  const parts = blocs(sections.prices || [], status);
   if (!parts.length) throw new Error('section prices vide dans full.xml');
   const embeds = parts.map((d, i) => new EmbedBuilder().setColor(0x6aa84f)
-    .setTitle(i === 0 ? `🌾 RESSOURCES DE LA CARTE (${(sections.prices || []).length})` : null)
+    .setTitle(i === 0 ? `🌾 RESSOURCES DE LA CARTE · TOP 3 DES VENTES` : null)
     .setDescription(d)
     .setFooter({ text: `${FOOTER} · ${i + 1}/${parts.length}${exportedAt ? ` · relevé du ${exportedAt}` : ''}` }));
   const msgs = [...(await channel.messages.fetch({ limit: 50 })).values()]
@@ -48,7 +55,7 @@ function start(client) {
   };
   if (!process.env.FS25_RESSOURCES_CHANNEL_ID) return;
   setTimeout(run, 45_000);
-  setInterval(run, 30 * 60_000);
+  setInterval(run, 10 * 60_000);
 }
 
 module.exports = { publier, start, blocs };

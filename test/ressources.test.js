@@ -9,3 +9,6 @@ const st = { farms: [{ id: 1, name: 'A' }, { id: 2, name: 'B' }], counters: [
   { kind: 'sold', farm: 1, fillType: 'WHEAT', value: 5 }, { kind: 'produced', farm: 1, fillType: 'WHEAT', value: 999 }, { kind: 'sold', farm: 1, fillType: 'MAIZE', value: 1 }] };
 assert.deepStrictEqual(classement(st, 'WHEAT'), [{ nom: 'B', litres: 30 }, { nom: 'A', litres: 15 }]);
 console.log('ok classement');
+const [t] = blocs([{ fillType: 'WHEAT', pricePer1000: '700' }], st);
+assert.strictEqual(t, '**Blé de printemps** · 700 € / 1000 L\n🥇 B 30 L · 🥈 A 15 L');
+console.log('ok top3');
