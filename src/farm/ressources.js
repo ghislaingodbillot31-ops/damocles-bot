@@ -2,13 +2,14 @@
 const { EmbedBuilder } = require('discord.js');
 
 const FOOTER = 'MonCopainBot · Ressources';
+const FR = require('./ressources-fr');
 const euro = (v) => `${Math.round(Number(v)).toLocaleString('fr-FR')} €`;
 
 // -> tableau de blocs de texte ≤ 3800 caractères (un embed chacun)
 function blocs(rows) {
   const lignes = rows
-    .map((r) => ({ nom: r.title || r.fillType, prix: Number(r.pricePer1000) }))
-    .filter((r) => r.prix > 0)
+    .map((r) => ({ nom: FR[r.fillType] || r.title || r.fillType, prix: Number(r.pricePer1000) }))
+    .filter((r, i, t) => r.prix > 0 && t.findIndex((x) => x.nom === r.nom) === i) // doublons (ex. Herbe) : un seul
     .sort((a, b) => a.nom.localeCompare(b.nom, 'fr'))
     .map((r) => `**${r.nom}** · ${euro(r.prix)} / 1000 L`);
   const out = [];
