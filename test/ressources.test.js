@@ -8,10 +8,10 @@ assert.deepStrictEqual(classement(st, 'WHEAT'), [{ nom: 'B', litres: 30 }, { nom
 assert.ok(estMeilleur('WHEAT', 11));   // blé : pic en janvier (période 11)
 assert.ok(!estMeilleur('WHEAT', 6));   // août : creux
 assert.ok(estMeilleur('PEA', 9) && !estMeilleur('WHEAT', 9)); // novembre : pois à 98 % du pic (vert), blé à 89 % (non)
-assert.ok(!estMeilleur('CHEESE', 11)); // pas de facteurs : jamais vert
+assert.ok(!estMeilleur('DIESEL', 11)); // pas de facteurs : jamais vert
 
-const [b] = blocs([{ fillType: 'WHEAT' }, { fillType: 'X_MOD' }, { fillType: 'CHEESE' }], st, 11);
-assert.strictEqual(b.texte, '```ansi\n\u001b[1;32mBlé de printemps\u001b[0m\n🥇 B 30 L · 🥈 A 15 L\n\u001b[1;37mFromage\u001b[0m\n```'); // vert si meilleur mois, sans interligne ni prix
+const [b] = blocs([{ fillType: 'WHEAT' }, { fillType: 'X_MOD' }, { fillType: 'DIESEL' }], st, 11);
+assert.strictEqual(b.texte, '```ansi\n\u001b[1;32mBlé de printemps\u001b[0m\n🥇 B 30 L · 🥈 A 15 L\n\u001b[1;37mDiesel\u001b[0m\n```'); // vert si meilleur mois, sans interligne ni prix
 assert.ok(b.vert);
 const tous = Object.keys(require('../src/farm/ressources-fr')).map((fillType) => ({ fillType }));
 const parts = blocs(tous, null, 1);
