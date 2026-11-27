@@ -58,6 +58,7 @@ function suggPayload(n, s) {
     ...panneau({ embeds: [{
       title: c.emoji + ' ' + c.label + ' · ' + s.titre,
       description: 'Proposée par <@' + s.userId + '>\n\n' + s.texte,
+      fields: s.lien ? [{ name: '🔗 Lien du mod', value: s.lien }] : [],
       color: c.color,
       footer: { text: 'Suggestion n°' + n },
       timestamp: new Date(s.createdAt).toISOString(),
@@ -88,11 +89,15 @@ async function handleCategorie(interaction) {
   const cat = interaction.values[0];
   const c = CATEGORIES[cat];
   if (!c) return;
-  await interaction.showModal(new ModalBuilder().setCustomId('prop_modal_' + cat).setTitle('Suggestion · ' + c.label).addComponents(
-    new ActionRowBuilder().addComponents(new TextInputBuilder().setCustomId('titre').setLabel('Titre').setStyle(TextInputStyle.Short).setMaxLength(80).setRequired(true)),
+  const modal = new ModalBuilder().setCustomId('prop_modal_' + cat).setTitle('Suggestion · ' + c.label).addComponents(
+    new ActionRowBuilder().addComponents(new TextInputBuilder().setCustomId('titre').setLabel(cat === 'mod' ? 'Nom du mod' : 'Titre').setStyle(TextInputStyle.Short).setMaxLength(80).setRequired(true)),
     new ActionRowBuilder().addComponents(new TextInputBuilder().setCustomId('texte').setLabel('Détails (' + MAX_DESC + ' caractères max)').setStyle(TextInputStyle.Paragraph)
       .setMinLength(10).setMaxLength(MAX_DESC).setRequired(true)),
-  ));
+  );
+  // Mod : le lien du mod est obligatoire
+  if (cat === 'mod') modal.addComponents(new ActionRowBuilder().addComponents(
+    new TextInputBuilder().setCustomId('lien').setLabel('Lien du mod').setStyle(TextInputStyle.Short).setPlaceholder('https://...').setMaxLength(300).setRequired(true)));
+  await interaction.showModal(modal);
   // le menu reste sur « Choisis une catégorie » : on remet le message à neuf pour que le choix ne reste pas affiché
   await interaction.message?.edit(hubPayload()).catch(() => {});
 }
@@ -103,11 +108,13 @@ async function handleModal(interaction) {
   const titre = interaction.fields.getTextInputValue('titre').trim();
   const texte = interaction.fields.getTextInputValue('texte').trim().slice(0, MAX_DESC);
   if (!titre || !texte) return interaction.reply({ content: '❌ Le titre et les détails sont obligatoires.', flags: 64 });
+  const lien = cat === 'mod' ? interaction.fields.getTextInputValue('lien').trim() : null;
+  if (cat === 'mod' && !/^https?:\/\/\S+$/i.test(lien)) return interaction.reply({ content: '❌ Le lien du mod doit commencer par `http://` ou `https://`.', flags: 64 });
   const channel = await salon(interaction.client);
   if (!channel) return interaction.reply({ content: '⚠️ Salon des suggestions introuvable.', flags: 64 });
 
   const n = store.next++;
-  const s = { userId: interaction.user.id, cat, titre, texte, votes: {}, status: 'attente', createdAt: Date.now() };
+  const s = { userId: interaction.user.id, cat, titre, texte, lien, votes: {}, status: 'attente', createdAt: Date.now() };
   const msg = await channel.send(suggPayload(n, s)).catch(() => null);
   if (!msg) { store.next--; return interaction.reply({ content: '⚠️ Impossible de publier la suggestion.', flags: 64 }); }
   s.msgId = msg.id;

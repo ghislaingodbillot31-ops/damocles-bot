@@ -8,9 +8,19 @@ const p = require('../src/community/propositions');
   const channel = { send: async (m) => { sent.push(m); return { id: 'm' + sent.length }; } };
   const client = { channels: { cache: { get: () => channel } } };
   const replies = [];
-  const fields = { titre: ' Nouveau mod ', texte: 'x'.repeat(300) };
-  await p.handleModal({ customId: 'prop_modal_mod', client, user: { id: 'u1' }, fields: { getTextInputValue: (k) => fields[k] }, reply: async (r) => replies.push(r) });
+  const fields = { titre: ' Nouveau mod ', texte: 'x'.repeat(300), lien: 'pas un lien' };
+  const modal = (cat) => p.handleModal({ customId: 'prop_modal_' + cat, client, user: { id: 'u1' }, fields: { getTextInputValue: (k) => fields[k] }, reply: async (r) => replies.push(r) });
+  await modal('mod');                                // mod avec un lien invalide : refusé, rien publié
+  assert.strictEqual(sent.length, 0);
+  assert.ok(replies[0].content.includes('lien'));
+  fields.lien = 'https://exemple.com/mod';
+  await modal('mod');
+  assert.strictEqual(sent[0].embeds[0].fields[0].value, 'https://exemple.com/mod'); // le lien est publié dans la demande
   const s = p._store().items[1];
+  assert.strictEqual(s.lien, 'https://exemple.com/mod');
+  await modal('divers');                             // autre catégorie : pas de lien demandé
+  assert.strictEqual(p._store().items[2].lien, null);
+  delete p._store().items[2];
   assert.strictEqual(s.texte.length, 200);          // description limitée à 200 caractères
   assert.strictEqual(s.titre, 'Nouveau mod');
   assert.strictEqual(s.cat, 'mod');
