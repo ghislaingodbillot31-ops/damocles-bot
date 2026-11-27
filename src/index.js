@@ -97,6 +97,7 @@ client.once(Events.ClientReady, async () => {
   require('./moderation/publiclog').demarrer(client).catch(() => {});
   levels.startLevels(client);
   boutique.startBoutique(client);
+  require('./farm/ressources').start(client);
   require('./farm/hub2').init(client);
   require('./farm/hub-unifie').init(client);
   setTimeout(() => require('./farm/salon-exploitation').refreshAll(client).catch(() => {}), 40_000); // répare un salon resté vide (redémarrage en pleine création)
