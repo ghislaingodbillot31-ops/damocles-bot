@@ -9,6 +9,7 @@ const PRIX_MOIS = require('./prix-mois.json'); // fillType -> 12 facteurs (péri
 const FOOTER = 'MonCopainBot · Ressources';
 const MEDALS = ['🥇', '🥈', '🥉'];
 const MOIS = ['Mars', 'Avril', 'Mai', 'Juin', 'Juillet', 'Août', 'Septembre', 'Octobre', 'Novembre', 'Décembre', 'Janvier', 'Février'];
+const BLOCS = 3; // nombre de grands messages
 const LARGEUR = 50; // caractères : largeur commune des blocs (à ajuster si les blocs paraissent trop larges ou trop étroits)
 const STORE = dataPath('ressources-mois.json');
 
@@ -55,14 +56,17 @@ function blocs(rows, status, period) {
       return { vert, nom: r.nom, txt: (vert ? '\u001b[1;32m' : '\u001b[1;37m') + r.nom + '\u001b[0m' + // texte coloré : bloc ```ansi (couleurs visibles sur ordinateur)
         (top.length ? '\n' + top.map((v, i) => `${MEDALS[i]} \u001b[1;34m${v.nom}\u001b[0m ${Math.round(v.litres).toLocaleString('fr-FR')} L`).join(' · ') : '') };
     });
-  // un bloc par lettre
-  const parLettre = new Map();
+  // BLOCS groupes consécutifs (ordre alphabétique) de longueur de texte à peu près égale
+  const total = lignes.reduce((n, l) => n + l.txt.length + 1, 0);
+  const groupes = [[]];
+  let taille = 0;
   for (const l of lignes) {
-    const k = initiale(l.nom);
-    if (!parLettre.has(k)) parLettre.set(k, []);
-    parLettre.get(k).push(l);
+    if (groupes.length < BLOCS && taille >= (total / BLOCS) * groupes.length) groupes.push([]);
+    groupes[groupes.length - 1].push(l);
+    taille += l.txt.length + 1;
   }
-  return [...parLettre].map(([lettre, ls]) => {
+  return groupes.filter((ls) => ls.length).map((ls) => {
+    const lettre = `${initiale(ls[0].nom)} → ${initiale(ls[ls.length - 1].nom)}`;
     // 1re ligne complétée par des espaces : tous les blocs ont ainsi la même largeur (le bloc de code s'ajuste à sa ligne la plus longue)
     const txts = ls.map((l) => l.txt);
     txts[0] = txts[0].replace(/^([^\n]*)/, (m) => m + ' '.repeat(Math.max(0, LARGEUR - (ls[0].nom.length))));
