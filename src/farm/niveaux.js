@@ -13,7 +13,7 @@ const save = () => { try { fs.writeFileSync(PATH, JSON.stringify(db, null, 2), '
 
 const estForet = farm => farm.name.trim().toLowerCase() === C.FORET;
 
-// Somme des niveaux de succès débloqués par la ferme (max 38 × 25 = 950)
+// Somme des niveaux de succès débloqués par la ferme (36 séries de 100 niveaux, Apiculteur 5)
 function score(farm, status) {
   const { seriesValue, tiersReached } = require('./fs25-succes');
   return SERIES.reduce((n, s) => { const v = seriesValue(s, farm.id, status); return n + (v === null ? 0 : tiersReached(s, v)); }, 0);
@@ -28,7 +28,7 @@ function fiche(farm) {
 // Recalcule score et niveau de toutes les fermes. Renvoie les montées de niveau.
 // Une ferme vue pour la première fois est enregistrée sans annonce.
 // Barème des succès : en changer le nom recalcule UNE fois le score et le niveau de toutes les fermes (sans annonce)
-const BAREME = 'paliers-2026-11-brut';
+const BAREME = 'paliers-2026-11-100niv';
 
 function actualiser(status) {
   const montees = [];
@@ -44,7 +44,11 @@ function actualiser(status) {
     if (niv > f.niveau && !neuf) montees.push({ farm, de: f.niveau, a: niv });
     f.niveau = niv;
   }
-  if (recalcul) db.bareme = BAREME;
+  if (recalcul) {
+    // L'ancien barème (25 niveaux) reste sur le disque, une seule fois
+    try { const b = dataPath('niveaux.backup-bareme-25.json'); if (!fs.existsSync(b)) fs.writeFileSync(b, JSON.stringify(db, null, 2), 'utf-8'); } catch {}
+    db.bareme = BAREME;
+  }
   save();
   return montees;
 }

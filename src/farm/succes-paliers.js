@@ -1,10 +1,10 @@
 // Réglages des paliers de succès faits depuis le dashboard (onglet « Succès »).
-// Fichier succes-paliers.json : { idSuccès: { pas, sup } }. Niveau n = pas × n + sup × n(n-1)/2, le nombre de niveaux de la série est conservé.
+// Fichier succes-paliers-v2.json (succes-paliers.json = ancien barème à 25 niveaux, conservé) : { idSuccès: { pas, sup } }. Niveau n = pas × n + sup × n(n-1)/2, le nombre de niveaux de la série est conservé.
 // Sans réglage, la série garde les paliers définis dans fs25-succes-config.js.
 const fs = require('fs');
 const { dataPath } = require('../core/paths');
 
-const FILE = dataPath('succes-paliers.json');
+const FILE = dataPath('succes-paliers-v2.json');
 let reglages = {};
 try { reglages = JSON.parse(fs.readFileSync(FILE, 'utf-8')); } catch {}
 
