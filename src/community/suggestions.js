@@ -326,9 +326,7 @@ return { supprimer, startSuggestions, handleSuggNew, handleSuggModal, handleSugg
 }
 
 const jeu  = creer({ JEU: true, SUGG_CHANNEL: ids('SUGG_CHANNEL_ID'), P: 'sugg', fichier: 'suggestions.json' });
-const mods = creer({ JEU: false, SUGG_CHANNEL: ids('MODS_CHANNEL_ID'), P: 'modprop', fichier: 'mods-propositions.json' });
+// Le salon MODS_CHANNEL_ID est désormais le salon de suggestions à catégories et votes : voir propositions.js
+const startSuggestions = async client => { await jeu.startSuggestions(client); await require('./propositions').startPropositions(client); };
 
-// Le HUB des mods n'est publié que si MODS_CHANNEL_ID est défini
-const startSuggestions = async client => { await jeu.startSuggestions(client); if (ids('MODS_CHANNEL_ID')) await mods.startSuggestions(client); };
-
-module.exports = { startSuggestions, jeu, mods };
+module.exports = { startSuggestions, jeu };

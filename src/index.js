@@ -291,6 +291,7 @@ client.on(Events.InteractionCreate, async interaction => {
   if (interaction.isStringSelectMenu()) {
     const cid = interaction.customId;
     try {
+      if (cid === 'prop_cat')                  { await require('./community/propositions').handleCategorie(interaction); return; }
       if (cid === 'hub_expl_creerfarm')        { await hub.handleHubExplCreerModal(interaction); return; }
       if (cid === 'hub_expl_droits')           { await interaction.update({ natif: true, ...require('./farm/droits-texte').payload(interaction.values[0]) }); return; }
       if (cid.startsWith('hub_expl_manage_'))  { await hub.handleHubExplManage(interaction);  return; }
@@ -323,8 +324,9 @@ client.on(Events.InteractionCreate, async interaction => {
       if (cid.startsWith('besoin_modal_'))      { await contrat.handleBesoinModal(interaction);   return; }
       if (cid.startsWith('voice_rename_modal_') || cid.startsWith('voice_limit_modal_')) { await tempvoice.handleVoiceModal(interaction); return; }
       if (cid === 'text_create_modal' || cid.startsWith('text_rename_modal_')) { await require('./community/temptext').handleTextModal(interaction); return; }
-      if (cid === 'sugg_modal' || cid === 'modprop_modal') { await require('./community/suggestions')[cid.split('_')[0] === 'sugg' ? 'jeu' : 'mods'].handleSuggModal(interaction); return; }
-      if (/^(sugg|modprop)_(ok|no)modal_\d+$/.test(cid)) { await require('./community/suggestions')[cid.startsWith('sugg') ? 'jeu' : 'mods'].handleSuggDecisionModal(interaction); return; }
+      if (cid === 'sugg_modal') { await require('./community/suggestions').jeu.handleSuggModal(interaction); return; }
+      if (/^sugg_(ok|no)modal_\d+$/.test(cid)) { await require('./community/suggestions').jeu.handleSuggDecisionModal(interaction); return; }
+      if (cid.startsWith('prop_modal_'))        { await require('./community/propositions').handleModal(interaction); return; }
       if (cid.startsWith('asso_'))               { await require('./farm/association').handle(interaction); return; }
       if (cid === 'map_modal')                  { await require('./community/maps').handleModal(interaction); return; }
       if (/^bug_modal(_en)?$/.test(cid))        { await require('./community/bugs').handleBugModal(interaction); return; }
@@ -421,8 +423,10 @@ client.on(Events.InteractionCreate, async interaction => {
 
   // Boîte à idées
   try {
-    if (id === 'sugg_new' || id === 'modprop_new') { await require('./community/suggestions')[id.startsWith('sugg') ? 'jeu' : 'mods'].handleSuggNew(interaction); return; }
-    if (/^(sugg|modprop)_(ok|no)_\d+$/.test(id)) { await require('./community/suggestions')[id.startsWith('sugg') ? 'jeu' : 'mods'].handleSuggDecision(interaction); return; }
+    if (id === 'sugg_new') { await require('./community/suggestions').jeu.handleSuggNew(interaction); return; }
+    if (/^sugg_(ok|no)_\d+$/.test(id)) { await require('./community/suggestions').jeu.handleSuggDecision(interaction); return; }
+    if (/^prop_(pour|contre)_\d+$/.test(id)) { await require('./community/propositions').handleVote(interaction); return; }
+    if (/^prop_votants_\d+$/.test(id)) { await require('./community/propositions').handleVotants(interaction); return; }
   } catch (err) { console.error('Erreur bouton suggestions :', err.stack || err.message); }
 
   // Lien d'invitation (7 jours)

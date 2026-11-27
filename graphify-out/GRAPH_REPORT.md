@@ -1,16 +1,16 @@
-# Graph Report - Bot dominius  (2026-11-26)
+# Graph Report - Bot dominius  (2026-11-27)
 
 ## Corpus Check
-- 139 files · ~147,583 words
+- 144 files · ~149,528 words
 - Verdict: corpus is large enough that graph structure adds value.
 
 ## Summary
-- 1562 nodes · 2954 edges · 88 communities (77 shown, 11 thin omitted)
-- Extraction: 89% EXTRACTED · 11% INFERRED · 0% AMBIGUOUS · INFERRED: 316 edges (avg confidence: 0.85)
+- 1597 nodes · 3009 edges · 90 communities (78 shown, 12 thin omitted)
+- Extraction: 89% EXTRACTED · 11% INFERRED · 0% AMBIGUOUS · INFERRED: 324 edges (avg confidence: 0.85)
 - Token cost: 0 input · 0 output
 
 ## Graph Freshness
-- Built from commit: `66b46e73`
+- Built from commit: `6ca5036b`
 - Run `git rev-parse HEAD` and compare to check if the graph is stale.
 - Run `graphify update .` after code changes (no API cost).
 
@@ -47,11 +47,11 @@
 - antispam.js
 - creer
 - tickets.js
-- setup-moncopainbot.js
+- ressources.js
 - embed-format.js
 - suggestions.js
 - admin-api.js
-- panneau-sync.test.js
+- publier
 - panneau
 - purge.js
 - farm/hub-unifie.js
@@ -60,7 +60,7 @@
 - Hubs.jsx
 - Messages
 - config.js
-- log
+- antiraid.js
 - xp-admin.js
 - invite.js
 - DiscordBridge.lua
@@ -87,11 +87,11 @@
 - deployer-render.sh
 - sync-db.js
 - moderation_roles_postrolesheader
-- tirage-au-sort.js
-- ref_path
+- jeux.js
+- bouton-info.js
 - succes-base.js
 - deploy-commands.js
-- publier
+- startJeux
 - Tickets
 - Messages.jsx
 - creer-classement.js
@@ -99,15 +99,17 @@
 - purge-ancien.js
 - structure.js
 - vider-panneaux.js
+- parseBrut
+- boutique-admin.js
 
 ## God Nodes (most connected - your core abstractions)
 1. `panneau()` - 107 edges
-2. `dataPath()` - 39 edges
+2. `dataPath()` - 40 edges
 3. `agrilog()` - 25 edges
 4. `autoClean()` - 19 edges
 5. `publier()` - 18 edges
 6. `creer()` - 17 edges
-7. `save()` - 16 edges
+7. `save()` - 17 edges
 8. `safe()` - 15 edges
 9. `panneauEmbed()` - 15 edges
 10. `log()` - 15 edges
@@ -115,26 +117,26 @@
 ## Surprising Connections (you probably didn't know these)
 - `st()` --calls--> `parseStatus()`  [EXTRACTED]
   test/succes.test.js → src/farm/fs25-bridge.js
-- `handleButton()` --calls--> `log()`  [EXTRACTED]
-  src/commands/purge.js → src/core/logger.js
 - `execute()` --calls--> `panneau()`  [EXTRACTED]
   src/commands/analyse.js → src/core/embed-format.js
 - `execute()` --calls--> `panneau()`  [EXTRACTED]
   src/commands/banid.js → src/core/embed-format.js
 - `handleContratAccepter()` --calls--> `panneau()`  [EXTRACTED]
   src/commands/contrat.js → src/core/embed-format.js
+- `execute()` --calls--> `getLastActivity()`  [EXTRACTED]
+  src/commands/expulsion.js → src/community/activity.js
 
 ## Import Cycles
 - None detected.
 
-## Communities (88 total, 11 thin omitted)
+## Communities (90 total, 12 thin omitted)
 
 ### Community 0 - "temptext.js"
-Cohesion: 0.07
-Nodes (54): ajouterImages(), {
+Cohesion: 0.13
+Nodes (27): autoClean(), {
   ChannelType, PermissionFlagsBits, ActionRowBuilder, ButtonBuilder, ButtonStyle,
   ModalBuilder, TextInputBuilder, TextInputStyle,
-}, { dataPath }, derniere, dernierMessage(), doublon(), fs, handleModal() (+46 more)
+}, controlRow(), creerSalon(), { dataPath }, dernierMessage(), fs, handleTextControl() (+19 more)
 
 ### Community 1 - "levels.js"
 Cohesion: 0.06
@@ -142,9 +144,9 @@ Nodes (58): levels, { SlashCommandBuilder }, adminAjuster(), adminReset(), annou
 
 ### Community 2 - "association.js"
 Cohesion: 0.10
-Nodes (65): actifs(), {
+Nodes (66): actifs(), {
   ActionRowBuilder, ButtonBuilder, ButtonStyle, ModalBuilder, TextInputBuilder, TextInputStyle, PermissionFlagsBits, StringSelectMenuBuilder,
-}, adminPayload(), alertes, anneeEnCours(), auTotal(), calculFacture(), CHANNEL_ID (+57 more)
+}, adminPayload(), alertes, anneeEnCours(), auTotal(), calculFacture(), CHANNEL_ID (+58 more)
 
 ### Community 3 - "contrat.js"
 Cohesion: 0.07
@@ -159,8 +161,8 @@ Nodes (39): {
 }, ACTIVITES, { agrilog }, autoClean(), canManage(), choixActivites(), exp, EXPLOITANT_ROLE_ID (+31 more)
 
 ### Community 5 - "fs25-bridge.js"
-Cohesion: 0.10
-Nodes (31): ref_stream, allTags(), attrs(), buildEmbed(), cfg(), duration(), { EmbedBuilder, ActionRowBuilder, ButtonBuilder, ButtonStyle }, ensureStatusMessage() (+23 more)
+Cohesion: 0.12
+Nodes (26): ref_stream, buildEmbed(), cfg(), duration(), { EmbedBuilder, ActionRowBuilder, ButtonBuilder, ButtonStyle }, ensureStatusMessage(), fetchMods(), fetchModsFtp() (+18 more)
 
 ### Community 6 - "🚜 Travaux des champs"
 Cohesion: 0.04
@@ -191,7 +193,7 @@ Nodes (24): basic-ftp, discord.js, dotenv, express, express-session, node-cron, 
 
 ### Community 12 - "fs25-succes.js"
 Cohesion: 0.07
-Nodes (44): execute(), { resetSalon, getStatus }, { SlashCommandBuilder, PermissionFlagsBits }, bar(), computeUnlocks(), arrondi(), C, proposition() (+36 more)
+Nodes (43): execute(), { resetSalon, getStatus }, { SlashCommandBuilder, PermissionFlagsBits }, bar(), computeUnlocks(), arrondi(), C, proposition() (+35 more)
 
 ### Community 13 - "devDependencies"
 Cohesion: 0.08
@@ -218,26 +220,26 @@ Cohesion: 0.12
 Nodes (21): { ActionRowBuilder, ButtonBuilder, ButtonStyle, ChannelType }, classementPayload(), { dataPath }, fs, handleInviteButton(), handleRolesButton(), handleRoleToggle(), HUB_CHANNEL (+13 more)
 
 ### Community 19 - "dashboard.js"
-Cohesion: 0.15
-Nodes (18): ref_crypto, { ChannelType }, construire(), createDashboard(), crypto, { dataPath }, embeds, express (+10 more)
+Cohesion: 0.16
+Nodes (17): { ChannelType }, construire(), createDashboard(), crypto, { dataPath }, embeds, express, find() (+9 more)
 
 ### Community 20 - "salon-exploitation.js"
 Cohesion: 0.16
 Nodes (16): panneauDroits(), parNom(), CATEGORIE, { ChannelType, PermissionFlagsBits: P, ActionRowBuilder, ButtonBuilder, ButtonStyle }, droitsPayload(), ensure(), ensureInterne(), exp (+8 more)
 
 ### Community 21 - "statusbot.js"
-Cohesion: 0.16
-Nodes (18): construire(), { dataPath }, db, duree(), events(), EVENTS_FILE, fs, ids (+10 more)
+Cohesion: 0.11
+Nodes (22): ids, { SlashCommandBuilder, PermissionFlagsBits }, cfg, config, construire(), { dataPath }, db, duree() (+14 more)
 
 ### Community 23 - "maps.js"
-Cohesion: 0.10
-Nodes (26): ids, { SlashCommandBuilder, PermissionFlagsBits }, {
+Cohesion: 0.15
+Nodes (22): {
   ActionRowBuilder, ButtonBuilder, ButtonStyle, ModalBuilder, TextInputBuilder, TextInputStyle,
-}, cartePayload(), { dataPath }, etoiles(), fs, handleDelete() (+18 more)
+}, cartePayload(), { dataPath }, etoiles(), fs, handleDelete(), handleModal(), handleRate() (+14 more)
 
 ### Community 24 - "boutique.js"
-Cohesion: 0.11
-Nodes (31): boutique, { SlashCommandBuilder, PermissionFlagsBits }, { agrilog }, autoClean(), cooldownRestant(), createRequest(), { dataPath }, decisionRow() (+23 more)
+Cohesion: 0.13
+Nodes (29): { agrilog }, autoClean(), cooldownRestant(), createRequest(), { dataPath }, decisionRow(), demandeEmbed(), estAdmin() (+21 more)
 
 ### Community 25 - "marche.js"
 Cohesion: 0.18
@@ -247,8 +249,8 @@ Nodes (21): {
 }, champ(), { dataPath }, ERREUR, fmt(), fs, handleAjouter(), handleGerer() (+13 more)
 
 ### Community 26 - "scheduled-messages.js"
-Cohesion: 0.22
-Nodes (18): clearTimer(), create(), crypto, DATA_PATH, { dataPath }, fs, getAll(), load() (+10 more)
+Cohesion: 0.07
+Nodes (37): ref_path, CATS, { Client, GatewayIntentBits, ChannelType: T, PermissionFlagsBits: P }, dotenv, EN, env, FORCE, fs (+29 more)
 
 ### Community 27 - "verification.js"
 Cohesion: 0.18
@@ -267,12 +269,12 @@ Cohesion: 0.31
 Nodes (15): creer(), autoClean(), estAdmin(), handleSuggDecision(), handleSuggDecisionModal(), handleSuggModal(), handleSuggNew(), installerHub() (+7 more)
 
 ### Community 31 - "tickets.js"
-Cohesion: 0.20
-Nodes (15): { ActionRowBuilder, ButtonBuilder, ButtonStyle, PermissionFlagsBits, ChannelType }, closeTicket(), config, createTicket(), db, estSupport(), historique(), { log } (+7 more)
+Cohesion: 0.19
+Nodes (17): handleButton(), log(), { ActionRowBuilder, ButtonBuilder, ButtonStyle, PermissionFlagsBits, ChannelType }, closeTicket(), config, createTicket(), db, estSupport() (+9 more)
 
-### Community 32 - "setup-moncopainbot.js"
-Cohesion: 0.14
-Nodes (10): CATS, { Client, GatewayIntentBits, ChannelType: T, PermissionFlagsBits: P }, dotenv, EN, env, FORCE, fs, GO (+2 more)
+### Community 32 - "ressources.js"
+Cohesion: 0.08
+Nodes (31): ref_assert, autocomplete(), { classement }, data, execute(), FR, MEDALS, norm() (+23 more)
 
 ### Community 33 - "embed-format.js"
 Cohesion: 0.21
@@ -289,27 +291,25 @@ Nodes (9): { agrilog }, { dataPath }, fs, ids, jeu, mods, { panneau }, {
 Cohesion: 0.18
 Nodes (11): config, { dataPath }, db, expl, fs, hubInfo, levels, lire() (+3 more)
 
-### Community 36 - "panneau-sync.test.js"
-Cohesion: 0.18
-Nodes (10): installer(), sansNotif(), assert, { formater }, guild, { imageSteam }, jeux, { publier } (+2 more)
+### Community 36 - "publier"
+Cohesion: 0.14
+Nodes (16): installer(), sansNotif(), envoyerRapport(), formater(), ICONE, noter(), publier(), tampon (+8 more)
 
 ### Community 37 - "panneau"
 Cohesion: 0.11
 Nodes (20): db, execute(), { panneau }, { SlashCommandBuilder, PermissionFlagsBits }, panneau(), { panneau }, reglementEmbed(), REGLES (+12 more)
 
 ### Community 38 - "purge.js"
-Cohesion: 0.18
-Nodes (12): collectRange(), data, dataEnd, dataStart, executeEnd(), executeStart(), handleButton(), key() (+4 more)
+Cohesion: 0.15
+Nodes (13): execute(), collectRange(), data, dataEnd, dataStart, executeEnd(), executeStart(), key() (+5 more)
 
 ### Community 39 - "farm/hub-unifie.js"
 Cohesion: 0.15
 Nodes (22): { ActionRowBuilder, ButtonBuilder, ButtonStyle }, bouton(), commerce(), { dataPath }, ecrire(), egal(), etiquette(), eur() (+14 more)
 
 ### Community 40 - "hub-info.js"
-Cohesion: 0.11
-Nodes (22): CHOIX, enregistrer(), execute(), handleModal(), info, lire(), {
-  SlashCommandBuilder, PermissionFlagsBits, ModalBuilder, TextInputBuilder, TextInputStyle, ActionRowBuilder,
-}, TEXTE (+14 more)
+Cohesion: 0.17
+Nodes (14): { ActionRowBuilder, ButtonBuilder, ButtonStyle }, buildMessage(), { dataPath }, DEFAUT, DYN, fs, get(), getIntro() (+6 more)
 
 ### Community 41 - "Members"
 Cohesion: 0.24
@@ -327,9 +327,9 @@ Nodes (5): Messages(), deleteMsg(), loadAll(), save(), toggleEnabled()
 Cohesion: 0.31
 Nodes (8): CONFIG_PATH, { dataPath }, DEFAULT_CONFIG, ensureDataDir(), fs, get(), path, set()
 
-### Community 45 - "log"
-Cohesion: 0.31
-Nodes (9): execute(), execute(), log(), checkLinks(), checkSpam(), estStaff(), EXCLUDED_ROLE_IDS, { log } (+1 more)
+### Community 45 - "antiraid.js"
+Cohesion: 0.38
+Nodes (6): checkLinks(), checkSpam(), estStaff(), EXCLUDED_ROLE_IDS, { log }, memberMessages
 
 ### Community 46 - "xp-admin.js"
 Cohesion: 0.27
@@ -362,8 +362,8 @@ Cohesion: 0.43
 Nodes (7): arretPropre(), config, heureParis(), heureReglee(), prevenir(), redemarrer(), startDailyRestart()
 
 ### Community 53 - "evenements.js"
-Cohesion: 0.17
-Nodes (21): attribuer(), crypto, { dataPath }, etat, FILE, fmt(), fs, initBase() (+13 more)
+Cohesion: 0.10
+Nodes (32): ref_crypto, bouton(), crypto, { dataPath }, ecrire(), embed(), execute(), FILE (+24 more)
 
 ### Community 54 - "activites-sup.js"
 Cohesion: 0.23
@@ -399,15 +399,15 @@ Nodes (11): appliquer(), calcul(), { dataPath }, defauts, FILE, fs, init(), list
 
 ### Community 63 - "paths.js"
 Cohesion: 0.13
-Nodes (17): ref_fs, dataPath(), fs, path, REPO_DATA, { dataPath }, exp, fs (+9 more)
+Nodes (18): ref_fs, dataPath(), fs, path, REPO_DATA, { dataPath }, exp, fs (+10 more)
 
 ### Community 64 - "fs25-data.js"
 Cohesion: 0.17
 Nodes (13): execute(), { lireDonneesCompletes }, { sectionEmbed }, { SlashCommandBuilder }, src_farm_fs25_bridge_liredonneescompletes, attrs(), cache, { EmbedBuilder } (+5 more)
 
 ### Community 65 - "succes.test.js"
-Cohesion: 0.18
-Nodes (12): ref_assert, deplacerTravail(), parseStatus(), src_farm_fs25_succes_reset, assert, base, { computeUnlocks, _reset }, cv (+4 more)
+Cohesion: 0.20
+Nodes (11): deplacerTravail(), parseStatus(), src_farm_fs25_succes_reset, assert, base, { computeUnlocks, _reset }, cv, { parseStatus } (+3 more)
 
 ### Community 66 - "panneauEmbed"
 Cohesion: 0.23
@@ -425,13 +425,18 @@ Nodes (5): barre(), execute(), levels, { panneau }, { SlashCommandBuilder }
 Cohesion: 0.40
 Nodes (5): db, execute(), { panneau }, { SlashCommandBuilder, PermissionFlagsBits }, syncDatabase()
 
-### Community 75 - "tirage-au-sort.js"
-Cohesion: 0.31
-Nodes (10): bouton(), crypto, { dataPath }, ecrire(), embed(), execute(), FILE, fs (+2 more)
+### Community 75 - "jeux.js"
+Cohesion: 0.14
+Nodes (22): ajouterImages(), {
+  ChannelType, PermissionFlagsBits, ActionRowBuilder, ButtonBuilder, ButtonStyle,
+  ModalBuilder, TextInputBuilder, TextInputStyle,
+}, { dataPath }, derniere, dernierMessage(), doublon(), fs, handleModal() (+14 more)
 
-### Community 76 - "ref_path"
-Cohesion: 0.20
-Nodes (9): ref_path, assert, channel, d, ev, farms, os, path (+1 more)
+### Community 76 - "bouton-info.js"
+Cohesion: 0.33
+Nodes (8): CHOIX, enregistrer(), execute(), handleModal(), info, lire(), {
+  SlashCommandBuilder, PermissionFlagsBits, ModalBuilder, TextInputBuilder, TextInputStyle, ActionRowBuilder,
+}, TEXTE
 
 ### Community 77 - "succes-base.js"
 Cohesion: 0.31
@@ -441,33 +446,37 @@ Nodes (9): appliquer(), base, charger(), { dataPath }, figer(), FILE, fs, kC() (
 Cohesion: 0.50
 Nodes (3): commands, rest, { REST, Routes }
 
-### Community 79 - "publier"
-Cohesion: 0.43
-Nodes (6): envoyerRapport(), formater(), ICONE, noter(), publier(), tampon
+### Community 79 - "startJeux"
+Cohesion: 0.60
+Nodes (5): panelPayload(), startJeux(), cacherAuxAutres(), salonAccueil(), visiblePar()
 
 ### Community 81 - "Messages.jsx"
 Cohesion: 0.50
 Nodes (3): COLOR_OPTIONS, EMPTY_FORM, INTERVAL_OPTIONS
 
+### Community 88 - "parseBrut"
+Cohesion: 0.50
+Nodes (5): allTags(), attrs(), firstTag(), parseBrut(), unescapeXml()
+
 ## Knowledge Gaps
-- **604 isolated node(s):** `{ Client, ChannelType, PermissionFlagsBits: P }`, `c`, `{ Client, GatewayIntentBits }`, `c`, `{ Client, GatewayIntentBits }` (+599 more)
+- **624 isolated node(s):** `{ Client, ChannelType, PermissionFlagsBits: P }`, `c`, `{ Client, GatewayIntentBits }`, `c`, `{ Client, GatewayIntentBits }` (+619 more)
   These have ≤1 connection - possible missing edges or undocumented components.
-- **11 thin communities (<3 nodes) omitted from report** — run `graphify query` to explore isolated nodes.
+- **12 thin communities (<3 nodes) omitted from report** — run `graphify query` to explore isolated nodes.
 
 ## Suggested Questions
 _Questions this graph is uniquely positioned to answer:_
 
-- **Why does `panneau()` connect `panneau` to `temptext.js`, `association.js`, `contrat.js`, `hub.js`, `codeverif.js`, `bugs.js`, `birthday.js`, `tempvoice.js`, `database.js`, `invitations.js`, `dashboard.js`, `salon-exploitation.js`, `statusbot.js`, `maps.js`, `boutique.js`, `marche.js`, `antispam.js`, `creer`, `tickets.js`, `embed-format.js`, `suggestions.js`, `farm/hub-unifie.js`, `hub-info.js`, `log`, `xp-admin.js`, `hub2.js`, `activites-sup.js`, `antidoublecompte.js`, `panneauEmbed`, `niveau.js`, `sync-db.js`?**
-  _High betweenness centrality (0.151) - this node is a cross-community bridge._
-- **Why does `dataPath()` connect `paths.js` to `temptext.js`, `levels.js`, `association.js`, `contrat.js`, `codeverif.js`, `bugs.js`, `tempvoice.js`, `fs25-succes.js`, `database.js`, `exploitation.js`, `roles.js`, `invitations.js`, `dashboard.js`, `statusbot.js`, `maps.js`, `boutique.js`, `marche.js`, `scheduled-messages.js`, `antispam.js`, `creer`, `suggestions.js`, `admin-api.js`, `panneau`, `farm/hub-unifie.js`, `hub-info.js`, `config.js`, `evenements.js`, `succes-paliers.js`, `tirage-au-sort.js`, `succes-base.js`?**
-  _High betweenness centrality (0.075) - this node is a cross-community bridge._
-- **Why does `panneauEmbed()` connect `panneauEmbed` to `levels.js`, `embed-format.js`, `publiclog.js`, `fs25-bridge.js`, `panneau`, `roles.js`?**
-  _High betweenness centrality (0.010) - this node is a cross-community bridge._
+- **Why does `panneau()` connect `panneau` to `temptext.js`, `association.js`, `contrat.js`, `hub.js`, `codeverif.js`, `bugs.js`, `birthday.js`, `tempvoice.js`, `database.js`, `invitations.js`, `dashboard.js`, `salon-exploitation.js`, `statusbot.js`, `maps.js`, `boutique.js`, `marche.js`, `antispam.js`, `creer`, `tickets.js`, `embed-format.js`, `suggestions.js`, `purge.js`, `farm/hub-unifie.js`, `hub-info.js`, `xp-admin.js`, `hub2.js`, `activites-sup.js`, `antidoublecompte.js`, `panneauEmbed`, `niveau.js`, `sync-db.js`, `jeux.js`, `startJeux`?**
+  _High betweenness centrality (0.126) - this node is a cross-community bridge._
+- **Why does `dataPath()` connect `paths.js` to `temptext.js`, `levels.js`, `association.js`, `contrat.js`, `codeverif.js`, `bugs.js`, `tempvoice.js`, `fs25-succes.js`, `database.js`, `exploitation.js`, `roles.js`, `invitations.js`, `dashboard.js`, `statusbot.js`, `maps.js`, `boutique.js`, `marche.js`, `scheduled-messages.js`, `antispam.js`, `creer`, `ressources.js`, `suggestions.js`, `admin-api.js`, `panneau`, `farm/hub-unifie.js`, `hub-info.js`, `config.js`, `evenements.js`, `succes-paliers.js`, `jeux.js`, `succes-base.js`?**
+  _High betweenness centrality (0.101) - this node is a cross-community bridge._
+- **Why does `creer()` connect `creer` to `suggestions.js`, `paths.js`?**
+  _High betweenness centrality (0.017) - this node is a cross-community bridge._
 - **Are the 2 inferred relationships involving `panneau()` (e.g. with `embed-format.js` and `panneauEmbed()`) actually correct?**
   _`panneau()` has 2 INFERRED edges - model-reasoned connections that need verification._
 - **What connects `{ Client, ChannelType, PermissionFlagsBits: P }`, `c`, `{ Client, GatewayIntentBits }` to the rest of the system?**
-  _604 weakly-connected nodes found - possible documentation gaps or missing edges._
+  _624 weakly-connected nodes found - possible documentation gaps or missing edges._
 - **Should `temptext.js` be split into smaller, more focused modules?**
-  _Cohesion score 0.06957047791893527 - nodes in this community are weakly interconnected._
+  _Cohesion score 0.1349206349206349 - nodes in this community are weakly interconnected._
 - **Should `levels.js` be split into smaller, more focused modules?**
   _Cohesion score 0.06041986687147977 - nodes in this community are weakly interconnected._

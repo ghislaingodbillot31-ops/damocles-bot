@@ -204,15 +204,15 @@
     "semantic_hash": ""
   },
   "src/deploy-commands.js": {
-    "mtime": 1795596888.6018534,
-    "seen": 1795696270.9795394,
-    "ast_hash": "9f01a31f82b4c485405d1ab1b138b6fc",
+    "mtime": 1795783321.5451903,
+    "seen": 1795787171.3321877,
+    "ast_hash": "4b9301cf2e96580952494ae4fb96a428",
     "semantic_hash": ""
   },
   "src/index.js": {
-    "mtime": 1795596888.6519578,
-    "seen": 1795696270.9795663,
-    "ast_hash": "4d6a998db2269f2358caa1e507d6f311",
+    "mtime": 1795783321.5933194,
+    "seen": 1795787171.3322213,
+    "ast_hash": "3be781aacdad8e3347464822a8c90fc4",
     "semantic_hash": ""
   },
   "test/panneau-sync.test.js": {
@@ -486,9 +486,9 @@
     "semantic_hash": ""
   },
   "src/farm/fs25-bridge.js": {
-    "mtime": 1795597440.533573,
-    "seen": 1795696270.9795465,
-    "ast_hash": "a3bd83a8a5798a1d557acb508dedfb79",
+    "mtime": 1795709364.2659924,
+    "seen": 1795787171.3321958,
+    "ast_hash": "ed14a386fcd311da6d34f7c47b020b22",
     "semantic_hash": ""
   },
   "src/farm/hub-info.js": {
@@ -606,9 +606,9 @@
     "semantic_hash": ""
   },
   "mod-src/scripts/DiscordBridge.lua": {
-    "mtime": 1795450813.164747,
-    "seen": 1795696270.9794939,
-    "ast_hash": "8bcf9053eb081fd3fde13afb01415042",
+    "mtime": 1795709354.2486439,
+    "seen": 1795787171.332138,
+    "ast_hash": "c734e7c5cba6e2496cadaa1a1d281c88",
     "semantic_hash": ""
   },
   "src/commands/succes-maj.js": {
@@ -666,9 +666,9 @@
     "semantic_hash": ""
   },
   "src/farm/hub2.js": {
-    "mtime": 1795597431.0323117,
-    "seen": 1795696270.9795535,
-    "ast_hash": "89b669b3cd7650b4b3efda7ed1ec5116",
+    "mtime": 1795786186.5265117,
+    "seen": 1795787171.3322039,
+    "ast_hash": "aec740da0e1d0bb30455dfef033a33f1",
     "semantic_hash": ""
   },
   "src/farm/niveaux-config.js": {
@@ -696,9 +696,9 @@
     "semantic_hash": ""
   },
   "src/farm/association.js": {
-    "mtime": 1795694860.5217175,
-    "seen": 1795696270.9795413,
-    "ast_hash": "bbe3be8784846a78ccd652c8e8d084f6",
+    "mtime": 1795786144.279064,
+    "seen": 1795787171.3321893,
+    "ast_hash": "1d6c01efeffa33c0fdb1def850cc3556",
     "semantic_hash": ""
   },
   "src/commands/fs25.js": {
@@ -732,9 +732,9 @@
     "semantic_hash": ""
   },
   "src/farm/salon-exploitation.js": {
-    "mtime": 1795590708.01328,
-    "seen": 1795696270.979563,
-    "ast_hash": "a1804e7a2420421c362a21d5b6b1b5b9",
+    "mtime": 1795785729.2194147,
+    "seen": 1795787171.3322175,
+    "ast_hash": "9b7d837878cdf30ff69601007a2d2893",
     "semantic_hash": ""
   },
   "src/core/logs-salon.js": {
@@ -756,9 +756,9 @@
     "semantic_hash": ""
   },
   "src/farm/reglement-fs25.js": {
-    "mtime": 1795516500.4317224,
-    "seen": 1795696270.9795597,
-    "ast_hash": "b5d671c7b4c9a069ae89880a0f334f98",
+    "mtime": 1795786186.345229,
+    "seen": 1795787171.3322117,
+    "ast_hash": "a140a944c807d598281836f2031e00b9",
     "semantic_hash": ""
   },
   "src/farm/succes-paliers.js": {
@@ -810,9 +810,9 @@
     "semantic_hash": ""
   },
   "src/farm/evenements.js": {
-    "mtime": 1795606512.0329013,
-    "seen": 1795696270.9795444,
-    "ast_hash": "0e2a1048ac327c3ee3c6f20dc65c725b",
+    "mtime": 1795786070.4417632,
+    "seen": 1795787171.3321939,
+    "ast_hash": "09f0a3d46d2b9817cd1172b3e09e24a5",
     "semantic_hash": ""
   },
   "src/farm/hub-unifie.js": {
@@ -840,15 +840,45 @@
     "semantic_hash": ""
   },
   "test/evenements.test.js": {
-    "mtime": 1795352518.206647,
-    "seen": 1795696270.9795787,
-    "ast_hash": "c6696417a86e962a9d6873dbfc39c872",
+    "mtime": 1795786080.8920536,
+    "seen": 1795787171.332235,
+    "ast_hash": "4068ca509eabd8f3b3f35e5ea29da7e9",
     "semantic_hash": ""
   },
   "CAHIER-DES-CHARGES.md": {
     "mtime": 1795592012.8806639,
     "seen": 1795696270.979581,
     "ast_hash": "e0ef569d3f89b57c9adb832572188192",
+    "semantic_hash": ""
+  },
+  "src/commands/ventes.js": {
+    "mtime": 1795783321.5071323,
+    "seen": 1795787171.3321621,
+    "ast_hash": "a74321a929e83f4880788f2e6390781b",
+    "semantic_hash": ""
+  },
+  "src/farm/prix-mois.json": {
+    "mtime": 1795783614.1029458,
+    "seen": 1795787171.3322108,
+    "ast_hash": "5581ce92f55b3159417b5898af709acc",
+    "semantic_hash": ""
+  },
+  "src/farm/ressources-fr.js": {
+    "mtime": 1795783228.5807717,
+    "seen": 1795787171.3322155,
+    "ast_hash": "79a8447ca8f880393949354c8919573b",
+    "semantic_hash": ""
+  },
+  "src/farm/ressources.js": {
+    "mtime": 1795784438.263245,
+    "seen": 1795787171.3322165,
+    "ast_hash": "f0bfc47f79536b5e3dd6bb599df14230",
+    "semantic_hash": ""
+  },
+  "test/ressources.test.js": {
+    "mtime": 1795784281.3917954,
+    "seen": 1795787171.3322368,
+    "ast_hash": "5ae9607b8afbcdd13f9936e22d16cbb1",
     "semantic_hash": ""
   }
 }
