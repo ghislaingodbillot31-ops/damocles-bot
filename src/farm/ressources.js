@@ -15,8 +15,7 @@ function blocs(rows, status) {
     .sort((a, b) => a.nom.localeCompare(b.nom, 'fr'))
     .map((r) => {
       const top = status ? classement(status, r.cle).filter((v) => v.litres >= 0.5).slice(0, 3) : [];
-      return `**${r.nom}** · ${euro(r.prix)} / 1000 L` + (top.length ? '
-' + top.map((v, i) => `${MEDALS[i]} ${v.nom} ${Math.round(v.litres).toLocaleString('fr-FR')} L`).join(' · ') : '');
+      return `**${r.nom}** · ${euro(r.prix)} / 1000 L` + (top.length ? '\n' + top.map((v, i) => `${MEDALS[i]} ${v.nom} ${Math.round(v.litres).toLocaleString('fr-FR')} L`).join(' · ') : '');
     });
   const out = [];
   let cur = '';
