@@ -52,3 +52,12 @@ function start(client) {
 }
 
 module.exports = { publier, start, blocs };
+
+// Exploitations classées par quantité vendue d'un produit (compteurs `sold` du mod).
+function classement(status, fillType) {
+  const nom = (id) => (status.farms.find((f) => f.id === id) || {}).name || `Ferme ${id}`;
+  const total = new Map();
+  for (const c of status.counters) if (c.kind === 'sold' && c.fillType === fillType && c.value > 0) total.set(c.farm, (total.get(c.farm) || 0) + c.value);
+  return [...total].map(([id, litres]) => ({ nom: nom(id), litres })).sort((a, b) => b.litres - a.litres);
+}
+module.exports.classement = classement;

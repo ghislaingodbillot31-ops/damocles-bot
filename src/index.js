@@ -230,6 +230,7 @@ client.on(Events.InteractionCreate, async interaction => {
   if (interaction.isAutocomplete()) {
     if (interaction.commandName === 'succes') await require('./commands/succes').autocomplete(interaction).catch(() => {});
     if (interaction.commandName === 'fs25') await require('./commands/fs25').autocomplete(interaction).catch(() => {});
+    if (interaction.commandName === 'ventes') await require('./commands/ventes').autocomplete(interaction).catch(() => {});
     return;
   }
 
@@ -255,6 +256,7 @@ client.on(Events.InteractionCreate, async interaction => {
       'succes':       './commands/succes',
       'succes-maj':   './commands/succes-maj',
       'fs25':         './commands/fs25',
+      'ventes':       './commands/ventes',
       'hub-unifie':   './commands/hub-unifie',
       'nettoyer':     './commands/purge',
     };
