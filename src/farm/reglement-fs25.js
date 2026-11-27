@@ -35,7 +35,7 @@ const BLOCS = [
 `📏 **Limites**
 • 🌱 10 champs max ~
 • 🐝 5 ruches max
-• 🏠 8 serres max
+• 🏠 6 serres max · **1 seule ressource par serre**, et une même ressource ne peut pas être produite dans deux serres différentes (ex : pas de laitue dans 2 serres)
 • 🐄 1 enclos par espèce, **500 animaux max par enclos**
 • 🏭 Usines : selon ton niveau d'industrie
 • 🌾 Fusion des champs : **interdite** 🚫
